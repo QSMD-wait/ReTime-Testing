@@ -77,7 +77,7 @@ namespace ReTime_Testing.ViewModels
             _stateStartTime = DateTime.Now;
             _stateManager = new ProgressStateManager();
             _stateManager.OnStateChanged = OnStateChanged;
-
+            Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化完成");
             StartProgressCycle();
         }
 
@@ -86,46 +86,68 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         private void OnStateChanged(ProgressStateConfig config)
         {
-            ProgressValue = config.Value;
-            IsIndeterminate = config.IsIndeterminate;
-            Foreground = config.Foreground;
-            Background = config.Background;
-            Visibility = config.Visibility;
-            IsEnabled = config.IsEnabled;
-            Opacity = config.Opacity;
-            Minimum = config.Minimum;
-            Maximum = config.Maximum;
+            try
+            {
+                if (config == null)
+                {
+                    Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "OnStateChanged: 配置为 null");
+                    return;
+                }
+
+                ProgressValue = config.Value;
+                IsIndeterminate = config.IsIndeterminate;
+                Foreground = config.Foreground ?? ProgressColors.DefaultBlue;
+                Background = config.Background ?? Brushes.Transparent;
+                Visibility = config.Visibility;
+                IsEnabled = config.IsEnabled;
+                Opacity = config.Opacity;
+                Minimum = config.Minimum;
+                Maximum = config.Maximum;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "OnStateChanged: 更新属性时发生异常", ex);
+            }
         }
 
         private void StartProgressCycle()
         {
-            _timer = new DispatcherTimer
+            try
             {
-                Interval = TimeSpan.FromMilliseconds(TimerInterval)
-            };
+                _timer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(TimerInterval)
+                };
 
-            _timer.Tick += OnTimerTick;
-            _timer.Start();
+                _timer.Tick += OnTimerTick;
+                _timer.Start();
+                Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进度循环已启动");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "启动进度循环失败", ex);
+            }
         }
 
         private void OnTimerTick(object? sender, EventArgs e)
         {
-            var elapsed = DateTime.Now - _stateStartTime;
-            var elapsedMs = elapsed.TotalMilliseconds;
+            try
+            {
+                var elapsed = DateTime.Now - _stateStartTime;
+                var elapsedMs = elapsed.TotalMilliseconds;
 
-            switch (_currentState)
+                // 只在状态进入的第一帧输出日志
+                if (elapsedMs < 200)
+                {
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", $"OnTimerTick - 当前状态: {_currentState}, 已运行: {elapsedMs:F0}ms");
+                }
+
+                switch (_currentState)
             {
                 case ProgressState.Loading:
                     // 蓝色不确定加载 5s，所有默认值
-                    ProgressValue = 0;
-                    IsIndeterminate = true;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Loading 状态");
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
 
                     if (elapsedMs >= LoadingDuration)
                     {
@@ -135,17 +157,11 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Progress1:
                     // 蓝色进度 8s（0% → 50%），Value测试
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Progress1 状态");
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    
                     var progress1 = (elapsedMs / Progress1Duration) * 50;
-                    ProgressValue = Math.Min(progress1, 50);
+                    _stateManager.SetValue(Math.Min(progress1, 50));
 
                     if (elapsedMs >= Progress1Duration)
                     {
@@ -155,16 +171,11 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Paused:
                     // 橙色暂停 3s（50%）
-                    ProgressValue = 50;
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.PauseOrange;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-
+                    if (elapsedMs < 200)
+                    {
+                        Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Paused 状态");
+                    }
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Paused);
                     if (elapsedMs >= PauseDuration)
                     {
                         TransitionToState(ProgressState.Progress2);
@@ -173,17 +184,10 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Progress2:
                     // 蓝色进度 8s（50% → 100%）
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    
                     var progress2 = 50 + (elapsedMs / Progress2Duration) * 50;
-                    ProgressValue = Math.Min(progress2, 100);
+                    _stateManager.SetValue(Math.Min(progress2, 100));
 
                     if (elapsedMs >= Progress2Duration)
                     {
@@ -193,51 +197,39 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.OpacityTest:
                     // Opacity 淡入淡出 5s
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Minimum = 0;
-                    Maximum = 100;
-                    ProgressValue = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    _stateManager.SetValue(100);
 
                     // 0→2.5s: 1.0→0.5, 2.5s→5s: 0.5→1.0
                     if (elapsedMs < OpacityTestDuration / 2)
                     {
-                        Opacity = 1.0 - (elapsedMs / (OpacityTestDuration / 2)) * 0.5;
+                        _stateManager.SetOpacity(1.0 - (elapsedMs / (OpacityTestDuration / 2)) * 0.5);
                     }
                     else
                     {
-                        Opacity = 0.5 + ((elapsedMs - OpacityTestDuration / 2) / (OpacityTestDuration / 2)) * 0.5;
+                        _stateManager.SetOpacity(0.5 + ((elapsedMs - OpacityTestDuration / 2) / (OpacityTestDuration / 2)) * 0.5);
                     }
 
                     if (elapsedMs >= OpacityTestDuration)
                     {
-                        Opacity = 1.0;
+                        _stateManager.SetOpacity(1.0);
                         TransitionToState(ProgressState.BackgroundTest);
                     }
                     break;
 
                 case ProgressState.BackgroundTest:
                     // Background 变化 4s
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-                    ProgressValue = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    _stateManager.SetValue(100);
 
                     // 0→2s: Transparent→Gray, 2s→4s: Gray→Transparent
                     if (elapsedMs < BackgroundTestDuration / 2)
                     {
-                        Background = ProgressColors.Gray;
+                        _stateManager.SetBackground(ProgressColors.Gray);
                     }
                     else
                     {
-                        Background = Brushes.Transparent;
+                        _stateManager.SetBackground(Brushes.Transparent);
                     }
 
                     if (elapsedMs >= BackgroundTestDuration)
@@ -248,27 +240,21 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.VisibilityTest:
                     // Visible→Hidden(1s)→Visible 3s
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-                    ProgressValue = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    _stateManager.SetValue(100);
 
                     // 0→0.5s: Visible, 0.5s→2.5s: Hidden, 2.5s→3s: Visible
                     if (elapsedMs < 500)
                     {
-                        Visibility = Visibility.Visible;
+                        _stateManager.SetVisibility(Visibility.Visible);
                     }
                     else if (elapsedMs < 2500)
                     {
-                        Visibility = Visibility.Hidden;
+                        _stateManager.SetVisibility(Visibility.Hidden);
                     }
                     else
                     {
-                        Visibility = Visibility.Visible;
+                        _stateManager.SetVisibility(Visibility.Visible);
                     }
 
                     if (elapsedMs >= VisibilityTestDuration)
@@ -279,23 +265,17 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.IsEnabledTest:
                     // IsEnabled false(1.5s)→true 3s
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-                    ProgressValue = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    _stateManager.SetValue(100);
 
                     // 0→1.5s: false, 1.5s→3s: true
                     if (elapsedMs < 1500)
                     {
-                        IsEnabled = false;
+                        _stateManager.SetEnabled(false);
                     }
                     else
                     {
-                        IsEnabled = true;
+                        _stateManager.SetEnabled(true);
                     }
 
                     if (elapsedMs >= IsEnabledTestDuration)
@@ -306,37 +286,24 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.MinMaxTest:
                     // Min=0,Max=200,Value=100（50%位置）3s
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.DefaultBlue;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 200;
-                    ProgressValue = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
+                    _stateManager.SetValue(100);
+                    _stateManager.SetRange(0, 200);
 
                     if (elapsedMs >= MinMaxTestDuration)
                     {
-                        // 恢复默认值
-                        Minimum = 0;
-                        Maximum = 100;
+                        _stateManager.SetRange(0, 100);  // 恢复默认范围
                         TransitionToState(ProgressState.Error);
                     }
                     break;
 
                 case ProgressState.Error:
                     // 红色错误状态 4s
-                    ProgressValue = 100;
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.ErrorRed;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
-
+                    if (elapsedMs < 200)
+                    {
+                        Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Error 状态");
+                    }
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Error);
                     if (elapsedMs >= ErrorDuration)
                     {
                         TransitionToState(ProgressState.Success);
@@ -345,17 +312,10 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Success:
                     // 绿色进度 10s（0% → 100%）
-                    IsIndeterminate = false;
-                    Foreground = ProgressColors.SuccessGreen;
-                    Background = Brushes.Transparent;
-                    Visibility = Visibility.Visible;
-                    IsEnabled = true;
-                    Opacity = 1.0;
-                    Minimum = 0;
-                    Maximum = 100;
+                    _stateManager.SetState(ProgressStateManager.ProgressStates.Success);
 
                     var progress3 = (elapsedMs / SuccessDuration) * 100;
-                    ProgressValue = Math.Min(progress3, 100);
+                    _stateManager.SetValue(Math.Min(progress3, 100));
 
                     if (elapsedMs >= SuccessDuration)
                     {
@@ -364,12 +324,45 @@ namespace ReTime_Testing.ViewModels
                     }
                     break;
             }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "OnTimerTick: 处理进度状态时发生异常", ex);
+            }
         }
 
         private void TransitionToState(ProgressState newState)
         {
+            Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", $"状态切换: {_currentState} -> {newState}");
             _currentState = newState;
             _stateStartTime = DateTime.Now;
+        }
+
+        /// <summary>
+        /// 清理资源
+        /// </summary>
+        public void Cleanup()
+        {
+            try
+            {
+                if (_timer != null)
+                {
+                    _timer.Stop();
+                    _timer.Tick -= OnTimerTick;
+                    _timer = null;
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "Timer 已清理");
+                }
+
+                if (_stateManager != null)
+                {
+                    _stateManager.OnStateChanged = null;
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "StateManager 回调已清理");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "清理资源时发生异常", ex);
+            }
         }
     }
 }

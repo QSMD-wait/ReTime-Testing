@@ -45,29 +45,39 @@ namespace ReTime_Testing.Models
     }
 
     /// <summary>
-    /// 进度条状态配置类
-    /// </summary>
-    public class ProgressStateConfig
-    {
-        private double _value;
-        private double _opacity;
-        private double _minimum;
-        private double _maximum;
-
-        /// <summary>
-        /// 状态类型
-        /// </summary>
-        public ProgressStateType StateType { get; set; }
-
-        /// <summary>
-        /// 进度值（自动限制在 Min-Max 范围内）
-        /// </summary>
-        public double Value
-        {
-            get => _value;
-            set => _value = Math.Clamp(value, Minimum, Maximum);
-        }
-
+            /// 进度条状态配置类
+            /// </summary>
+            public class ProgressStateConfig
+            {
+            private double _value;
+            private double _opacity;
+            private double _minimum;
+            private double _maximum;
+            private bool _initialized = false;  // 标记是否已完成初始化
+    
+            /// <summary>
+            /// 状态类型
+            /// </summary>
+            public ProgressStateType StateType { get; set; }
+    
+            /// <summary>
+            /// 进度值（初始化时不验证，运行时才限制在 Min-Max 范围内）
+            /// </summary>
+            public double Value
+            {
+                get => _value;
+                set
+                {
+                    if (_initialized)
+                    {
+                        _value = Math.Clamp(value, Minimum, Maximum);
+                    }
+                    else
+                    {
+                        _value = value;
+                    }
+                }
+            }
         /// <summary>
         /// 不确定模式
         /// </summary>
@@ -94,12 +104,22 @@ namespace ReTime_Testing.Models
         public bool IsEnabled { get; set; }
 
         /// <summary>
-        /// 透明度（自动限制在 0-1 范围内）
+        /// 透明度（初始化时不验证，运行时才限制在 0-1 范围内）
         /// </summary>
         public double Opacity
         {
             get => _opacity;
-            set => _opacity = Math.Clamp(value, 0.0, 1.0);
+            set
+            {
+                if (_initialized)
+                {
+                    _opacity = Math.Clamp(value, 0.0, 1.0);
+                }
+                else
+                {
+                    _opacity = value;
+                }
+            }
         }
 
         /// <summary>
@@ -110,12 +130,12 @@ namespace ReTime_Testing.Models
             get => _minimum;
             set
             {
-                // 只在非初始化时验证（当 _maximum 不为默认值时）
-                if (_maximum != 0 && value >= Maximum)
+                // 只在初始化完成后验证
+                if (_initialized && value >= Maximum)
                     throw new ArgumentException("Minimum must be less than Maximum");
                 _minimum = value;
-                // 确保当前值在范围内
-                if (_value < _minimum) _value = _minimum;
+                // 确保当前值在范围内（只在初始化完成后）
+                if (_initialized && _value < _minimum) _value = _minimum;
             }
         }
 
@@ -127,12 +147,12 @@ namespace ReTime_Testing.Models
             get => _maximum;
             set
             {
-                // 只在非初始化时验证（当 _minimum 不为默认值时）
-                if (_minimum != 0 && value <= Minimum)
+                // 只在初始化完成后验证
+                if (_initialized && value <= Minimum)
                     throw new ArgumentException("Maximum must be greater than Minimum");
                 _maximum = value;
-                // 确保当前值在范围内
-                if (_value > _maximum) _value = _maximum;
+                // 确保当前值在范围内（只在初始化完成后）
+                if (_initialized && _value > _maximum) _value = _maximum;
             }
         }
 
@@ -141,7 +161,7 @@ namespace ReTime_Testing.Models
         /// </summary>
         public static ProgressStateConfig Default()
         {
-            return new ProgressStateConfig
+            var config = new ProgressStateConfig
             {
                 StateType = ProgressStateType.Loading,
                 Value = 0,
@@ -154,6 +174,8 @@ namespace ReTime_Testing.Models
                 Minimum = 0,
                 Maximum = 100
             };
+            config._initialized = true;
+            return config;
         }
 
         /// <summary>
@@ -161,7 +183,7 @@ namespace ReTime_Testing.Models
         /// </summary>
         public ProgressStateConfig Clone()
         {
-            return new ProgressStateConfig
+            var config = new ProgressStateConfig
             {
                 StateType = StateType,
                 Value = Value,
@@ -174,6 +196,8 @@ namespace ReTime_Testing.Models
                 Minimum = Minimum,
                 Maximum = Maximum
             };
+            config._initialized = true;
+            return config;
         }
 
         /// <summary>

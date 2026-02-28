@@ -177,6 +177,7 @@ namespace ReTime_Testing.Services
             }
             else
             {
+                Logger.Info("ReTime_Testing.Services.ProgressStateManager", $"状态变更 - StateType={_currentConfig.StateType}, Value={_currentConfig.Value}");
                 OnStateChanged?.Invoke(_currentConfig);
             }
         }
@@ -237,9 +238,21 @@ namespace ReTime_Testing.Services
             _currentConfig.Opacity = config.Opacity;
             _currentConfig.Minimum = config.Minimum;
             _currentConfig.Maximum = config.Maximum;
-            
+
+            // 标记初始化完成，启用验证
+            SetInitialized(_currentConfig, true);
+
             NotifyStateChanged();
             return this;
+        }
+
+        /// <summary>
+        /// 设置配置的初始化状态（通过反射访问私有字段）
+        /// </summary>
+        private void SetInitialized(ProgressStateConfig config, bool initialized)
+        {
+            var field = typeof(ProgressStateConfig).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field?.SetValue(config, initialized);
         }
 
         /// <summary>
