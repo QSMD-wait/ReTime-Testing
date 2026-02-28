@@ -21,6 +21,10 @@ namespace ReTime_Testing
             // 打开 TimeTopDesktop 窗口
             var timeTopDesktop = new TimeTopDesktop();
             timeTopDesktop.Show();
+
+            // 打开 TimeTopSetting 窗口
+            var timeTopSetting = new TimeTopSetting();
+            timeTopSetting.Show();
         }
     }
 }
