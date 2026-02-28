@@ -177,7 +177,6 @@ namespace ReTime_Testing.Services
             }
             else
             {
-                Logger.Info("ReTime_Testing.Services.ProgressStateManager", $"状态变更 - StateType={_currentConfig.StateType}, Value={_currentConfig.Value}");
                 OnStateChanged?.Invoke(_currentConfig);
             }
         }

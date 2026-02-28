@@ -130,25 +130,17 @@ namespace ReTime_Testing.ViewModels
         }
 
         private void OnTimerTick(object? sender, EventArgs e)
-        {
-            try
-            {
-                var elapsed = DateTime.Now - _stateStartTime;
-                var elapsedMs = elapsed.TotalMilliseconds;
-
-                // 只在状态进入的第一帧输出日志
-                if (elapsedMs < 200)
                 {
-                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", $"OnTimerTick - 当前状态: {_currentState}, 已运行: {elapsedMs:F0}ms");
-                }
-
-                switch (_currentState)
-            {
-                case ProgressState.Loading:
-                    // 蓝色不确定加载 5s，所有默认值
-                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Loading 状态");
-                    _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
-
+                    try
+                    {
+                        var elapsed = DateTime.Now - _stateStartTime;
+                        var elapsedMs = elapsed.TotalMilliseconds;
+        
+                        switch (_currentState)
+                        {
+                            case ProgressState.Loading:
+                                // 蓝色不确定加载 5s，所有默认值
+                                _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
                     if (elapsedMs >= LoadingDuration)
                     {
                         TransitionToState(ProgressState.Progress1);
@@ -157,7 +149,6 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Progress1:
                     // 蓝色进度 8s（0% → 50%），Value测试
-                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Progress1 状态");
                     _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
                     
                     var progress1 = (elapsedMs / Progress1Duration) * 50;
@@ -171,10 +162,6 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Paused:
                     // 橙色暂停 3s（50%）
-                    if (elapsedMs < 200)
-                    {
-                        Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Paused 状态");
-                    }
                     _stateManager.SetState(ProgressStateManager.ProgressStates.Paused);
                     if (elapsedMs >= PauseDuration)
                     {
@@ -299,10 +286,6 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Error:
                     // 红色错误状态 4s
-                    if (elapsedMs < 200)
-                    {
-                        Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "进入 Error 状态");
-                    }
                     _stateManager.SetState(ProgressStateManager.ProgressStates.Error);
                     if (elapsedMs >= ErrorDuration)
                     {

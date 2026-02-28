@@ -10,7 +10,9 @@
         Title="TimeTopDesktop"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent"> 
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"> 
 
     <Grid IsHitTestVisible="False">
         <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5"
