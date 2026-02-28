@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using ReTime_Testing.Models;
+using ReTime_Testing.Services;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -41,13 +43,7 @@ namespace ReTime_Testing.ViewModels
 
         private ProgressState _currentState = ProgressState.Loading;
         private DateTime _stateStartTime;
-
-        // 颜色定义
-        private static readonly Brush DefaultBlueBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x67, 0xc0));
-        private static readonly Brush ErrorRedBrush = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c));
-        private static readonly Brush PauseOrangeBrush = new SolidColorBrush(Color.FromRgb(0x9d, 0x5d, 0x00));
-        private static readonly Brush SuccessGreenBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x00));
-        private static readonly Brush GrayBrush = new SolidColorBrush(Color.FromRgb(0x80, 0x80, 0x80));
+        private readonly ProgressStateManager _stateManager;
 
         [ObservableProperty]
         private double _progressValue = 0;
@@ -56,10 +52,10 @@ namespace ReTime_Testing.ViewModels
         private bool _isIndeterminate = true;
 
         [ObservableProperty]
-        private Brush _foreground = DefaultBlueBrush;
+        private Brush? _foreground = ProgressColors.DefaultBlue;
 
         [ObservableProperty]
-        private Brush _background = Brushes.Transparent;
+        private Brush? _background = Brushes.Transparent;
 
         [ObservableProperty]
         private Visibility _visibility = Visibility.Visible;
@@ -79,7 +75,26 @@ namespace ReTime_Testing.ViewModels
         public TimeTopDesktopViewModel()
         {
             _stateStartTime = DateTime.Now;
+            _stateManager = new ProgressStateManager();
+            _stateManager.OnStateChanged = OnStateChanged;
+
             StartProgressCycle();
+        }
+
+        /// <summary>
+        /// 状态变更回调
+        /// </summary>
+        private void OnStateChanged(ProgressStateConfig config)
+        {
+            ProgressValue = config.Value;
+            IsIndeterminate = config.IsIndeterminate;
+            Foreground = config.Foreground;
+            Background = config.Background;
+            Visibility = config.Visibility;
+            IsEnabled = config.IsEnabled;
+            Opacity = config.Opacity;
+            Minimum = config.Minimum;
+            Maximum = config.Maximum;
         }
 
         private void StartProgressCycle()
@@ -102,15 +117,15 @@ namespace ReTime_Testing.ViewModels
             {
                 case ProgressState.Loading:
                     // 蓝色不确定加载 5s，所有默认值
+                    ProgressValue = 0;
                     IsIndeterminate = true;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
                     Opacity = 1.0;
                     Minimum = 0;
                     Maximum = 100;
-                    ProgressValue = 0;
 
                     if (elapsedMs >= LoadingDuration)
                     {
@@ -121,7 +136,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.Progress1:
                     // 蓝色进度 8s（0% → 50%），Value测试
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
@@ -140,15 +155,15 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Paused:
                     // 橙色暂停 3s（50%）
+                    ProgressValue = 50;
                     IsIndeterminate = false;
-                    Foreground = PauseOrangeBrush;
+                    Foreground = ProgressColors.PauseOrange;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
                     Opacity = 1.0;
                     Minimum = 0;
                     Maximum = 100;
-                    ProgressValue = 50;
 
                     if (elapsedMs >= PauseDuration)
                     {
@@ -159,7 +174,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.Progress2:
                     // 蓝色进度 8s（50% → 100%）
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
@@ -179,7 +194,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.OpacityTest:
                     // Opacity 淡入淡出 5s
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
@@ -207,7 +222,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.BackgroundTest:
                     // Background 变化 4s
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
                     Opacity = 1.0;
@@ -218,7 +233,7 @@ namespace ReTime_Testing.ViewModels
                     // 0→2s: Transparent→Gray, 2s→4s: Gray→Transparent
                     if (elapsedMs < BackgroundTestDuration / 2)
                     {
-                        Background = GrayBrush;
+                        Background = ProgressColors.Gray;
                     }
                     else
                     {
@@ -234,7 +249,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.VisibilityTest:
                     // Visible→Hidden(1s)→Visible 3s
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     IsEnabled = true;
                     Opacity = 1.0;
@@ -265,7 +280,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.IsEnabledTest:
                     // IsEnabled false(1.5s)→true 3s
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     Opacity = 1.0;
@@ -292,7 +307,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.MinMaxTest:
                     // Min=0,Max=200,Value=100（50%位置）3s
                     IsIndeterminate = false;
-                    Foreground = DefaultBlueBrush;
+                    Foreground = ProgressColors.DefaultBlue;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
@@ -312,15 +327,15 @@ namespace ReTime_Testing.ViewModels
 
                 case ProgressState.Error:
                     // 红色错误状态 4s
+                    ProgressValue = 100;
                     IsIndeterminate = false;
-                    Foreground = ErrorRedBrush;
+                    Foreground = ProgressColors.ErrorRed;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
                     Opacity = 1.0;
                     Minimum = 0;
                     Maximum = 100;
-                    ProgressValue = 100;
 
                     if (elapsedMs >= ErrorDuration)
                     {
@@ -331,7 +346,7 @@ namespace ReTime_Testing.ViewModels
                 case ProgressState.Success:
                     // 绿色进度 10s（0% → 100%）
                     IsIndeterminate = false;
-                    Foreground = SuccessGreenBrush;
+                    Foreground = ProgressColors.SuccessGreen;
                     Background = Brushes.Transparent;
                     Visibility = Visibility.Visible;
                     IsEnabled = true;
