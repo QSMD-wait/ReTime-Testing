@@ -39,9 +39,17 @@ namespace ReTime_Testing.ViewModels
 
         public TimeTopDesktopViewModel()
         {
-            _service = GlobalTimeTopDesktopService.Instance;
-            _service.OnStateChanged = OnStateChanged;
-            Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化完成");
+            try
+            {
+                _service = GlobalTimeTopDesktopService.Instance;
+                _service.OnStateChanged = OnStateChanged;
+                Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化完成");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化失败", ex);
+                throw;
+            }
         }
 
         /// <summary>

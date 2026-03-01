@@ -14,7 +14,9 @@
 
     <ikw:SimpleStackPanel VerticalAlignment="Center" Spacing="5">
         <TextBlock Text="ReTime - Testing" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
-        <TextBlock Text="Fluent Design, by iNKORE.UI.WPF.Modern form NuGet package." FontSize="20" TextAlignment="Center"/>
+        <TextBlock Text="TimeTopDesktop TEST by 青色漫地_wait." FontSize="20" TextAlignment="Center"/>
+        <TextBlock Text="APP use C#, .NET10, WPF." FontSize="14" TextAlignment="Center"/>
+        <TextBlock Text="UI use Fluent Design, by iNKORE.UI.WPF.Modern form NuGet package." FontSize="14" TextAlignment="Center"/>
     </ikw:SimpleStackPanel>
 
 </Window>

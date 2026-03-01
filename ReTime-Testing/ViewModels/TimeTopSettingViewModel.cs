@@ -11,6 +11,9 @@ namespace ReTime_Testing.ViewModels
 {
     public partial class TimeTopSettingViewModel : ObservableObject
     {
+        private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
+        private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
+
         private DispatcherTimer? _timer;
         private readonly GlobalTimeTopDesktopService _service;
 
@@ -29,8 +32,8 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private int _endMinute = 0;
 
-        public List<int> Hours { get; } = new List<int>();
-        public List<int> Minutes { get; } = new List<int>();
+        public List<int> Hours => _hours;
+        public List<int> Minutes => _minutes;
 
         [ObservableProperty]
         private double _timerProgress = 0;
@@ -44,10 +47,6 @@ namespace ReTime_Testing.ViewModels
         public TimeTopSettingViewModel()
         {
             _service = GlobalTimeTopDesktopService.Instance;
-
-            // 初始化小时和分钟列表
-            for (int i = 0; i < 24; i++) Hours.Add(i);
-            for (int i = 0; i < 60; i++) Minutes.Add(i);
         }
 
         partial void OnProgressValueChanged(double value)
@@ -88,17 +87,29 @@ namespace ReTime_Testing.ViewModels
         [RelayCommand]
         private void StartTimer()
         {
+            // 检查 Timer 是否已运行
+            if (_timer != null)
+            {
+                TimerStatus = "错误：计时器已在运行中";
+                return;
+            }
+
             var startTime = new TimeSpan(StartHour, StartMinute, 0);
             var endTime = new TimeSpan(EndHour, EndMinute, 0);
 
-            // 验证时间
-            if (endTime <= startTime)
+            // 验证时间：如果开始时间等于结束时间，则无意义
+            if (startTime == endTime)
             {
-                if ((endTime - startTime).TotalHours > 8)
-                {
-                    TimerStatus = "错误：时间跨度不能超过8小时";
-                    return;
-                }
+                TimerStatus = "错误：开始时间不能等于结束时间";
+                return;
+            }
+
+            // 验证时间跨度（跨天时计算总时长）
+            var duration = endTime > startTime ? endTime - startTime : endTime + TimeSpan.FromHours(24) - startTime;
+            if (duration.TotalHours > 8)
+            {
+                TimerStatus = "错误：时间跨度不能超过8小时";
+                return;
             }
 
             IsStateControlsEnabled = false;
@@ -172,8 +183,12 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void Cleanup()
         {
-            _timer?.Stop();
-            _timer = null;
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Tick -= OnTimerTick;
+                _timer = null;
+            }
         }
     }
 }

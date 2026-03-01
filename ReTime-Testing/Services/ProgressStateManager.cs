@@ -37,7 +37,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 成功状态 - 绿色完成
@@ -54,7 +54,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 错误状态 - 红色
@@ -71,7 +71,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 暂停状态 - 橙色
@@ -88,7 +88,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 进度状态 - 蓝色（需设置 Value）
@@ -105,7 +105,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 隐藏状态
@@ -122,7 +122,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 半透明状态
@@ -139,7 +139,7 @@ namespace ReTime_Testing.Services
                 Opacity = 0.5,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
 
             /// <summary>
             /// 禁用状态
@@ -156,7 +156,7 @@ namespace ReTime_Testing.Services
                 Opacity = 1.0,
                 Minimum = 0,
                 Maximum = 100
-            };
+            }.SetInitialized();
         }
 
         private ProgressStateConfig _currentConfig = ProgressStateConfig.Default();
@@ -239,19 +239,10 @@ namespace ReTime_Testing.Services
             _currentConfig.Maximum = config.Maximum;
 
             // 标记初始化完成，启用验证
-            SetInitialized(_currentConfig, true);
+            _currentConfig.SetInitialized();
 
             NotifyStateChanged();
             return this;
-        }
-
-        /// <summary>
-        /// 设置配置的初始化状态（通过反射访问私有字段）
-        /// </summary>
-        private void SetInitialized(ProgressStateConfig config, bool initialized)
-        {
-            var field = typeof(ProgressStateConfig).GetField("_initialized", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(config, initialized);
         }
 
         /// <summary>

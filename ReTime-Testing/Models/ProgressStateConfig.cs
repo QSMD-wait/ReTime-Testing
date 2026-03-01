@@ -174,7 +174,7 @@ namespace ReTime_Testing.Models
                 Minimum = 0,
                 Maximum = 100
             };
-            config._initialized = true;
+            config.SetInitialized();
             return config;
         }
 
@@ -196,8 +196,17 @@ namespace ReTime_Testing.Models
                 Minimum = Minimum,
                 Maximum = Maximum
             };
-            config._initialized = true;
+            config.SetInitialized();
             return config;
+        }
+
+        /// <summary>
+        /// 设置配置为已初始化状态（启用验证）
+        /// </summary>
+        internal ProgressStateConfig SetInitialized()
+        {
+            _initialized = true;
+            return this;
         }
 
         /// <summary>
@@ -233,10 +242,26 @@ namespace ReTime_Testing.Models
     /// </summary>
     public static class ProgressColors
     {
-        public static readonly Brush DefaultBlue = new SolidColorBrush(Color.FromRgb(0x00, 0x67, 0xc0));
-        public static readonly Brush ErrorRed = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c));
-        public static readonly Brush PauseOrange = new SolidColorBrush(Color.FromRgb(0x9d, 0x5d, 0x00));
-        public static readonly Brush SuccessGreen = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x00));
-        public static readonly Brush Gray = new SolidColorBrush(Color.FromRgb(0x80, 0x80, 0x80));
+        private static readonly Brush _defaultBlue = new SolidColorBrush(Color.FromRgb(0x00, 0x67, 0xc0));
+        private static readonly Brush _errorRed = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c));
+        private static readonly Brush _pauseOrange = new SolidColorBrush(Color.FromRgb(0x9d, 0x5d, 0x00));
+        private static readonly Brush _successGreen = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x00));
+        private static readonly Brush _gray = new SolidColorBrush(Color.FromRgb(0x80, 0x80, 0x80));
+
+        static ProgressColors()
+        {
+            // 冻结所有 Brush 以提高性能
+            _defaultBlue.Freeze();
+            _errorRed.Freeze();
+            _pauseOrange.Freeze();
+            _successGreen.Freeze();
+            _gray.Freeze();
+        }
+
+        public static Brush DefaultBlue => _defaultBlue;
+        public static Brush ErrorRed => _errorRed;
+        public static Brush PauseOrange => _pauseOrange;
+        public static Brush SuccessGreen => _successGreen;
+        public static Brush Gray => _gray;
     }
 }

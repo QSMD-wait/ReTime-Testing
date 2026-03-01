@@ -29,13 +29,18 @@ namespace ReTime_Testing.Services
         /// <summary>
         /// 设置为加载状态（蓝色不确定动画）
         /// </summary>
-        public void SetLoading() => _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
+        public void SetLoading()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Loading");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
+        }
         
         /// <summary>
         /// 设置为进度状态（蓝色确定进度）
         /// </summary>
         public void SetProgress(double value)
         {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", $"设置进度: {value:F1}%");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
             _stateManager.SetValue(value);
         }
@@ -43,27 +48,47 @@ namespace ReTime_Testing.Services
         /// <summary>
         /// 设置为成功状态（绿色完成）
         /// </summary>
-        public void SetSuccess() => _stateManager.SetState(ProgressStateManager.ProgressStates.Success);
+        public void SetSuccess()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Success");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Success);
+        }
         
         /// <summary>
         /// 设置为错误状态（红色）
         /// </summary>
-        public void SetError() => _stateManager.SetState(ProgressStateManager.ProgressStates.Error);
+        public void SetError()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Error");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Error);
+        }
         
         /// <summary>
         /// 设置为暂停状态（橙色）
         /// </summary>
-        public void SetPaused() => _stateManager.SetState(ProgressStateManager.ProgressStates.Paused);
+        public void SetPaused()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Paused");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Paused);
+        }
         
         /// <summary>
         /// 设置为隐藏状态
         /// </summary>
-        public void SetHidden() => _stateManager.SetState(ProgressStateManager.ProgressStates.Hidden);
+        public void SetHidden()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Hidden");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Hidden);
+        }
         
         /// <summary>
         /// 设置为禁用状态
         /// </summary>
-        public void SetDisabled() => _stateManager.SetState(ProgressStateManager.ProgressStates.Disabled);
+        public void SetDisabled()
+        {
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Disabled");
+            _stateManager.SetState(ProgressStateManager.ProgressStates.Disabled);
+        }
         
         // ==================== 属性控制 ====================
         
