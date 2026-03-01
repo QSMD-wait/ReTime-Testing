@@ -1,6 +1,7 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using ReTime_Testing.Services;
 using ReTime_Testing.Views;
 
 namespace ReTime_Testing
@@ -13,6 +14,9 @@ namespace ReTime_Testing
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // 初始化全局服务
+            var service = GlobalTimeTopDesktopService.Instance;
 
             // 打开主窗口
             var mainWindow = new MainWindow();
