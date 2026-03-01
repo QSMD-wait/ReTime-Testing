@@ -7,6 +7,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+
+    <Authors>青色漫地_wait</Authors>
+    <Product>ReTime - Testing</Product>
+    <Copyright>Copyright © 青色漫地_wait</Copyright>
+    <FileVersion>0.0.0.1</FileVersion>
+
   </PropertyGroup>
 
   <ItemGroup>
