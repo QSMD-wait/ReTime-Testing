@@ -171,8 +171,337 @@
                            FontSize="12"
                            Foreground="Gray"
                            Margin="0,0,0,32"/>
+
+                <!-- 互斥锁调试 -->
+                <TextBlock Text="互斥锁调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="用于调试互斥锁功能，测试多实例检测"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 互斥锁状态信息 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="互斥锁状态信息"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="互斥锁状态:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding MutexStatus}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMutexAcquired}" Value="True">
+                                                <Setter Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsMutexAcquired}" Value="False">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="互斥锁 ID:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding MutexId}"
+                                       Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="是否启用:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IsMutexEnabled}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="启用"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMutexEnabled}" Value="False">
+                                                <Setter Property="Text" Value="禁用"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 互斥锁操作按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="释放互斥锁"
+                            Command="{Binding ReleaseMutexCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="释放互斥锁，允许新实例启动"/>
+
+                    <Button Content="重新获取"
+                            Command="{Binding ReacquireMutexCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="重新尝试获取互斥锁"/>
+
+                    <Button Content="切换启用状态"
+                            Command="{Binding ToggleMutexEnabledCommand}"
+                            Width="120"
+                            Height="32"
+                            ToolTip="切换互斥锁的启用/禁用状态"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：修改互斥锁状态后，请重新启动应用程序测试多实例功能"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- GlobalTimeTopDesktopService API 调试 -->
+                <TextBlock Text="GlobalTimeTopDesktopService API 调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="测试进度条服务的所有公共 API"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 额外状态控制 -->
+                <TextBlock Text="额外状态控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="Hidden 状态"
+                            Command="{Binding SetHiddenCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="Disabled 状态"
+                            Command="{Binding SetDisabledCommand}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 可见性控制 -->
+                <TextBlock Text="可见性控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="Visible"
+                            Command="{Binding SetVisibilityVisibleCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="Hidden"
+                            Command="{Binding SetVisibilityHiddenCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="Collapsed"
+                            Command="{Binding SetVisibilityCollapsedCommand}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 启用状态控制 -->
+                <TextBlock Text="启用状态控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="Enabled"
+                            Command="{Binding SetEnabledTrueCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="Disabled"
+                            Command="{Binding SetEnabledFalseCommand}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 透明度控制 -->
+                <TextBlock Text="透明度控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="1.0 (100%)"
+                            Command="{Binding SetOpacityFullCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="0.5 (50%)"
+                            Command="{Binding SetOpacityHalfCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="0.2 (20%)"
+                            Command="{Binding SetOpacityLowCommand}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 前景色控制 -->
+                <TextBlock Text="前景色控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="蓝色"
+                            Command="{Binding SetForegroundBlueCommand}"
+                            Width="100"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="绿色"
+                            Command="{Binding SetForegroundGreenCommand}"
+                            Width="100"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="红色"
+                            Command="{Binding SetForegroundRedCommand}"
+                            Width="100"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="橙色"
+                            Command="{Binding SetForegroundOrangeCommand}"
+                            Width="100"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="灰色"
+                            Command="{Binding SetForegroundGrayCommand}"
+                            Width="100"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 背景色控制 -->
+                <TextBlock Text="背景色控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="透明"
+                            Command="{Binding SetBackgroundTransparentCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="浅灰色"
+                            Command="{Binding SetBackgroundLightGrayCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="白色"
+                            Command="{Binding SetBackgroundWhiteCommand}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 范围控制 -->
+                <TextBlock Text="范围控制"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="0-100"
+                            Command="{Binding SetRange0100Command}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="0-1"
+                            Command="{Binding SetRange01Command}"
+                            Width="120"
+                            Height="32"/>
+                </StackPanel>
+
+                <!-- 其他操作 -->
+                <TextBlock Text="其他操作"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="重置状态"
+                            Command="{Binding ResetStateCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"/>
+
+                    <Button Content="批量更新测试"
+                            Command="{Binding BatchUpdateTestCommand}"
+                            Width="150"
+                            Height="32"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：批量更新测试会同时设置进度为 75%、前景色为绿色、透明度为 0.8、可见性为 Visible"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>
-    
+
 </Window>
