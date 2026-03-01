@@ -43,11 +43,11 @@ namespace ReTime_Testing.ViewModels
             {
                 _service = GlobalTimeTopDesktopService.Instance;
                 _service.OnStateChanged = OnStateChanged;
-                Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化完成");
+                Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "ViewModel 初始化失败", ex);
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化失败", ex);
                 throw;
             }
         }
@@ -61,7 +61,7 @@ namespace ReTime_Testing.ViewModels
             {
                 if (config == null)
                 {
-                    Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "OnStateChanged: 配置为 null");
+                    Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "OnStateChanged: 配置为 null");
                     return;
                 }
 
@@ -77,7 +77,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "OnStateChanged: 更新属性时发生异常", ex);
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "OnStateChanged: 更新属性时发生异常", ex);
             }
         }
 
@@ -91,12 +91,12 @@ namespace ReTime_Testing.ViewModels
                 if (_service != null)
                 {
                     _service.OnStateChanged = null;
-                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "Service 回调已清理");
+                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "Service 回调已清理");
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel", "清理资源时发生异常", ex);
+                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "清理资源时发生异常", ex);
             }
         }
     }
