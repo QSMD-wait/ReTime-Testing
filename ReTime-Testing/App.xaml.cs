@@ -15,6 +15,7 @@ namespace ReTime_Testing
     public partial class App : Application
     {
         private MutexManager? _mutexManager;
+        private TrayIconService? _trayIconService;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -51,17 +52,19 @@ namespace ReTime_Testing
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
 
-                // 打开主窗口
-                var mainWindow = new MainWindow();
-                mainWindow.Show();
+                // 初始化系统托盘图标服务
+                _trayIconService = TrayIconService.Instance;
+                _trayIconService.Initialize();
 
-                // 打开 TimeTopDesktop 窗口
-                var timeTopDesktop = new TimeTopDesktop();
-                timeTopDesktop.Show();
+                // 订阅托盘图标事件
+                _trayIconService.OpenDebugRequested += OpenTimeTopSetting;
+                _trayIconService.AboutRequested += OpenMainWindow;
+                _trayIconService.ExitRequested += ExitApplication;
 
-                // 打开 TimeTopSetting 窗口
-                var timeTopSetting = new TimeTopSetting();
-                timeTopSetting.Show();
+                // 使用 WindowManager 打开窗口
+                WindowManager.ShowMainWindow();
+                WindowManager.ShowTimeTopDesktop();
+                WindowManager.ShowTimeTopSetting();
 
                 Logger.Info(GetType().FullName ?? "App", "应用程序启动成功");
             }
@@ -145,12 +148,93 @@ namespace ReTime_Testing
             Logger.Info(GetType().FullName ?? "App", "互斥锁获取成功事件触发");
         }
 
+        /// <summary>
+        /// 打开主窗口（关于窗口）
+        /// </summary>
+        private void OpenMainWindow()
+        {
+            try
+            {
+                WindowManager.ShowMainWindow();
+                Logger.Info(GetType().FullName ?? "App", "主窗口已打开");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "打开主窗口时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 打开调试窗口（TimeTopSetting）
+        /// </summary>
+        private void OpenTimeTopSetting()
+        {
+            try
+            {
+                WindowManager.ShowTimeTopSetting();
+                Logger.Info(GetType().FullName ?? "App", "调试窗口已打开");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "打开调试窗口时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 退出应用程序
+        /// </summary>
+        private void ExitApplication()
+        {
+            try
+            {
+                Logger.Info(GetType().FullName ?? "App", "应用程序退出请求");
+
+                // 清理托盘图标
+                _trayIconService?.Dispose();
+
+                // 释放互斥锁
+                _mutexManager?.Release();
+
+                // 取消事件订阅
+                if (_trayIconService != null)
+                {
+                    _trayIconService.OpenDebugRequested -= OpenTimeTopSetting;
+                    _trayIconService.AboutRequested -= OpenMainWindow;
+                    _trayIconService.ExitRequested -= ExitApplication;
+                }
+
+                if (_mutexManager != null)
+                {
+                    _mutexManager.OnConflictDetected -= OnMutexConflictDetected;
+                    _mutexManager.OnMutexAcquired -= OnMutexAcquired;
+                }
+
+                // 退出应用
+                Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "退出应用程序时发生异常", ex);
+                Shutdown();
+            }
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
+            // 释放托盘图标
+            _trayIconService?.Dispose();
+
             // 释放互斥锁
             _mutexManager?.Release();
 
             // 取消事件订阅
+            if (_trayIconService != null)
+            {
+                _trayIconService.OpenDebugRequested -= OpenTimeTopSetting;
+                _trayIconService.AboutRequested -= OpenMainWindow;
+                _trayIconService.ExitRequested -= ExitApplication;
+            }
+
             if (_mutexManager != null)
             {
                 _mutexManager.OnConflictDetected -= OnMutexConflictDetected;
