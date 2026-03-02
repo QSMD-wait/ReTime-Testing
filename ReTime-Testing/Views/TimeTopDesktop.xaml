@@ -15,7 +15,7 @@
         ShowInTaskbar="False"> 
 
     <Grid IsHitTestVisible="False">
-        <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5"
+        <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5" Margin="0,-1,0,0"
                        Value="{Binding ProgressValue}"
                        IsIndeterminate="{Binding IsIndeterminate}"
                        Foreground="{Binding Foreground, FallbackValue=Transparent}"
