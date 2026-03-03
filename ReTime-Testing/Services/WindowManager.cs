@@ -3,7 +3,7 @@ using System.Linq;
 using System.Windows;
 using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
-using ReTime_Testing.Views.Debug;
+using ReTime_Testing.Views.Testing;
 
 namespace ReTime_Testing.Services
 {
