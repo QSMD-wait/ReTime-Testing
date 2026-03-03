@@ -2,18 +2,18 @@ using System;
 using System.Linq;
 using System.Windows;
 using ReTime_Testing.Views;
+using ReTime_Testing.Views.Settings;
 
 namespace ReTime_Testing.Services
 {
     /// <summary>
     /// 窗口管理器
-    /// 管理应用程序的单例窗口实例
+    /// 管理应用程序的单例窗口实例（不包括进度条窗口）
     /// </summary>
     public static class WindowManager
     {
         private static Window? _mainWindow;
         private static Window? _timeTopSetting;
-        private static Window? _timeTopDesktop;
 
         /// <summary>
         /// 获取或创建主窗口（MainWindow）
@@ -42,19 +42,6 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 获取或创建进度条窗口（TimeTopDesktop）
-        /// </summary>
-        public static Window GetTimeTopDesktop()
-        {
-            if (_timeTopDesktop == null || !_timeTopDesktop.IsLoaded)
-            {
-                _timeTopDesktop = new TimeTopDesktop();
-                _timeTopDesktop.Closed += (s, e) => _timeTopDesktop = null;
-            }
-            return _timeTopDesktop;
-        }
-
-        /// <summary>
         /// 显示主窗口
         /// </summary>
         public static void ShowMainWindow()
@@ -75,23 +62,12 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 显示进度条窗口
-        /// </summary>
-        public static void ShowTimeTopDesktop()
-        {
-            var window = GetTimeTopDesktop();
-            window.Show();
-            window.Activate();
-        }
-
-        /// <summary>
         /// 关闭所有窗口
         /// </summary>
         public static void CloseAllWindows()
         {
             _mainWindow?.Close();
             _timeTopSetting?.Close();
-            _timeTopDesktop?.Close();
         }
 
         /// <summary>
@@ -101,7 +77,6 @@ namespace ReTime_Testing.Services
         {
             _mainWindow = null;
             _timeTopSetting = null;
-            _timeTopDesktop = null;
         }
     }
 }

@@ -6,6 +6,9 @@ using System.Windows;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using ReTime_Testing.Views;
+using ReTime_Testing.Views.Settings;
+using ReTime_Testing.Views.TimeTopDesktop;
+using ReTime_Testing.Helpers;
 
 namespace ReTime_Testing
 {
@@ -61,10 +64,12 @@ namespace ReTime_Testing
                 _trayIconService.AboutRequested += OpenMainWindow;
                 _trayIconService.ExitRequested += ExitApplication;
 
-                // 使用 WindowManager 打开窗口
+                // 使用 WindowManager 打开主窗口和设置窗口
                 WindowManager.ShowMainWindow();
-                WindowManager.ShowTimeTopDesktop();
                 WindowManager.ShowTimeTopSetting();
+
+                // 使用 DesktopWindowManager 打开进度条窗口（默认顶部）
+                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
 
                 Logger.Info(GetType().FullName ?? "App", "应用程序启动成功");
             }

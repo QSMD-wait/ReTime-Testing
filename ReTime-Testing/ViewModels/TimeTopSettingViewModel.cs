@@ -58,6 +58,12 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _mutexStatus = "未知";
 
+        [ObservableProperty]
+        private ProgressBarPosition _currentPosition = ProgressBarPosition.Top;
+
+        [ObservableProperty]
+        private string _positionText = "顶部";
+
         public TimeTopSettingViewModel()
         {
             _service = GlobalTimeTopDesktopService.Instance;
@@ -65,6 +71,9 @@ namespace ReTime_Testing.ViewModels
 
             // 初始化互斥锁状态
             UpdateMutexStatus();
+
+            // 初始化进度条位置
+            UpdatePositionStatus();
         }
 
         partial void OnProgressValueChanged(double value)
@@ -488,6 +497,105 @@ namespace ReTime_Testing.ViewModels
                 svc.SetOpacity(0.8);
                 svc.SetVisibility(Visibility.Visible);
             });
+        }
+
+        // ==================== 进度条位置控制 ====================
+
+        /// <summary>
+        /// 更新位置状态
+        /// </summary>
+        private void UpdatePositionStatus()
+        {
+            var manager = DesktopWindowManager.Instance;
+            CurrentPosition = manager.CurrentPosition;
+            PositionText = GetPositionText(CurrentPosition);
+        }
+
+        /// <summary>
+        /// 获取位置文本
+        /// </summary>
+        private string GetPositionText(ProgressBarPosition position)
+        {
+            return position switch
+            {
+                ProgressBarPosition.Top => "顶部",
+                ProgressBarPosition.Bottom => "底部",
+                ProgressBarPosition.Left => "左侧",
+                ProgressBarPosition.Right => "右侧",
+                _ => "未知"
+            };
+        }
+
+        /// <summary>
+        /// 切换到顶部位置
+        /// </summary>
+        [RelayCommand]
+        private void SetPositionTop()
+        {
+            try
+            {
+                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
+                UpdatePositionStatus();
+                Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到顶部");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "切换进度条位置到顶部时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 切换到底部位置
+        /// </summary>
+        [RelayCommand]
+        private void SetPositionBottom()
+        {
+            try
+            {
+                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Bottom);
+                UpdatePositionStatus();
+                Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到底部");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "切换进度条位置到底部时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 切换到左侧位置
+        /// </summary>
+        [RelayCommand]
+        private void SetPositionLeft()
+        {
+            try
+            {
+                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Left);
+                UpdatePositionStatus();
+                Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到左侧");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "切换进度条位置到左侧时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 切换到右侧位置
+        /// </summary>
+        [RelayCommand]
+        private void SetPositionRight()
+        {
+            try
+            {
+                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Right);
+                UpdatePositionStatus();
+                Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到右侧");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "切换进度条位置到右侧时发生异常", ex);
+            }
         }
     }
 }
