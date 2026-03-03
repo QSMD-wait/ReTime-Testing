@@ -1,6 +1,7 @@
 using ReTime_Testing.Models;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ReTime_Testing.Services
 {
@@ -18,6 +19,41 @@ namespace ReTime_Testing.Services
         public static GlobalTimeTopDesktopService Instance => _instance.Value;
         
         private readonly ProgressStateManager _stateManager;
+        private DispatcherTimer? _timer;
+        private int _startHour = 9;
+        private int _startMinute = 0;
+        private int _endHour = 17;
+        private int _endMinute = 0;
+        
+        /// <summary>
+        /// 定时器进度（用于 UI 显示）
+        /// </summary>
+        public double TimerProgress { get; private set; }
+        
+        /// <summary>
+        /// 定时器状态（用于 UI 显示）
+        /// </summary>
+        public string TimerStatus { get; private set; } = "未开始";
+        
+        /// <summary>
+        /// 调度是否正在运行
+        /// </summary>
+        public bool IsScheduleRunning => _timer != null;
+        
+        /// <summary>
+        /// 调度进度（用于 UI 显示）
+        /// </summary>
+        public double ScheduleProgress { get; private set; }
+        
+        /// <summary>
+        /// 调度状态（用于 UI 显示）
+        /// </summary>
+        public string ScheduleStatus { get; private set; } = "未开始";
+        
+        /// <summary>
+        /// 调度状态变更事件
+        /// </summary>
+        public event Action<double, string>? OnScheduleStateChanged;
         
         private GlobalTimeTopDesktopService()
         {
@@ -185,5 +221,156 @@ namespace ReTime_Testing.Services
         /// 获取当前配置
         /// </summary>
         public ProgressStateConfig GetCurrentConfig() => _stateManager.CurrentConfig;
+        
+        // ==================== 调度控制 ====================
+        
+        /// <summary>
+        /// 设置调度时间
+        /// </summary>
+        /// <param name="startHour">开始小时</param>
+        /// <param name="startMinute">开始分钟</param>
+        /// <param name="endHour">结束小时</param>
+        /// <param name="endMinute">结束分钟</param>
+        public void SetScheduleTime(int startHour, int startMinute, int endHour, int endMinute)
+        {
+            _startHour = startHour;
+            _startMinute = startMinute;
+            _endHour = endHour;
+            _endMinute = endMinute;
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", 
+                $"调度时间已设置: {startHour:D2}:{startMinute:D2} - {endHour:D2}:{endMinute:D2}");
+        }
+        
+        /// <summary>
+        /// 启动调度
+        /// </summary>
+        /// <param name="startHour">开始小时</param>
+        /// <param name="startMinute">开始分钟</param>
+        /// <param name="endHour">结束小时</param>
+        /// <param name="endMinute">结束分钟</param>
+        /// <returns>是否成功启动</returns>
+        public bool StartSchedule(int startHour, int startMinute, int endHour, int endMinute)
+        {
+            // 检查调度是否已运行
+            if (_timer != null)
+            {
+                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "调度已在运行中");
+                return false;
+            }
+
+            var startTime = new TimeSpan(startHour, startMinute, 0);
+            var endTime = new TimeSpan(endHour, endMinute, 0);
+
+            // 验证时间：如果开始时间等于结束时间，则无意义
+            if (startTime == endTime)
+            {
+                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "开始时间不能等于结束时间");
+                return false;
+            }
+
+            // 验证时间跨度（跨天时计算总时长）
+            var duration = endTime > startTime ? endTime - startTime : endTime + TimeSpan.FromHours(24) - startTime;
+            if (duration.TotalHours > 8)
+            {
+                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "时间跨度不能超过8小时");
+                return false;
+            }
+
+            // 设置调度时间
+            SetScheduleTime(startHour, startMinute, endHour, endMinute);
+
+            // 使用 Application.Current.Dispatcher 创建定时器，确保与应用程序生命周期绑定
+            _timer = new DispatcherTimer 
+            { 
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _timer.Tick += OnScheduleTick;
+            _timer.Start();
+
+            ScheduleProgress = 0;
+            ScheduleStatus = "运行中...";
+            NotifyScheduleStateChanged();
+
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "调度已启动");
+            return true;
+        }
+        
+        /// <summary>
+        /// 停止调度
+        /// </summary>
+        public void StopSchedule()
+        {
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Tick -= OnScheduleTick;
+                _timer = null;
+            }
+
+            ScheduleProgress = 0;
+            ScheduleStatus = "已停止";
+            NotifyScheduleStateChanged();
+
+            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "调度已停止");
+        }
+        
+        /// <summary>
+        /// 调度定时器回调
+        /// </summary>
+        private void OnScheduleTick(object? sender, EventArgs e)
+        {
+            var now = DateTime.Now.TimeOfDay;
+            var nowTime = now.TotalSeconds;
+            var start = new TimeSpan(_startHour, _startMinute, 0).TotalSeconds;
+            var end = new TimeSpan(_endHour, _endMinute, 0).TotalSeconds;
+
+            // 跨天处理：如果结束时间小于开始时间，说明跨天
+            if (end < start)
+            {
+                end += 24 * 60 * 60;  // 加上24小时
+                if (nowTime < start)
+                {
+                    nowTime += 24 * 60 * 60;  // 当前时间也在跨天后
+                }
+            }
+
+            if (nowTime < start)
+            {
+                // 未到开始时间：Loading 状态
+                SetLoading();
+                ScheduleProgress = 0;
+                ScheduleStatus = "等待开始...";
+            }
+            else if (nowTime >= end)
+            {
+                // 已到期：绿色 Loading 状态
+                SetLoading();
+                SetForeground(ProgressColors.SuccessGreen);
+                ScheduleProgress = 100;
+                ScheduleStatus = "已完成";
+            }
+            else
+            {
+                // 在时间段内：按进度前进
+                var totalDuration = end - start;
+                var elapsed = nowTime - start;
+                var progress = (elapsed / totalDuration) * 100;
+
+                SetProgress(progress);
+                SetForeground(ProgressColors.DefaultBlue);
+                ScheduleProgress = progress;
+                ScheduleStatus = "进行中...";
+            }
+
+            NotifyScheduleStateChanged();
+        }
+        
+        /// <summary>
+        /// 通知调度状态变更
+        /// </summary>
+        private void NotifyScheduleStateChanged()
+        {
+            OnScheduleStateChanged?.Invoke(ScheduleProgress, ScheduleStatus);
+        }
     }
 }

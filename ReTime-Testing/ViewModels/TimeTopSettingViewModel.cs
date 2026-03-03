@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace ReTime_Testing.ViewModels
 {
@@ -15,7 +14,6 @@ namespace ReTime_Testing.ViewModels
         private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
         private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
 
-        private DispatcherTimer? _timer;
         private readonly GlobalTimeTopDesktopService _service;
         private readonly MutexManager _mutexManager;
 
@@ -38,13 +36,16 @@ namespace ReTime_Testing.ViewModels
         public List<int> Minutes => _minutes;
 
         [ObservableProperty]
-        private double _timerProgress = 0;
+        private double _scheduleProgress = 0;
 
         [ObservableProperty]
-        private string _timerStatus = "未开始";
+        private string _scheduleStatus = "未开始";
 
         [ObservableProperty]
         private bool _isStateControlsEnabled = true;
+
+        [ObservableProperty]
+        private bool _isScheduleRunning = false;
 
         [ObservableProperty]
         private bool _isMutexAcquired = false;
@@ -69,11 +70,24 @@ namespace ReTime_Testing.ViewModels
             _service = GlobalTimeTopDesktopService.Instance;
             _mutexManager = MutexManager.Instance;
 
+            // 订阅 Service 的调度状态变更事件
+            _service.OnScheduleStateChanged += OnScheduleStateChanged;
+
             // 初始化互斥锁状态
             UpdateMutexStatus();
 
             // 初始化进度条位置
             UpdatePositionStatus();
+        }
+
+        /// <summary>
+        /// 调度状态变更回调
+        /// </summary>
+        private void OnScheduleStateChanged(double progress, string status)
+        {
+            ScheduleProgress = progress;
+            ScheduleStatus = status;
+            IsScheduleRunning = _service.IsScheduleRunning;
         }
 
         partial void OnProgressValueChanged(double value)
@@ -112,97 +126,27 @@ namespace ReTime_Testing.ViewModels
         }
 
         [RelayCommand]
-        private void StartTimer()
+        private void StartSchedule()
         {
-            // 检查 Timer 是否已运行
-            if (_timer != null)
+            bool started = _service.StartSchedule(StartHour, StartMinute, EndHour, EndMinute);
+
+            if (started)
             {
-                TimerStatus = "错误：计时器已在运行中";
-                return;
-            }
-
-            var startTime = new TimeSpan(StartHour, StartMinute, 0);
-            var endTime = new TimeSpan(EndHour, EndMinute, 0);
-
-            // 验证时间：如果开始时间等于结束时间，则无意义
-            if (startTime == endTime)
-            {
-                TimerStatus = "错误：开始时间不能等于结束时间";
-                return;
-            }
-
-            // 验证时间跨度（跨天时计算总时长）
-            var duration = endTime > startTime ? endTime - startTime : endTime + TimeSpan.FromHours(24) - startTime;
-            if (duration.TotalHours > 8)
-            {
-                TimerStatus = "错误：时间跨度不能超过8小时";
-                return;
-            }
-
-            IsStateControlsEnabled = false;
-            TimerProgress = 0;
-
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _timer.Tick += OnTimerTick;
-            _timer.Start();
-
-            TimerStatus = "运行中...";
-        }
-
-        [RelayCommand]
-        private void StopTimer()
-        {
-            _timer?.Stop();
-            _timer = null;
-            TimerProgress = 0;
-            TimerStatus = "已停止";
-            IsStateControlsEnabled = true;
-        }
-
-        private void OnTimerTick(object? sender, EventArgs e)
-        {
-            var now = DateTime.Now.TimeOfDay;
-            var nowTime = now.TotalSeconds;
-            var start = new TimeSpan(StartHour, StartMinute, 0).TotalSeconds;
-            var end = new TimeSpan(EndHour, EndMinute, 0).TotalSeconds;
-
-            // 跨天处理：如果结束时间小于开始时间，说明跨天
-            if (end < start)
-            {
-                end += 24 * 60 * 60;  // 加上24小时
-                if (nowTime < start)
-                {
-                    nowTime += 24 * 60 * 60;  // 当前时间也在跨天后
-                }
-            }
-
-            if (nowTime < start)
-            {
-                // 未到开始时间：Loading 状态
-                _service.SetLoading();
-                TimerProgress = 0;
-                TimerStatus = "等待开始...";
-            }
-            else if (nowTime >= end)
-            {
-                // 已到期：绿色 Loading 状态
-                _service.SetLoading();
-                _service.SetForeground(ProgressColors.SuccessGreen);
-                TimerProgress = 100;
-                TimerStatus = "已完成";
+                IsStateControlsEnabled = false;
+                IsScheduleRunning = true;
             }
             else
             {
-                // 在时间段内：按进度前进
-                var totalDuration = end - start;
-                var elapsed = nowTime - start;
-                var progress = (elapsed / totalDuration) * 100;
-
-                _service.SetProgress(progress);
-                _service.SetForeground(ProgressColors.DefaultBlue);
-                TimerProgress = progress;
-                TimerStatus = "进行中...";
+                ScheduleStatus = "错误：启动失败";
             }
+        }
+
+        [RelayCommand]
+        private void StopSchedule()
+        {
+            _service.StopSchedule();
+            IsStateControlsEnabled = true;
+            IsScheduleRunning = false;
         }
 
         /// <summary>
@@ -210,11 +154,10 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void Cleanup()
         {
-            if (_timer != null)
+            // 取消订阅 Service 事件
+            if (_service != null)
             {
-                _timer.Stop();
-                _timer.Tick -= OnTimerTick;
-                _timer = null;
+                _service.OnScheduleStateChanged -= OnScheduleStateChanged;
             }
         }
 
