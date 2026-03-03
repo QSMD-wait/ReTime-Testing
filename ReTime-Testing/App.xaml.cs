@@ -60,13 +60,13 @@ namespace ReTime_Testing
                 _trayIconService.Initialize();
 
                 // 订阅托盘图标事件
-                _trayIconService.OpenDebugRequested += OpenTimeTopSetting;
+                _trayIconService.OpenDebugRequested += OpenDebugTest;
                 _trayIconService.AboutRequested += OpenMainWindow;
                 _trayIconService.ExitRequested += ExitApplication;
 
-                // 使用 WindowManager 打开主窗口和设置窗口
+                // 使用 WindowManager 打开主窗口和调试测试窗口
                 WindowManager.ShowMainWindow();
-                WindowManager.ShowTimeTopSetting();
+                WindowManager.ShowDebugTest();
 
                 // 使用 DesktopWindowManager 打开进度条窗口（默认顶部）
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
@@ -170,18 +170,18 @@ namespace ReTime_Testing
         }
 
         /// <summary>
-        /// 打开调试窗口（TimeTopSetting）
+        /// 打开调试测试窗口（DebugTest）
         /// </summary>
-        private void OpenTimeTopSetting()
+        private void OpenDebugTest()
         {
             try
             {
-                WindowManager.ShowTimeTopSetting();
-                Logger.Info(GetType().FullName ?? "App", "调试窗口已打开");
+                WindowManager.ShowDebugTest();
+                Logger.Info(GetType().FullName ?? "App", "调试测试窗口已打开");
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "打开调试窗口时发生异常", ex);
+                Logger.Error(GetType().FullName ?? "App", "打开调试测试窗口时发生异常", ex);
             }
         }
 
@@ -203,7 +203,7 @@ namespace ReTime_Testing
                 // 取消事件订阅
                 if (_trayIconService != null)
                 {
-                    _trayIconService.OpenDebugRequested -= OpenTimeTopSetting;
+                    _trayIconService.OpenDebugRequested -= OpenDebugTest;
                     _trayIconService.AboutRequested -= OpenMainWindow;
                     _trayIconService.ExitRequested -= ExitApplication;
                 }
@@ -235,7 +235,7 @@ namespace ReTime_Testing
             // 取消事件订阅
             if (_trayIconService != null)
             {
-                _trayIconService.OpenDebugRequested -= OpenTimeTopSetting;
+                _trayIconService.OpenDebugRequested -= OpenDebugTest;
                 _trayIconService.AboutRequested -= OpenMainWindow;
                 _trayIconService.ExitRequested -= ExitApplication;
             }
