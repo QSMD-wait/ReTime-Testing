@@ -52,6 +52,10 @@ namespace ReTime_Testing
         {
             try
             {
+                // 初始化配置管理器（必须在其他服务之前初始化）
+                var configManager = Services.ConfigurationManager.Instance;
+                configManager.InitializeDirectories();
+
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
 
