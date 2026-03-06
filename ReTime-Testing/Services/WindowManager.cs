@@ -31,13 +31,13 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 获取或创建调试窗口（TimeTopSetting）
+        /// 获取或创建设置窗口（Setting）
         /// </summary>
         public static Window GetTimeTopSetting()
         {
             if (_timeTopSetting == null || !_timeTopSetting.IsLoaded)
             {
-                _timeTopSetting = new TimeTopSetting();
+                _timeTopSetting = new Setting();
                 _timeTopSetting.Closed += (s, e) => _timeTopSetting = null;
             }
             return _timeTopSetting;
