@@ -8,10 +8,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
-    <Authors>青色漫地_wait</Authors>
     <Product>ReTime - Testing</Product>
-    <Copyright>Copyright © 青色漫地_wait</Copyright>
+    <Authors>青色漫地_wait</Authors>
+    <Copyright>Copyright © 青色漫地_wait. All rights reserved.</Copyright>
+    <Version>0.0.0.1</Version>
+    <AssemblyVersion>0.0.0.1</AssemblyVersion>
     <FileVersion>0.0.0.1</FileVersion>
+    <InformationalVersion>0.0.0.1</InformationalVersion>
+    <VersionPrefix></VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
 
   </PropertyGroup>
 
