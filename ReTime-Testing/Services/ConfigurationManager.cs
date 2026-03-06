@@ -69,7 +69,7 @@ namespace ReTime_Testing.Services
                 ApplicationRootDirectory = assemblyDirectory ?? Environment.CurrentDirectory;
 
                 DataDirectory = Path.Combine(ApplicationRootDirectory, "data");
-                GlobalSettingFilePath = Path.Combine(DataDirectory, "setting.json");
+                GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
