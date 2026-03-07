@@ -56,6 +56,10 @@ namespace ReTime_Testing
                 var configManager = Services.ConfigurationManager.Instance;
                 configManager.InitializeDirectories();
 
+                // 初始化时间计划管理器
+                var scheduleManager = Services.TimeScheduleManager.Instance;
+                scheduleManager.Initialize();
+
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
 
