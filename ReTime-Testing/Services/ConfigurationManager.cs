@@ -1,4 +1,4 @@
-using ReTime_Testing.Models;
+﻿using ReTime_Testing.Models;
 using System.IO;
 using System.Text.Json;
 
@@ -76,7 +76,7 @@ namespace ReTime_Testing.Services
                 DataDirectory = Path.Combine(ApplicationRootDirectory, "data");
                 GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
-                TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeSchedules");
+                TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeSchedules");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
