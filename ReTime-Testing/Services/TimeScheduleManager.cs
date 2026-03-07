@@ -10,8 +10,8 @@ using ReTime_Testing.Models;
 namespace ReTime_Testing.Services
 {
     /// <summary>
-    /// Ê±¼ä¼Æ»®¹ÜÀíÆ÷£¨µ¥Àı£©
-    /// Ö°Ôğ£º¹ÜÀíÊ±¼ä¼Æ»®ÅäÖÃÎÄ¼şµÄ´´½¨¡¢¶ÁÈ¡¡¢¸üĞÂ¡¢É¾³ı
+    /// æ—¶é—´è®¡åˆ’ç®¡ç†å™¨çš„ä¸»è¦å®ç°
+    /// èŒè´£ï¼šç®¡ç†æ—¶é—´è®¡åˆ’æ–‡ä»¶çš„åˆ›å»ºã€è¯»å–ã€ä¿å­˜ã€åˆ é™¤
     /// </summary>
     public class TimeScheduleManager
     {
@@ -19,7 +19,7 @@ namespace ReTime_Testing.Services
             new Lazy<TimeScheduleManager>(() => new TimeScheduleManager());
 
         /// <summary>
-        /// »ñÈ¡È«¾ÖÎ¨Ò»ÊµÀı
+        /// è·å–å…¨å±€å”¯ä¸€å®ä¾‹
         /// </summary>
         public static TimeScheduleManager Instance => _instance.Value;
 
@@ -35,22 +35,22 @@ namespace ReTime_Testing.Services
         private string _timeSchedulesDirectory = string.Empty;
 
         /// <summary>
-        /// »ñÈ¡Ê±¼ä¼Æ»®Ä¿Â¼Â·¾¶
+        /// è·å–æ—¶é—´è®¡åˆ’çš„ç›®å½•è·¯å¾„
         /// </summary>
         public string TimeSchedulesDirectory => _timeSchedulesDirectory;
 
         /// <summary>
-        /// Ê±¼ä¼Æ»®±ä¸üÊÂ¼ş
+        /// æ—¶é—´è®¡åˆ’æ·»åŠ äº‹ä»¶
         /// </summary>
         public event Action<TimeSchedule>? OnScheduleChanged;
 
         /// <summary>
-        /// Ê±¼ä¼Æ»®Ìí¼ÓÊÂ¼ş
+        /// æ—¶é—´è®¡åˆ’æ·»åŠ äº‹ä»¶
         /// </summary>
         public event Action<TimeSchedule>? OnScheduleAdded;
 
         /// <summary>
-        /// Ê±¼ä¼Æ»®É¾³ıÊÂ¼ş
+        /// æ—¶é—´è®¡åˆ’åˆ é™¤äº‹ä»¶
         /// </summary>
         public event Action<string>? OnScheduleDeleted;
 
@@ -60,7 +60,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// ³õÊ¼»¯Â·¾¶
+        /// åˆå§‹åŒ–è·¯å¾„
         /// </summary>
         private void InitializePaths()
         {
@@ -70,18 +70,18 @@ namespace ReTime_Testing.Services
                 _timeSchedulesDirectory = configManager.TimeSchedulesDirectory;
 
                 Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"Â·¾¶³õÊ¼»¯Íê³É: TimeSchedulesDirectory={_timeSchedulesDirectory}");
+                    $"è·¯å¾„åˆå§‹åŒ–å®Œæˆ: TimeSchedulesDirectory={_timeSchedulesDirectory}");
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"Â·¾¶³õÊ¼»¯Ê§°Ü: {ex.Message}", ex);
+                    $"è·¯å¾„åˆå§‹åŒ–å¤±è´¥: {ex.Message}", ex);
                 throw;
             }
         }
 
         /// <summary>
-        /// ³õÊ¼»¯£¨Æô¶¯Ê±µ÷ÓÃ£©
+        /// åˆå§‹åŒ–æ‰€æœ‰æ—¶é—´è®¡åˆ’ï¼Œ
         /// </summary>
         public void Initialize()
         {
@@ -90,18 +90,18 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(_timeSchedulesDirectory);
                 EnsureDefaultScheduleExists();
 
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "³õÊ¼»¯Íê³É");
+                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "åˆå§‹åŒ–å®Œæˆ");
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"³õÊ¼»¯Ê§°Ü: {ex.Message}", ex);
+                    $"åˆå§‹åŒ–å¤±è´¥: {ex.Message}", ex);
                 throw;
             }
         }
 
         /// <summary>
-        /// È·±£Ä¿Â¼´æÔÚ
+        /// ç¡®ä¿ç›®å½•å­˜åœ¨
         /// </summary>
         private void EnsureDirectoryExists(string path)
         {
@@ -109,12 +109,12 @@ namespace ReTime_Testing.Services
             {
                 Directory.CreateDirectory(path);
                 Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"Ä¿Â¼ÒÑ´´½¨: {path}");
+                    $"ç›®å½•å·²åˆ›å»º: {path}");
             }
         }
 
         /// <summary>
-        /// È·±£Ä¬ÈÏÊ±¼ä¼Æ»®´æÔÚ
+        /// ç¡®ä¿é»˜è®¤æ—¶é—´è®¡åˆ’å­˜åœ¨
         /// </summary>
         private void EnsureDefaultScheduleExists()
         {
@@ -124,12 +124,12 @@ namespace ReTime_Testing.Services
             {
                 var defaultSchedule = CreateDefaultSchedule();
                 SaveSchedule(defaultSchedule);
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "Ä¬ÈÏÊ±¼ä¼Æ»®ÒÑ´´½¨");
+                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "é»˜è®¤æ—¶é—´è®¡åˆ’å·²åˆ›å»º");
             }
         }
 
         /// <summary>
-        /// ´´½¨Ä¬ÈÏÊ±¼ä¼Æ»®
+        /// åˆ›å»ºé»˜è®¤æ—¶é—´è®¡åˆ’
         /// </summary>
         public TimeSchedule CreateDefaultSchedule()
         {
@@ -143,8 +143,8 @@ namespace ReTime_Testing.Services
                 {
                     Metadata = new TimeScheduleMetadata
                     {
-                        Name = "Ä¬ÈÏ¹¤×÷Ê±¼ä",
-                        Description = "±ê×¼µÄ 9:00 - 18:00 ¹¤×÷Ê±¼ä",
+                        Name = "é»˜è®¤å·¥ä½œæ—¶é—´",
+                        Description = "æ ‡å‡†çš„ 9:00 - 18:00 å·¥ä½œæ—¶é—´",
                         CreatedAt = now.ToString("o"),
                         UpdatedAt = now.ToString("o")
                     }
@@ -154,7 +154,7 @@ namespace ReTime_Testing.Services
                     new TimeScheduleItem
                     {
                         Id = "schedule_001",
-                        Name = "¹¤×÷Ê±¼ä¶Î",
+                        Name = "å·¥ä½œæ—¶é—´æ®µ",
                         StartTime = "09:00:00",
                         EndTime = "18:00:00"
                     }
@@ -163,7 +163,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// ¼ÓÔØËùÓĞÊ±¼ä¼Æ»®
+        /// åŠ è½½æ‰€æœ‰æ—¶é—´è®¡åˆ’
         /// </summary>
         public List<TimeSchedule> LoadAllSchedules()
         {
@@ -192,7 +192,7 @@ namespace ReTime_Testing.Services
                     catch (Exception ex)
                     {
                         Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                            $"¼ÓÔØÎÄ¼şÊ§°Ü: {file}, ´íÎó: {ex.Message}");
+                            $"è¯»å–æ–‡ä»¶å¤±è´¥: {file}, é”™è¯¯: {ex.Message}");
                     }
                 }
 
@@ -201,25 +201,25 @@ namespace ReTime_Testing.Services
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"¼ÓÔØËùÓĞÊ±¼ä¼Æ»®Ê§°Ü: {ex.Message}", ex);
+                    $"åŠ è½½æ‰€æœ‰æ—¶é—´è®¡åˆ’å¤±è´¥: {ex.Message}", ex);
                 return new List<TimeSchedule>();
             }
         }
 
         /// <summary>
-        /// ¼ÓÔØÖ¸¶¨IDµÄÊ±¼ä¼Æ»®
+        /// æ ¹æ®æŒ‡å®šIDçš„æ—¶é—´è®¡åˆ’
         /// </summary>
         public TimeSchedule? LoadSchedule(string id)
         {
             try
             {
-                // ÏÈ´Ó»º´æ²éÕÒ
+                // å…ˆä»ç¼“å­˜ä¸­æŸ¥æ‰¾
                 if (_scheduleCache.TryGetValue(id, out var cachedSchedule))
                 {
                     return cachedSchedule;
                 }
 
-                // ´ÓÎÄ¼ş¼ÓÔØ
+                // ä»æ–‡ä»¶åŠ è½½
                 var filePath = Path.Combine(_timeSchedulesDirectory, $"{id}.json");
                 
                 if (!File.Exists(filePath))
@@ -232,13 +232,13 @@ namespace ReTime_Testing.Services
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"¼ÓÔØÊ±¼ä¼Æ»®Ê§°Ü: {id}, ´íÎó: {ex.Message}", ex);
+                    $"åŠ è½½æ—¶é—´è®¡åˆ’å¤±è´¥: {id}, é”™è¯¯: {ex.Message}", ex);
                 return null;
             }
         }
 
         /// <summary>
-        /// ´ÓÎÄ¼ş¼ÓÔØÊ±¼ä¼Æ»®
+        /// ä»æ–‡ä»¶åŠ è½½æ—¶é—´è®¡åˆ’
         /// </summary>
         private TimeSchedule? LoadScheduleFromFile(string filePath)
         {
@@ -249,7 +249,7 @@ namespace ReTime_Testing.Services
                 
                 if (schedule != null && string.IsNullOrEmpty(schedule.Settings.Metadata.CreatedAt))
                 {
-                    // Ê×´Î¼ÓÔØÊ±ÉèÖÃ´´½¨Ê±¼ä
+                    // æ·»åŠ åˆ›å»ºæ—¶é—´æˆ³ä½œä¸ºå½“å‰æ—¶é—´
                     schedule.Settings.Metadata.CreatedAt = DateTime.UtcNow.ToString("o");
                     SaveScheduleToFile(schedule, filePath);
                 }
@@ -259,13 +259,13 @@ namespace ReTime_Testing.Services
             catch (JsonException ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"JSON½âÎöÊ§°Ü: {filePath}, ´íÎó: {ex.Message}");
+                    $"JSONè§£æå¤±è´¥: {filePath}, é”™è¯¯: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// ±£´æÊ±¼ä¼Æ»®
+        /// ä¿å­˜æ—¶é—´è®¡åˆ’
         /// </summary>
         public void SaveSchedule(TimeSchedule schedule)
         {
@@ -273,35 +273,35 @@ namespace ReTime_Testing.Services
             {
                 if (string.IsNullOrEmpty(schedule.Id))
                 {
-                    throw new ArgumentException("Ê±¼ä¼Æ»®ID²»ÄÜÎª¿Õ");
+                    throw new ArgumentException("æ—¶é—´è®¡åˆ’IDä¸èƒ½ä¸ºç©º");
                 }
 
-                // ¸üĞÂĞŞ¸ÄÊ±¼ä
+                // æ›´æ–°ä¿®æ”¹æ—¶é—´
                 schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
 
-                // ±£´æµ½ÎÄ¼ş
+                // ä¿å­˜åˆ°æ–‡ä»¶
                 var filePath = Path.Combine(_timeSchedulesDirectory, $"{schedule.Id}.json");
                 SaveScheduleToFile(schedule, filePath);
 
-                // ¸üĞÂ»º´æ
+                // æ›´æ–°ç¼“å­˜
                 _scheduleCache[schedule.Id] = schedule;
 
-                // ´¥·¢ÊÂ¼ş
+                // è§¦å‘äº‹ä»¶
                 OnScheduleChanged?.Invoke(schedule);
 
                 Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"Ê±¼ä¼Æ»®±£´æ³É¹¦: {schedule.Id}");
+                    $"æ—¶é—´è®¡åˆ’ä¿å­˜æˆåŠŸ: {schedule.Id}");
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"±£´æÊ±¼ä¼Æ»®Ê§°Ü: {schedule.Id}, ´íÎó: {ex.Message}", ex);
+                    $"ä¿å­˜æ—¶é—´è®¡åˆ’å¤±è´¥: {schedule.Id}, é”™è¯¯: {ex.Message}", ex);
                 throw;
             }
         }
 
         /// <summary>
-        /// ±£´æÊ±¼ä¼Æ»®µ½ÎÄ¼ş
+        /// ä¿å­˜æ—¶é—´è®¡åˆ’åˆ°æ–‡ä»¶
         /// </summary>
         private void SaveScheduleToFile(TimeSchedule schedule, string filePath)
         {
@@ -313,13 +313,13 @@ namespace ReTime_Testing.Services
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"Ğ´ÈëÎÄ¼şÊ§°Ü: {filePath}, ´íÎó: {ex.Message}");
+                    $"å†™å…¥æ–‡ä»¶å¤±è´¥: {filePath}, é”™è¯¯: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// É¾³ıÊ±¼ä¼Æ»®
+        /// åˆ é™¤æ—¶é—´è®¡åˆ’
         /// </summary>
         public void DeleteSchedule(string id)
         {
@@ -334,19 +334,19 @@ namespace ReTime_Testing.Services
                     OnScheduleDeleted?.Invoke(id);
                     
                     Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                        $"Ê±¼ä¼Æ»®É¾³ı³É¹¦: {id}");
+                        $"æ—¶é—´è®¡åˆ’åˆ é™¤æˆåŠŸ: {id}");
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"É¾³ıÊ±¼ä¼Æ»®Ê§°Ü: {id}, ´íÎó: {ex.Message}", ex);
+                    $"åˆ é™¤æ—¶é—´è®¡åˆ’å¤±è´¥: {id}, é”™è¯¯: {ex.Message}", ex);
                 throw;
             }
         }
 
         /// <summary>
-        /// ÑéÖ¤Ê±¼ä¼Æ»®
+        /// éªŒè¯æ—¶é—´è®¡åˆ’
         /// </summary>
         public bool ValidateSchedule(TimeSchedule schedule)
         {
@@ -392,7 +392,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// ÑéÖ¤Ê±¼ä¸ñÊ½£¨HH:mm:ss£©
+        /// éªŒè¯æ—¶é—´æ ¼å¼ï¼ˆHH:mm:ssï¼‰
         /// </summary>
         private bool IsValidTimeFormat(string time)
         {
@@ -413,7 +413,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// Ë¢ĞÂ»º´æ
+        /// åˆ·æ–°ç¼“å­˜
         /// </summary>
         public void RefreshCache()
         {
