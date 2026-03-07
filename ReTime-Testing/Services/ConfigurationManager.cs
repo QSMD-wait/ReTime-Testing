@@ -53,6 +53,11 @@ namespace ReTime_Testing.Services
         public string TimeSchedulesDirectory { get; private set; } = string.Empty;
 
         /// <summary>
+        /// 获取TimeTop设置文件路径
+        /// </summary>
+        public string TimeTopSettingFilePath { get; private set; } = string.Empty;
+
+        /// <summary>
         /// 全局配置变更事件
         /// </summary>
         public event Action<GlobalSetting>? OnGlobalSettingChanged;
@@ -77,6 +82,7 @@ namespace ReTime_Testing.Services
                 GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
                 TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeSchedules");
+                TimeTopSettingFilePath = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeTopSetting.json");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
@@ -100,6 +106,7 @@ namespace ReTime_Testing.Services
                 EnsureFileExists(GlobalSettingFilePath);
                 EnsureDirectoryExists(ConfigsDirectory);
                 EnsureDirectoryExists(TimeSchedulesDirectory);
+                EnsureTimeTopSettingExists();
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     "目录结构初始化完成");
@@ -248,6 +255,64 @@ namespace ReTime_Testing.Services
         public GlobalSetting GetCachedGlobalSetting()
         {
             return _cachedGlobalSetting ?? LoadGlobalSetting();
+        }
+
+        /// <summary>
+        /// 加载TimeTop设置
+        /// </summary>
+        public TimeTopSetting LoadTimeTopSetting()
+        {
+            try
+            {
+                EnsureTimeTopSettingExists();
+                string jsonContent = File.ReadAllText(TimeTopSettingFilePath);
+                var setting = JsonSerializer.Deserialize<TimeTopSetting>(jsonContent, _jsonOptions);
+                return setting ?? new TimeTopSetting();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                    $"加载TimeTop设置失败: {ex.Message}", ex);
+                return new TimeTopSetting();
+            }
+        }
+
+        /// <summary>
+        /// 保存TimeTop设置
+        /// </summary>
+        public void SaveTimeTopSetting(TimeTopSetting setting)
+        {
+            try
+            {
+                string jsonContent = JsonSerializer.Serialize(setting, _jsonOptions);
+                File.WriteAllText(TimeTopSettingFilePath, jsonContent);
+                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
+                    "TimeTop设置保存成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                    $"保存TimeTop设置失败: {ex.Message}", ex);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 确保TimeTop设置文件存在
+        /// </summary>
+        private void EnsureTimeTopSettingExists()
+        {
+            if (!File.Exists(TimeTopSettingFilePath))
+            {
+                var defaultSetting = new TimeTopSetting
+                {
+                    Version = "1.0.0",
+                    SelectedScheduleId = "Default"
+                };
+                SaveTimeTopSetting(defaultSetting);
+                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
+                    "TimeTop设置文件已创建");
+            }
         }
     }
 }
