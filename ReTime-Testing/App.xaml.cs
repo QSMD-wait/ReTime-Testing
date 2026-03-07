@@ -60,6 +60,9 @@ namespace ReTime_Testing
                 var scheduleManager = Services.TimeScheduleManager.Instance;
                 scheduleManager.Initialize();
 
+                // 应用时间计划配置（Service 层处理所有业务逻辑）
+                GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule();
+
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
 

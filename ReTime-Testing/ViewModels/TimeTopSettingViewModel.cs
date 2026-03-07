@@ -190,7 +190,7 @@ namespace ReTime_Testing.ViewModels
         [RelayCommand]
         private void StartSchedule()
         {
-            bool started = _service.StartSchedule(StartHour, StartMinute, EndHour, EndMinute);
+            bool started = _service.StartSchedule(StartHour, StartMinute, 0, EndHour, EndMinute, 0);
 
             if (started)
             {

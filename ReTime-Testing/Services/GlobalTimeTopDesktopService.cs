@@ -22,8 +22,10 @@ namespace ReTime_Testing.Services
         private DispatcherTimer? _timer;
         private int _startHour = 9;
         private int _startMinute = 0;
+        private int _startSecond = 0;
         private int _endHour = 17;
         private int _endMinute = 0;
+        private int _endSecond = 0;
         
         /// <summary>
         /// 定时器进度（用于 UI 显示）
@@ -229,27 +231,33 @@ namespace ReTime_Testing.Services
         /// </summary>
         /// <param name="startHour">开始小时</param>
         /// <param name="startMinute">开始分钟</param>
+        /// <param name="startSecond">开始秒数</param>
         /// <param name="endHour">结束小时</param>
         /// <param name="endMinute">结束分钟</param>
-        public void SetScheduleTime(int startHour, int startMinute, int endHour, int endMinute)
+        /// <param name="endSecond">结束秒数</param>
+        public void SetScheduleTime(int startHour, int startMinute, int startSecond, int endHour, int endMinute, int endSecond)
         {
             _startHour = startHour;
             _startMinute = startMinute;
+            _startSecond = startSecond;
             _endHour = endHour;
             _endMinute = endMinute;
+            _endSecond = endSecond;
             Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", 
-                $"调度时间已设置: {startHour:D2}:{startMinute:D2} - {endHour:D2}:{endMinute:D2}");
+                $"调度时间已设置: {startHour:D2}:{startMinute:D2}:{startSecond:D2} - {endHour:D2}:{endMinute:D2}:{endSecond:D2}");
         }
         
         /// <summary>
-        /// 启动调度
+        /// 启动调度（支持秒数）
         /// </summary>
         /// <param name="startHour">开始小时</param>
         /// <param name="startMinute">开始分钟</param>
+        /// <param name="startSecond">开始秒数</param>
         /// <param name="endHour">结束小时</param>
         /// <param name="endMinute">结束分钟</param>
+        /// <param name="endSecond">结束秒数</param>
         /// <returns>是否成功启动</returns>
-        public bool StartSchedule(int startHour, int startMinute, int endHour, int endMinute)
+        public bool StartSchedule(int startHour, int startMinute, int startSecond, int endHour, int endMinute, int endSecond)
         {
             // 检查调度是否已运行
             if (_timer != null)
@@ -258,8 +266,8 @@ namespace ReTime_Testing.Services
                 return false;
             }
 
-            var startTime = new TimeSpan(startHour, startMinute, 0);
-            var endTime = new TimeSpan(endHour, endMinute, 0);
+            var startTime = new TimeSpan(startHour, startMinute, startSecond);
+            var endTime = new TimeSpan(endHour, endMinute, endSecond);
 
             // 验证时间：如果开始时间等于结束时间，则无意义
             if (startTime == endTime)
@@ -277,7 +285,7 @@ namespace ReTime_Testing.Services
             }
 
             // 设置调度时间
-            SetScheduleTime(startHour, startMinute, endHour, endMinute);
+            SetScheduleTime(startHour, startMinute, startSecond, endHour, endMinute, endSecond);
 
             // 使用 Application.Current.Dispatcher 创建定时器，确保与应用程序生命周期绑定
             _timer = new DispatcherTimer 
@@ -321,8 +329,8 @@ namespace ReTime_Testing.Services
         {
             var now = DateTime.Now.TimeOfDay;
             var nowTime = now.TotalSeconds;
-            var start = new TimeSpan(_startHour, _startMinute, 0).TotalSeconds;
-            var end = new TimeSpan(_endHour, _endMinute, 0).TotalSeconds;
+            var start = new TimeSpan(_startHour, _startMinute, _startSecond).TotalSeconds;
+            var end = new TimeSpan(_endHour, _endMinute, _endSecond).TotalSeconds;
 
             // 跨天处理：如果结束时间小于开始时间，说明跨天
             if (end < start)
@@ -371,6 +379,163 @@ namespace ReTime_Testing.Services
         private void NotifyScheduleStateChanged()
         {
             OnScheduleStateChanged?.Invoke(ScheduleProgress, ScheduleStatus);
+        }
+
+        // ==================== 配置应用 ====================
+
+        /// <summary>
+        /// 从时间计划配置应用调度
+        /// </summary>
+        /// <param name="schedule">时间计划配置</param>
+        /// <returns>是否成功应用</returns>
+        public bool ApplyScheduleFromConfig(TimeSchedule schedule)
+        {
+            if (schedule == null || schedule.Schedules == null || schedule.Schedules.Count == 0)
+            {
+                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "时间计划配置无效");
+                return false;
+            }
+
+            // 获取当前时间
+            var now = DateTime.Now;
+            var currentTime = now.TimeOfDay.TotalSeconds;
+
+            // 查找当前时间适用的 schedule
+            TimeScheduleItem? applicableSchedule = null;
+            double applicableStartTime = 0;
+            double applicableEndTime = 0;
+
+            foreach (var scheduleItem in schedule.Schedules)
+            {
+                var startTime = ParseTimeFromScheduleItem(scheduleItem.StartTime);
+                var endTime = ParseTimeFromScheduleItem(scheduleItem.EndTime);
+
+                // 检查当前时间是否在该时间段内
+                if (currentTime >= startTime && currentTime < endTime)
+                {
+                    applicableSchedule = scheduleItem;
+                    applicableStartTime = startTime;
+                    applicableEndTime = endTime;
+                    break;
+                }
+
+                // 如果当前时间不在任何时间段内，选择最近的一个
+                if (applicableSchedule == null)
+                {
+                    applicableSchedule = scheduleItem;
+                    applicableStartTime = startTime;
+                    applicableEndTime = endTime;
+                }
+            }
+
+            if (applicableSchedule == null)
+            {
+                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "未找到适用的时间段");
+                return false;
+            }
+
+            // 转换为小时、分钟、秒
+            int startHour = (int)(applicableStartTime / 3600);
+            int startMinute = (int)((applicableStartTime % 3600) / 60);
+            int startSecond = (int)(applicableStartTime % 60);
+            int endHour = (int)(applicableEndTime / 3600);
+            int endMinute = (int)((applicableEndTime % 3600) / 60);
+            int endSecond = (int)(applicableEndTime % 60);
+
+            // 启动调度（支持秒数）
+            var result = StartSchedule(startHour, startMinute, startSecond, endHour, endMinute, endSecond);
+            if (result)
+            {
+                Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService",
+                    $"已应用时间计划: {schedule.Settings.Metadata.Name} - {applicableSchedule.Name}");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 从时间字符串解析秒数
+        /// </summary>
+        /// <param name="timeString">时间字符串 (HH:mm:ss 格式)</param>
+        /// <returns>秒数</returns>
+        private double ParseTimeFromScheduleItem(string timeString)
+        {
+            if (string.IsNullOrEmpty(timeString))
+            {
+                return 0;
+            }
+
+            var parts = timeString.Split(':');
+            if (parts.Length < 2)
+            {
+                return 0;
+            }
+
+            int hours = 0;
+            int minutes = 0;
+            int seconds = 0;
+
+            if (parts.Length >= 1 && int.TryParse(parts[0], out var h))
+            {
+                hours = h;
+            }
+            if (parts.Length >= 2 && int.TryParse(parts[1], out var m))
+            {
+                minutes = m;
+            }
+            if (parts.Length >= 3 && int.TryParse(parts[2], out var s))
+            {
+                seconds = s;
+            }
+
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        /// <summary>
+        /// 初始化并应用时间计划配置（完整流程）
+        /// </summary>
+        /// <returns>是否成功应用</returns>
+        public bool InitializeAndApplySchedule()
+        {
+            try
+            {
+                // 加载 TimeTopSetting
+                var configManager = ConfigurationManager.Instance;
+                var timeTopSetting = configManager.LoadTimeTopSetting();
+
+                // 检查是否启用时间计划控制
+                if (!timeTopSetting.EnableTimeSchedule)
+                {
+                    Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "时间计划控制已禁用");
+                    return false;
+                }
+
+                // 加载选中的时间计划
+                var scheduleManager = TimeScheduleManager.Instance;
+                var selectedSchedule = scheduleManager.LoadSchedule(timeTopSetting.SelectedScheduleId);
+
+                // 如果选中的时间计划不存在，使用默认配置
+                if (selectedSchedule == null)
+                {
+                    timeTopSetting.SelectedScheduleId = "Default";
+                    configManager.SaveTimeTopSetting(timeTopSetting);
+                    selectedSchedule = scheduleManager.LoadSchedule("Default");
+                }
+
+                // 应用时间计划配置
+                if (selectedSchedule != null)
+                {
+                    return ApplyScheduleFromConfig(selectedSchedule);
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.Services.GlobalTimeTopDesktopService", 
+                    $"初始化并应用时间计划配置失败: {ex.Message}", ex);
+                return false;
+            }
         }
     }
 }

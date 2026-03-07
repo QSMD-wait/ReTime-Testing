@@ -18,5 +18,11 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("selectedScheduleId")]
         public string SelectedScheduleId { get; set; } = "Default";
+
+        /// <summary>
+        /// 是否启用时间计划控制进度条
+        /// </summary>
+        [JsonPropertyName("enableTimeSchedule")]
+        public bool EnableTimeSchedule { get; set; } = true;
     }
 }
