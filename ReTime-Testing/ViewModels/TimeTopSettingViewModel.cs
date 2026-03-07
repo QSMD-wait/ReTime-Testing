@@ -9,13 +9,52 @@ using System.Windows.Media;
 
 namespace ReTime_Testing.ViewModels
 {
+    /// <summary>
+    /// 全局设置页面 ViewModel
+    /// </summary>
+    public partial class GlobalPageViewModel : ObservableObject
+    {
+        public GlobalPageViewModel()
+        {
+        }
+    }
+
+    /// <summary>
+    /// 进度条设置页面 ViewModel
+    /// </summary>
+    public partial class ProgressPageViewModel : ObservableObject
+    {
+        public ProgressPageViewModel()
+        {
+        }
+    }
+
+    /// <summary>
+    /// 关于页面 ViewModel
+    /// </summary>
+    public partial class AboutPageViewModel : ObservableObject
+    {
+        public AboutPageViewModel()
+        {
+        }
+    }
+
     public partial class TimeTopSettingViewModel : ObservableObject
     {
         private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
         private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
 
+        // 导航常量
+        private const string TAG_GLOBAL = "Global";
+        private const string TAG_PROGRESS = "Progress";
+        private const string TAG_ABOUT = "About";
+
         private readonly GlobalTimeTopDesktopService _service;
         private readonly MutexManager _mutexManager;
+
+        // 导航属性
+        [ObservableProperty]
+        private object? _currentPage;
 
         [ObservableProperty]
         private double _progressValue = 50;
@@ -78,6 +117,29 @@ namespace ReTime_Testing.ViewModels
 
             // 初始化进度条位置
             UpdatePositionStatus();
+        }
+
+        /// <summary>
+        /// 初始化导航
+        /// </summary>
+        public void InitializeNavigation()
+        {
+            // 默认选中全局设置
+            NavigateTo(TAG_GLOBAL);
+        }
+
+        /// <summary>
+        /// 导航到指定页面
+        /// </summary>
+        public void NavigateTo(string tag)
+        {
+            CurrentPage = tag switch
+            {
+                TAG_GLOBAL => new GlobalPageViewModel(),
+                TAG_PROGRESS => new ProgressPageViewModel(),
+                TAG_ABOUT => new AboutPageViewModel(),
+                _ => new GlobalPageViewModel()
+            };
         }
 
         /// <summary>

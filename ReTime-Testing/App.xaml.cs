@@ -64,6 +64,7 @@ namespace ReTime_Testing
                 _trayIconService.Initialize();
 
                 // 订阅托盘图标事件
+                _trayIconService.OpenSettingRequested += OpenSetting;
                 _trayIconService.OpenDebugRequested += OpenDebugTest;
                 _trayIconService.AboutRequested += OpenMainWindow;
                 _trayIconService.ExitRequested += ExitApplication;
@@ -158,6 +159,22 @@ namespace ReTime_Testing
         }
 
         /// <summary>
+        /// 打开设置窗口
+        /// </summary>
+        private void OpenSetting()
+        {
+            try
+            {
+                WindowManager.ShowTimeTopSetting();
+                Logger.Info(GetType().FullName ?? "App", "设置窗口已打开");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "打开设置窗口时发生异常", ex);
+            }
+        }
+
+        /// <summary>
         /// 打开主窗口（关于窗口）
         /// </summary>
         private void OpenMainWindow()
@@ -207,6 +224,7 @@ namespace ReTime_Testing
                 // 取消事件订阅
                 if (_trayIconService != null)
                 {
+                    _trayIconService.OpenSettingRequested -= OpenSetting;
                     _trayIconService.OpenDebugRequested -= OpenDebugTest;
                     _trayIconService.AboutRequested -= OpenMainWindow;
                     _trayIconService.ExitRequested -= ExitApplication;
@@ -239,6 +257,7 @@ namespace ReTime_Testing
             // 取消事件订阅
             if (_trayIconService != null)
             {
+                _trayIconService.OpenSettingRequested -= OpenSetting;
                 _trayIconService.OpenDebugRequested -= OpenDebugTest;
                 _trayIconService.AboutRequested -= OpenMainWindow;
                 _trayIconService.ExitRequested -= ExitApplication;

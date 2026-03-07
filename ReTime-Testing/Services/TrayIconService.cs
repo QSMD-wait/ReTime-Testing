@@ -25,6 +25,11 @@ namespace ReTime_Testing.Services
         private bool _disposed = false;
 
         /// <summary>
+        /// 打开设置请求事件
+        /// </summary>
+        public event Action? OpenSettingRequested;
+
+        /// <summary>
         /// 打开调试请求事件
         /// </summary>
         public event Action? OpenDebugRequested;
@@ -143,6 +148,11 @@ namespace ReTime_Testing.Services
                 BorderThickness = new Thickness(1)
             };
 
+            // 打开设置菜单项
+            var openSettingItem = CreateMenuItem("打开设置", "\uE713");
+            openSettingItem.Click += (s, e) => OpenSettingRequested?.Invoke();
+            contextMenu.Items.Add(openSettingItem);
+
             // 打开调试菜单项
             var openDebugItem = CreateMenuItem("打开调试", "\uE713");
             openDebugItem.Click += (s, e) => OpenDebugRequested?.Invoke();
@@ -193,15 +203,18 @@ namespace ReTime_Testing.Services
 
             menuItem.Header = stackPanel;
 
+            // 设置 CommandTarget 为 MenuItem 自身，消除绑定警告
+            menuItem.CommandTarget = menuItem;
+
             return menuItem;
         }
 
         /// <summary>
-        /// 左键双击事件处理 - 打开调试窗口
+        /// 左键双击事件处理 - 打开设置窗口
         /// </summary>
         private void OnTrayMouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            OpenDebugRequested?.Invoke();
+            OpenSettingRequested?.Invoke();
         }
 
         /// <summary>
