@@ -48,6 +48,11 @@ namespace ReTime_Testing.Services
         public string ConfigsDirectory { get; private set; } = string.Empty;
 
         /// <summary>
+        /// 获取时间计划表目录路径
+        /// </summary>
+        public string TimeSchedulesDirectory { get; private set; } = string.Empty;
+
+        /// <summary>
         /// 全局配置变更事件
         /// </summary>
         public event Action<GlobalSetting>? OnGlobalSettingChanged;
@@ -71,6 +76,7 @@ namespace ReTime_Testing.Services
                 DataDirectory = Path.Combine(ApplicationRootDirectory, "data");
                 GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
+                TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeSchedules");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
@@ -93,6 +99,7 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(DataDirectory);
                 EnsureFileExists(GlobalSettingFilePath);
                 EnsureDirectoryExists(ConfigsDirectory);
+                EnsureDirectoryExists(TimeSchedulesDirectory);
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     "目录结构初始化完成");
