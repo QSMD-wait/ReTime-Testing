@@ -103,7 +103,7 @@ namespace ReTime_Testing.Services
             try
             {
                 EnsureDirectoryExists(DataDirectory);
-                EnsureFileExists(GlobalSettingFilePath);
+                EnsureGlobalSettingExists();
                 EnsureDirectoryExists(ConfigsDirectory);
                 EnsureDirectoryExists(TimeSchedulesDirectory);
                 EnsureTimeTopSettingExists();
@@ -133,15 +133,16 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 确保文件存在
+        /// 确保全局配置文件存在
         /// </summary>
-        private void EnsureFileExists(string path)
+        private void EnsureGlobalSettingExists()
         {
-            if (!File.Exists(path))
+            if (!File.Exists(GlobalSettingFilePath))
             {
-                File.WriteAllText(path, "{}");
+                var defaultSetting = new GlobalSetting();
+                SaveGlobalSetting(defaultSetting);
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
-                    $"文件已创建: {path}");
+                    $"全局配置文件已创建: {GlobalSettingFilePath}");
             }
         }
 
@@ -152,7 +153,14 @@ namespace ReTime_Testing.Services
         {
             try
             {
-                EnsureFileExists(GlobalSettingFilePath);
+                if (!File.Exists(GlobalSettingFilePath))
+                {
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager", 
+                        "全局配置文件不存在，创建默认配置");
+                    var newSetting = new GlobalSetting();
+                    SaveGlobalSetting(newSetting);
+                    return newSetting;
+                }
 
                 string jsonContent = File.ReadAllText(GlobalSettingFilePath);
 
@@ -160,13 +168,27 @@ namespace ReTime_Testing.Services
                 {
                     Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                         "全局配置文件为空，创建默认配置");
+                    var newSetting = new GlobalSetting();
+                    SaveGlobalSetting(newSetting);
+                    return newSetting;
+                }
+
+                var setting = JsonSerializer.Deserialize<GlobalSetting>(jsonContent, _jsonOptions)
+                    ?? new GlobalSetting();
+
+                // 版本检查
+                if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
+                {
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                        $"全局配置文件版本不匹配: {setting.Version}，使用默认配置");
                     var defaultSetting = new GlobalSetting();
                     SaveGlobalSetting(defaultSetting);
                     return defaultSetting;
                 }
 
-                var setting = JsonSerializer.Deserialize<GlobalSetting>(jsonContent, _jsonOptions)
-                    ?? new GlobalSetting();
+                // 填充缺失字段的默认值
+                var defaults = new GlobalSetting();
+                setting = FillMissingFields(setting, defaults);
 
                 _cachedGlobalSetting = setting;
 
@@ -193,13 +215,25 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 填充缺失字段的默认值
+        /// </summary>
+        private GlobalSetting FillMissingFields(GlobalSetting target, GlobalSetting defaults)
+        {
+            if (string.IsNullOrEmpty(target.Version))
+                target.Version = defaults.Version;
+
+            return target;
+        }
+
+        /// <summary>
         /// 保存全局配置
         /// </summary>
         public void SaveGlobalSetting(GlobalSetting setting)
         {
             try
             {
-                EnsureFileExists(GlobalSettingFilePath);
+                // 确保目录存在
+                EnsureDirectoryExists(DataDirectory);
 
                 string jsonContent = JsonSerializer.Serialize(setting, _jsonOptions);
                 File.WriteAllText(GlobalSettingFilePath, jsonContent);
@@ -266,8 +300,46 @@ namespace ReTime_Testing.Services
             {
                 EnsureTimeTopSettingExists();
                 string jsonContent = File.ReadAllText(TimeTopSettingFilePath);
+
+                // 检查文件是否为空
+                if (string.IsNullOrWhiteSpace(jsonContent) || jsonContent.Trim() == "{}")
+                {
+                    Logger.Info("ReTime_Testing.Services.ConfigurationManager",
+                        "TimeTop设置文件为空，创建默认配置");
+                    var newSetting = new TimeTopSetting();
+                    SaveTimeTopSetting(newSetting);
+                    return newSetting;
+                }
+
+                // 反序列化
                 var setting = JsonSerializer.Deserialize<TimeTopSetting>(jsonContent, _jsonOptions);
-                return setting ?? new TimeTopSetting();
+
+                if (setting == null)
+                {
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                        "TimeTop设置文件解析失败，使用默认配置");
+                    return new TimeTopSetting();
+                }
+
+                // 版本检查
+                if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
+                {
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                        $"TimeTop设置文件版本不匹配: {setting.Version}，使用默认配置");
+                    return new TimeTopSetting();
+                }
+
+                // 填充缺失字段的默认值
+                var defaults = new TimeTopSetting();
+                setting = FillMissingFields(setting, defaults);
+
+                return setting;
+            }
+            catch (JsonException ex)
+            {
+                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                    $"TimeTop设置 JSON 解析失败: {ex.Message}", ex);
+                return new TimeTopSetting();
             }
             catch (Exception ex)
             {
@@ -275,6 +347,20 @@ namespace ReTime_Testing.Services
                     $"加载TimeTop设置失败: {ex.Message}", ex);
                 return new TimeTopSetting();
             }
+        }
+
+        /// <summary>
+        /// 填充缺失字段的默认值
+        /// </summary>
+        private TimeTopSetting FillMissingFields(TimeTopSetting target, TimeTopSetting defaults)
+        {
+            if (string.IsNullOrEmpty(target.Version))
+                target.Version = defaults.Version;
+            
+            if (string.IsNullOrEmpty(target.SelectedScheduleId))
+                target.SelectedScheduleId = defaults.SelectedScheduleId;
+
+            return target;
         }
 
         /// <summary>
