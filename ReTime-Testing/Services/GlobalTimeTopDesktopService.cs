@@ -333,16 +333,6 @@ namespace ReTime_Testing.Services
             var start = new TimeSpan(_startHour, _startMinute, _startSecond).TotalSeconds;
             var end = new TimeSpan(_endHour, _endMinute, _endSecond).TotalSeconds;
 
-            // 跨天处理：如果结束时间小于开始时间，说明跨天
-            if (end < start)
-            {
-                end += 24 * 60 * 60;  // 加上24小时
-                if (nowTime < start)
-                {
-                    nowTime += 24 * 60 * 60;  // 当前时间也在跨天后
-                }
-            }
-
             if (nowTime < start)
             {
                 // 未到开始时间：Loading 状态
