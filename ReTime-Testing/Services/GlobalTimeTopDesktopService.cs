@@ -82,7 +82,16 @@ namespace ReTime_Testing.Services
             _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
             _stateManager.SetValue(value);
         }
-        
+
+        /// <summary>
+        /// 仅更新进度值（不设置样式）
+        /// 用于定时器中的高频更新
+        /// </summary>
+        public void UpdateProgressOnly(double value)
+        {
+            _stateManager.SetValue(value);
+        }
+
         /// <summary>
         /// 设置为成功状态（绿色完成）
         /// </summary>
@@ -276,14 +285,6 @@ namespace ReTime_Testing.Services
                 return false;
             }
 
-            // 验证时间跨度（跨天时计算总时长）
-            var duration = endTime > startTime ? endTime - startTime : endTime + TimeSpan.FromHours(24) - startTime;
-            if (duration.TotalHours > 8)
-            {
-                Logger.Warn("ReTime_Testing.Services.GlobalTimeTopDesktopService", "时间跨度不能超过8小时");
-                return false;
-            }
-
             // 设置调度时间
             SetScheduleTime(startHour, startMinute, startSecond, endHour, endMinute, endSecond);
 
@@ -364,7 +365,8 @@ namespace ReTime_Testing.Services
                 var elapsed = nowTime - start;
                 var progress = (elapsed / totalDuration) * 100;
 
-                SetProgress(progress);
+                // 只更新进度值，不设置样式
+                UpdateProgressOnly(progress);
                 SetForeground(ProgressColors.DefaultBlue);
                 ScheduleProgress = progress;
                 ScheduleStatus = "进行中...";
