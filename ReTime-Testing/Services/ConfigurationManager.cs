@@ -356,9 +356,22 @@ namespace ReTime_Testing.Services
         {
             if (string.IsNullOrEmpty(target.Version))
                 target.Version = defaults.Version;
-            
+
             if (string.IsNullOrEmpty(target.SelectedScheduleId))
                 target.SelectedScheduleId = defaults.SelectedScheduleId;
+
+            // 填充时间设置字段
+            if (target.TimeSettings == null)
+                target.TimeSettings = new TimeSettingsData();
+
+            if (target.TimeSettings.Calibration == null)
+                target.TimeSettings.Calibration = new CalibrationSettings();
+
+            if (target.TimeSettings.Fallback == null)
+                target.TimeSettings.Fallback = new FallbackSettings();
+
+            if (target.TimeSettings.Threshold == null)
+                target.TimeSettings.Threshold = new ThresholdSettings();
 
             return target;
         }
@@ -393,12 +406,36 @@ namespace ReTime_Testing.Services
                 var defaultSetting = new TimeTopSetting
                 {
                     Version = "1.0.0",
-                    SelectedScheduleId = "Default"
+                    SelectedScheduleId = "Default",
+                    EnableTimeSchedule = true,
+                    TimeSettings = new TimeSettingsData
+                    {
+                        Calibration = new CalibrationSettings
+                        {
+                            Enabled = true,
+                            IntervalSeconds = 300,
+                            TimeoutSeconds = 3,
+                            MaxRetryCount = 5,
+                            BackoffMultiplier = 2.0
+                        },
+                        Fallback = new FallbackSettings
+                        {
+                            OnStartFailure = "systemTime",
+                            OnRuntimeFailure = "keepCurrent"
+                        },
+                        Threshold = new ThresholdSettings
+                        {
+                            CalibrationTriggerSeconds = 5,
+                            WarningThresholdSeconds = 60,
+                            SleepThresholdMinutes = 5
+                        }
+                    }
                 };
                 SaveTimeTopSetting(defaultSetting);
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     "TimeTop设置文件已创建");
             }
         }
-    }
+
+        }
 }

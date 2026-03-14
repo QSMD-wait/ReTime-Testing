@@ -26,6 +26,11 @@ namespace ReTime_Testing.Services
         private int _endHour = 17;
         private int _endMinute = 0;
         private int _endSecond = 0;
+
+        /// <summary>
+        /// 状态管理器（供外部访问）
+        /// </summary>
+        public ProgressStateManager StateManager => _stateManager;
         
         /// <summary>
         /// 定时器进度（用于 UI 显示）
