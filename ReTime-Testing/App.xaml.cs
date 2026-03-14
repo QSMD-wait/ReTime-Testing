@@ -20,6 +20,11 @@ namespace ReTime_Testing
         private MutexManager? _mutexManager;
         private TrayIconService? _trayIconService;
 
+        // 新增：时间服务字段
+        private ITimeService? _timeService;
+        private ScheduleManager? _scheduleManager;
+        private CloudCalibrationService? _cloudCalibrationService;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -59,6 +64,47 @@ namespace ReTime_Testing
                 // 初始化时间计划管理器
                 var scheduleManager = Services.TimeScheduleManager.Instance;
                 scheduleManager.Initialize();
+
+                // ===== 新增：初始化时间服务 =====
+                // 1. 初始化绝对时间服务
+                _timeService = new AbsoluteTimeService();
+                Logger.Info(GetType().FullName ?? "App", "时间服务已初始化");
+
+                // 2. 初始化执行计划生成器
+                var planGenerator = new ExecutionPlanGenerator();
+                Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
+
+                // 3. 生成执行计划
+                var selectedSchedule = scheduleManager.LoadSchedule(configManager.LoadTimeTopSetting().SelectedScheduleId);
+                if (selectedSchedule == null)
+                {
+                    selectedSchedule = scheduleManager.LoadSchedule("Default");
+                }
+
+                if (selectedSchedule != null)
+                {
+                    var executionPlan = planGenerator.Generate(selectedSchedule, DateTime.Today);
+                    Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
+
+                    // 4. 初始化调度管理器
+                    _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
+                    _scheduleManager.Initialize(executionPlan);
+                    Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+
+                    // 5. 初始化云端校准服务（使用配置文件中的设置）
+                    var timeTopSetting = configManager.LoadTimeTopSetting();
+                    _cloudCalibrationService = new CloudCalibrationService(_timeService);
+                    _cloudCalibrationService.Configure(
+                        enabled: timeTopSetting.TimeSettings.Calibration.Enabled,
+                        interval: timeTopSetting.TimeSettings.Calibration.IntervalSeconds,
+                        timeout: timeTopSetting.TimeSettings.Calibration.TimeoutSeconds,
+                        maxRetryCount: timeTopSetting.TimeSettings.Calibration.MaxRetryCount,
+                        backoffMultiplier: timeTopSetting.TimeSettings.Calibration.BackoffMultiplier,
+                        triggerThreshold: timeTopSetting.TimeSettings.Threshold.CalibrationTriggerSeconds
+                    );
+                    _cloudCalibrationService.Start();
+                    Logger.Info(GetType().FullName ?? "App", "云端校准服务已启动");
+                }
 
                 // 应用时间计划配置（Service 层处理所有业务逻辑）
                 GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule();
@@ -222,6 +268,10 @@ namespace ReTime_Testing
             {
                 Logger.Info(GetType().FullName ?? "App", "应用程序退出请求");
 
+                // 清理新服务
+                _scheduleManager?.Stop();
+                _cloudCalibrationService?.Stop();
+
                 // 清理托盘图标
                 _trayIconService?.Dispose();
 
@@ -255,6 +305,10 @@ namespace ReTime_Testing
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // 清理新服务
+            _scheduleManager?.Stop();
+            _cloudCalibrationService?.Stop();
+
             // 释放托盘图标
             _trayIconService?.Dispose();
 
