@@ -355,8 +355,8 @@ namespace ReTime_Testing.Services
                 var elapsed = nowTime - start;
                 var progress = (elapsed / totalDuration) * 100;
 
-                // 只更新进度值，不设置样式
-                UpdateProgressOnly(progress);
+                // 使用 SetProgress 确保 IsIndeterminate = false，进度条显示实际进度
+                SetProgress(progress);
                 SetForeground(ProgressColors.DefaultBlue);
                 ScheduleProgress = progress;
                 ScheduleStatus = "进行中...";
