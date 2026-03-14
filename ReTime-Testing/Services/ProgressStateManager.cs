@@ -18,7 +18,7 @@ namespace ReTime_Testing.Services
         public Action<ProgressStateConfig>? OnStateChanged { get; set; }
 
         /// <summary>
-        /// 预定义状态
+        /// 预定义状态（向后兼容）
         /// </summary>
         public static class ProgressStates
         {
@@ -125,23 +125,6 @@ namespace ReTime_Testing.Services
             }.SetInitialized();
 
             /// <summary>
-            /// 半透明状态
-            /// </summary>
-            public static ProgressStateConfig HalfOpacity => new ProgressStateConfig
-            {
-                StateType = ProgressStateType.Progress,
-                Value = 100,
-                IsIndeterminate = false,
-                Foreground = ProgressColors.DefaultBlue,
-                Background = Brushes.Transparent,
-                Visibility = Visibility.Visible,
-                IsEnabled = true,
-                Opacity = 0.5,
-                Minimum = 0,
-                Maximum = 100
-            }.SetInitialized();
-
-            /// <summary>
             /// 禁用状态
             /// </summary>
             public static ProgressStateConfig Disabled => new ProgressStateConfig
@@ -149,11 +132,11 @@ namespace ReTime_Testing.Services
                 StateType = ProgressStateType.Disabled,
                 Value = 100,
                 IsIndeterminate = false,
-                Foreground = ProgressColors.DefaultBlue,
+                Foreground = ProgressColors.Gray,
                 Background = Brushes.Transparent,
                 Visibility = Visibility.Visible,
                 IsEnabled = false,
-                Opacity = 1.0,
+                Opacity = 0.5,
                 Minimum = 0,
                 Maximum = 100
             }.SetInitialized();
@@ -222,7 +205,191 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置状态
+        /// 设置状态（应用样式）
+        /// 只更新样式属性，不更新进度值
+        /// </summary>
+        /// <param name="stateType">状态类型</param>
+        /// <param name="overrides">样式覆盖（可选）</param>
+        public void SetState(ProgressStateType stateType, StyleOverrides? overrides = null)
+        {
+            // 1. 获取基础样式（按优先级：配置文件 > 默认值）
+            var baseStyle = GetBaseStyle(stateType);
+
+            // 2. 应用覆盖样式
+            var finalStyle = ApplyOverrides(baseStyle, overrides);
+
+            // 3. 批量更新所有样式属性
+            BeginBatchUpdate();
+
+            _currentConfig.StateType = stateType;
+            _currentConfig.IsIndeterminate = stateType == ProgressStateType.Loading;
+            _currentConfig.Foreground = finalStyle.ForegroundColor;
+            _currentConfig.Background = finalStyle.BackgroundColor ?? Brushes.Transparent;
+            _currentConfig.Visibility = finalStyle.Visibility;
+            _currentConfig.IsEnabled = finalStyle.IsEnabled;
+            _currentConfig.Opacity = finalStyle.Opacity;
+
+            _currentConfig.SetInitialized();
+
+            EndBatchUpdate();
+        }
+
+        /// <summary>
+        /// 更新进度值
+        /// 只更新进度值，不修改样式属性
+        /// </summary>
+        /// <param name="value">进度值</param>
+        public void UpdateProgress(double value)
+        {
+            _currentConfig.Value = value;
+            NotifyStateChanged();
+        }
+
+        /// <summary>
+        /// 获取基础样式（按优先级：配置文件 > 默认值）
+        /// </summary>
+        /// <param name="stateType">状态类型</param>
+        /// <returns>基础样式配置</returns>
+        private StyleConfig GetBaseStyle(ProgressStateType stateType)
+        {
+            // TODO: 从配置文件读取样式配置
+            // 目前使用默认值
+
+            return stateType switch
+            {
+                ProgressStateType.Loading => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.DefaultBlue,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = true
+                },
+                ProgressStateType.Progress => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.DefaultBlue,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = false
+                },
+                ProgressStateType.Success => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.SuccessGreen,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = false
+                },
+                ProgressStateType.Error => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.ErrorRed,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = false
+                },
+                ProgressStateType.Paused => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.PauseOrange,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = false
+                },
+                ProgressStateType.Hidden => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.DefaultBlue,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Hidden,
+                    IsEnabled = true,
+                    Opacity = 1.0,
+                    IsIndeterminate = false
+                },
+                ProgressStateType.Disabled => new StyleConfig
+                {
+                    ForegroundColor = ProgressColors.Gray,
+                    BackgroundColor = Brushes.Transparent,
+                    Visibility = Visibility.Visible,
+                    IsEnabled = false,
+                    Opacity = 0.5,
+                    IsIndeterminate = false
+                },
+                _ => new StyleConfig()
+            };
+        }
+
+        /// <summary>
+        /// 应用覆盖样式
+        /// </summary>
+        /// <param name="baseStyle">基础样式</param>
+        /// <param name="overrides">覆盖样式</param>
+        /// <returns>最终样式</returns>
+        private StyleConfig ApplyOverrides(StyleConfig baseStyle, StyleOverrides? overrides)
+        {
+            if (overrides == null || !overrides.HasAnyOverride)
+            {
+                return baseStyle;
+            }
+
+            var result = new StyleConfig();
+
+            // ForegroundColor
+            result.ForegroundColor = overrides.ForegroundColor != null ? overrides.ForegroundColor : baseStyle.ForegroundColor;
+
+            // BackgroundColor
+            result.BackgroundColor = overrides.BackgroundColor != null ? overrides.BackgroundColor : baseStyle.BackgroundColor;
+
+            // Visibility
+            if (overrides.Visibility.HasValue)
+            {
+                result.Visibility = overrides.Visibility.Value;
+            }
+            else
+            {
+                result.Visibility = baseStyle.Visibility;
+            }
+
+            // IsEnabled
+            if (overrides.IsEnabled.HasValue)
+            {
+                result.IsEnabled = overrides.IsEnabled.Value;
+            }
+            else
+            {
+                result.IsEnabled = baseStyle.IsEnabled;
+            }
+
+            // Opacity
+            if (overrides.Opacity.HasValue)
+            {
+                result.Opacity = overrides.Opacity.Value;
+            }
+            else
+            {
+                result.Opacity = baseStyle.Opacity;
+            }
+
+            // IsIndeterminate
+            if (overrides.IsIndeterminate.HasValue)
+            {
+                result.IsIndeterminate = overrides.IsIndeterminate.Value;
+            }
+            else
+            {
+                result.IsIndeterminate = baseStyle.IsIndeterminate;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 设置状态（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetState(ProgressStateConfig config)
         {
@@ -246,7 +413,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置进度值
+        /// 设置进度值（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetValue(double value)
         {
@@ -256,7 +423,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置前景色
+        /// 设置前景色（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetForeground(Brush foreground)
         {
@@ -266,7 +433,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置透明度
+        /// 设置透明度（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetOpacity(double opacity)
         {
@@ -276,7 +443,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置可见性
+        /// 设置可见性（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetVisibility(Visibility visibility)
         {
@@ -286,7 +453,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置启用状态
+        /// 设置启用状态（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetEnabled(bool isEnabled)
         {
@@ -296,7 +463,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置背景色
+        /// 设置背景色（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetBackground(Brush background)
         {
@@ -306,7 +473,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置范围
+        /// 设置范围（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager SetRange(double minimum, double maximum)
         {
@@ -317,7 +484,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 重置为默认状态
+        /// 重置为默认状态（旧方法，保持兼容性）
         /// </summary>
         public ProgressStateManager Reset()
         {
@@ -327,11 +494,24 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 创建构建器
+        /// 创建构建器（旧方法，保持兼容性）
         /// </summary>
         public static ProgressStateConfigBuilder CreateBuilder()
         {
             return new ProgressStateConfigBuilder();
         }
+    }
+
+    /// <summary>
+    /// 样式配置（内部使用）
+    /// </summary>
+    internal class StyleConfig
+    {
+        public Brush ForegroundColor { get; set; } = ProgressColors.DefaultBlue;
+        public Brush? BackgroundColor { get; set; }
+        public Visibility Visibility { get; set; } = Visibility.Visible;
+        public bool IsEnabled { get; set; } = true;
+        public double Opacity { get; set; } = 1.0;
+        public bool IsIndeterminate { get; set; } = false;
     }
 }
