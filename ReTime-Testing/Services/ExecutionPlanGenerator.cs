@@ -1,4 +1,6 @@
 using ReTime_Testing.Models;
+using System.Windows;
+using System.Windows.Media;
 
 namespace ReTime_Testing.Services;
 
@@ -13,8 +15,9 @@ public class ExecutionPlanGenerator
     /// </summary>
     /// <param name="schedule">时间计划</param>
     /// <param name="date">计划日期</param>
+    /// <param name="currentTime">当前时间</param>
     /// <returns>执行计划</returns>
-    public ExecutionPlan Generate(TimeSchedule schedule, DateTime date)
+    public ExecutionPlan Generate(TimeSchedule schedule, DateTime date, DateTime currentTime)
     {
         var plan = new ExecutionPlan
         {
@@ -29,7 +32,6 @@ public class ExecutionPlanGenerator
         plan.TimeSegments = GenerateTimeSegments(schedule, date, plan.TimePoints);
 
         // 3. 计算当前状态
-        var currentTime = DateTime.Now;
         plan.UpdateCurrentState(currentTime);
 
         return plan;
@@ -181,14 +183,96 @@ public class ExecutionPlanGenerator
     }
 
     /// <summary>
-    /// 解析样式覆盖（预留）
+    /// 解析样式覆盖
     /// </summary>
     /// <param name="scheduleItem">时间计划项</param>
     /// <returns>样式覆盖</returns>
     private StyleOverrides? ParseStyleOverrides(TimeScheduleItem scheduleItem)
     {
-        // TODO: 从配置文件读取样式覆盖
-        // 目前返回 null，使用默认样式
-        return null;
+        if (scheduleItem.Styles == null) return null;
+
+        var overrides = new StyleOverrides();
+
+        // 解析前景色
+        if (!string.IsNullOrEmpty(scheduleItem.Styles.ForegroundColor))
+        {
+            overrides.ForegroundColor = ParseColor(scheduleItem.Styles.ForegroundColor);
+        }
+
+        // 解析背景色
+        if (!string.IsNullOrEmpty(scheduleItem.Styles.BackgroundColor))
+        {
+            overrides.BackgroundColor = ParseColor(scheduleItem.Styles.BackgroundColor);
+        }
+
+        // 解析透明度
+        if (scheduleItem.Styles.Opacity.HasValue)
+        {
+            overrides.Opacity = scheduleItem.Styles.Opacity.Value;
+        }
+
+        // 解析可见性
+        if (!string.IsNullOrEmpty(scheduleItem.Styles.Visibility))
+        {
+            overrides.Visibility = ParseVisibility(scheduleItem.Styles.Visibility);
+        }
+
+        // 解析启用状态
+        if (scheduleItem.Styles.IsEnabled.HasValue)
+        {
+            overrides.IsEnabled = scheduleItem.Styles.IsEnabled.Value;
+        }
+
+        // 解析不确定动画
+        if (scheduleItem.Styles.IsIndeterminate.HasValue)
+        {
+            overrides.IsIndeterminate = scheduleItem.Styles.IsIndeterminate.Value;
+        }
+
+        // 如果没有任何覆盖，返回null
+        if (!overrides.HasAnyOverride)
+        {
+            return null;
+        }
+
+        return overrides;
+    }
+
+    /// <summary>
+    /// 解析颜色字符串
+    /// </summary>
+    /// <param name="colorString">颜色字符串（如 #007ACC）</param>
+    /// <returns>Brush</returns>
+    private Brush ParseColor(string colorString)
+    {
+        try
+        {
+            if (colorString.StartsWith("#"))
+            {
+                var color = (Color)ColorConverter.ConvertFromString(colorString);
+                return new SolidColorBrush(color);
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 解析可见性字符串
+    /// </summary>
+    /// <param name="visibilityString">可见性字符串</param>
+    /// <returns>Visibility</returns>
+    private Visibility ParseVisibility(string visibilityString)
+    {
+        return visibilityString.ToLower() switch
+        {
+            "visible" => Visibility.Visible,
+            "hidden" => Visibility.Hidden,
+            "collapsed" => Visibility.Collapsed,
+            _ => Visibility.Visible
+        };
     }
 }

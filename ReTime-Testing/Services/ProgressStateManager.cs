@@ -252,9 +252,38 @@ namespace ReTime_Testing.Services
         /// <returns>基础样式配置</returns>
         private StyleConfig GetBaseStyle(ProgressStateType stateType)
         {
-            // TODO: 从配置文件读取样式配置
-            // 目前使用默认值
+            // 1. 获取默认样式
+            var defaultStyle = GetDefaultStyle(stateType);
 
+            // 2. 尝试从配置文件读取样式配置
+            try
+            {
+                var configManager = Services.ConfigurationManager.Instance;
+                var timeTopSetting = configManager.LoadTimeTopSetting();
+                var stateName = stateType.ToString();
+                
+                if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.TryGetValue(stateName, out var styleData))
+                {
+                    // 合并配置文件样式到默认样式
+                    return MergeStyleConfig(defaultStyle, styleData);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ProgressStateManager", $"读取样式配置失败: {ex.Message}");
+            }
+
+            // 3. 返回默认样式
+            return defaultStyle;
+        }
+
+        /// <summary>
+        /// 获取默认样式
+        /// </summary>
+        /// <param name="stateType">状态类型</param>
+        /// <returns>默认样式配置</returns>
+        private StyleConfig GetDefaultStyle(ProgressStateType stateType)
+        {
             return stateType switch
             {
                 ProgressStateType.Loading => new StyleConfig
@@ -321,6 +350,101 @@ namespace ReTime_Testing.Services
                     IsIndeterminate = false
                 },
                 _ => new StyleConfig()
+            };
+        }
+
+        /// <summary>
+        /// 合并样式配置（配置文件样式覆盖默认样式）
+        /// </summary>
+        /// <param name="defaultStyle">默认样式</param>
+        /// <param name="styleData">样式配置数据</param>
+        /// <returns>合并后的样式</returns>
+        private StyleConfig MergeStyleConfig(StyleConfig defaultStyle, StyleConfigData styleData)
+        {
+            var result = new StyleConfig
+            {
+                ForegroundColor = defaultStyle.ForegroundColor,
+                BackgroundColor = defaultStyle.BackgroundColor,
+                Visibility = defaultStyle.Visibility,
+                IsEnabled = defaultStyle.IsEnabled,
+                Opacity = defaultStyle.Opacity,
+                IsIndeterminate = defaultStyle.IsIndeterminate
+            };
+
+            // 覆盖前景色
+            if (!string.IsNullOrEmpty(styleData.ForegroundColor))
+            {
+                result.ForegroundColor = ParseColor(styleData.ForegroundColor);
+            }
+
+            // 覆盖背景色
+            if (!string.IsNullOrEmpty(styleData.BackgroundColor))
+            {
+                result.BackgroundColor = ParseColor(styleData.BackgroundColor);
+            }
+
+            // 覆盖透明度
+            if (styleData.Opacity.HasValue)
+            {
+                result.Opacity = styleData.Opacity.Value;
+            }
+
+            // 覆盖可见性
+            if (!string.IsNullOrEmpty(styleData.Visibility))
+            {
+                result.Visibility = ParseVisibility(styleData.Visibility);
+            }
+
+            // 覆盖启用状态
+            if (styleData.IsEnabled.HasValue)
+            {
+                result.IsEnabled = styleData.IsEnabled.Value;
+            }
+
+            // 覆盖不确定动画
+            if (styleData.IsIndeterminate.HasValue)
+            {
+                result.IsIndeterminate = styleData.IsIndeterminate.Value;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 解析颜色字符串
+        /// </summary>
+        /// <param name="colorString">颜色字符串（如 #007ACC）</param>
+        /// <returns>Brush</returns>
+        private Brush ParseColor(string colorString)
+        {
+            try
+            {
+                if (colorString.StartsWith("#"))
+                {
+                    var color = (Color)ColorConverter.ConvertFromString(colorString);
+                    return new SolidColorBrush(color);
+                }
+                return Brushes.Transparent;
+            }
+            catch
+            {
+                return Brushes.Transparent;
+            }
+        }
+
+        /// <summary>
+        /// 解析可见性字符串
+        /// </summary>
+        /// <param name="visibilityString">可见性字符串</param>
+        /// <returns>Visibility</returns>
+        private Visibility ParseVisibility(string visibilityString)
+        {
+            return visibilityString.ToLower() switch
+            {
+                "visible" => Visibility.Visible,
+                "hidden" => Visibility.Hidden,
+                "collapsed" => Visibility.Collapsed,
+                _ => Visibility.Visible
             };
         }
 

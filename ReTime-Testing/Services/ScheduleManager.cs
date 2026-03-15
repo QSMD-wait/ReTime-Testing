@@ -264,8 +264,8 @@ public class ScheduleManager
     {
         if (_currentPlan == null) return;
 
-        _currentPlan.CurrentSegment = _currentPlan.TimeSegments
-            .FirstOrDefault(seg => seg.Contains(currentTime));
+        // 调用 ExecutionPlan 的 UpdateCurrentState 方法
+        _currentPlan.UpdateCurrentState(currentTime);
     }
 
     /// <summary>

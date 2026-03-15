@@ -56,9 +56,44 @@ namespace ReTime_Testing
         }
 
         /// <summary>
+        /// 尝试从云端获取时间
+        /// </summary>
+        /// <param name="timeout">超时时间</param>
+        /// <returns>云端时间（如果成功），否则返回null</returns>
+        private async Task<DateTime?> TryGetCloudTimeAsync(TimeSpan timeout)
+        {
+            try
+            {
+                var calibrationService = new CloudCalibrationService(_timeService);
+                var cts = new CancellationTokenSource(timeout);
+                
+                // 尝试手动触发校准
+                var success = await calibrationService.CalibrateAsync();
+                
+                if (success)
+                {
+                    // 返回当前时间（已校准）
+                    return _timeService.GetCurrentTime();
+                }
+                
+                return null;
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Warn(GetType().FullName ?? "App", "云端时间获取超时");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(GetType().FullName ?? "App", $"云端时间获取失败: {ex.Message}");
+                return null;
+            }
+        }
+
+/// <summary>
         /// 启动应用程序主窗口
         /// </summary>
-        private void StartupApplication()
+        private async void StartupApplication()
         {
             try
             {
@@ -75,7 +110,28 @@ namespace ReTime_Testing
                 _timeService = new AbsoluteTimeService();
                 Logger.Info(GetType().FullName ?? "App", "时间服务已初始化");
 
-                // 2. 初始化执行计划生成器
+                // 2. 尝试从云端获取时间（3秒超时）
+                try
+                {
+                    var cloudCalibrationService = new CloudCalibrationService(_timeService);
+                    var cloudTime = await TryGetCloudTimeAsync(TimeSpan.FromSeconds(3));
+                    
+                    if (cloudTime.HasValue)
+                    {
+                        _timeService.Calibrate(cloudTime.Value);
+                        Logger.Info(GetType().FullName ?? "App", $"时间已从云端同步: {cloudTime.Value:yyyy-MM-dd HH:mm:ss}");
+                    }
+                    else
+                    {
+                        Logger.Warn(GetType().FullName ?? "App", "云端时间获取失败，使用系统时间");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(GetType().FullName ?? "App", $"云端时间获取异常: {ex.Message}，使用系统时间");
+                }
+
+                // 3. 初始化执行计划生成器
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
@@ -88,7 +144,8 @@ namespace ReTime_Testing
 
                 if (selectedSchedule != null)
                 {
-                    var executionPlan = planGenerator.Generate(selectedSchedule, DateTime.Today);
+                    var currentTime = _timeService.GetCurrentTime();
+                    var executionPlan = planGenerator.Generate(selectedSchedule, DateTime.Today, currentTime);
                     Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
 
                     // 4. 初始化调度管理器

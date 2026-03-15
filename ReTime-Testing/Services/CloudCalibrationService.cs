@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Threading;
 
 namespace ReTime_Testing.Services;
@@ -253,25 +254,99 @@ public class CloudCalibrationService
     }
 
     /// <summary>
-    /// 获取云端时间（预留）
+    /// 获取云端时间
+    /// 使用HTTP时间服务API获取标准时间
     /// </summary>
     /// <returns>云端时间</returns>
     private async Task<DateTime?> GetCloudTimeAsync()
     {
         try
         {
-            // TODO: 实现实际的云端时间获取
-            // 这里可以调用 NTP 服务器或其他时间服务
+            // 使用多个时间服务API（按优先级排序）
+            var timeServers = new[]
+            {
+                "https://worldtimeapi.org/api/timezone/Etc/UTC",
+                "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+                "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
+            };
 
-            // 模拟网络延迟
-            await Task.Delay(100);
+            using var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(CalibrationTimeout)
+            };
 
-            // 目前返回当前系统时间（模拟云端时间）
-            return DateTime.Now;
+            // 尝试每个时间服务器
+            foreach (var serverUrl in timeServers)
+            {
+                try
+                {
+                    var response = await httpClient.GetAsync(serverUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        var cloudTime = ParseTimeResponse(json, serverUrl);
+
+                        if (cloudTime.HasValue)
+                        {
+                            Logger.Info("CloudCalibrationService",
+                                $"成功从 {serverUrl} 获取云端时间: {cloudTime.Value:yyyy-MM-dd HH:mm:ss.fff}");
+                            return cloudTime;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn("CloudCalibrationService",
+                        $"从 {serverUrl} 获取时间失败: {ex.Message}");
+                    // 继续尝试下一个服务器
+                }
+            }
+
+            Logger.Error("CloudCalibrationService", "所有时间服务器都失败");
+            return null;
         }
         catch (Exception ex)
         {
             Logger.Error("CloudCalibrationService", $"获取云端时间失败: {ex.Message}", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 解析时间响应
+    /// </summary>
+    /// <param name="json">JSON响应</param>
+    /// <param name="serverUrl">服务器URL</param>
+    /// <returns>云端时间</returns>
+    private DateTime? ParseTimeResponse(string json, string serverUrl)
+    {
+        try
+        {
+            // 使用简单的字符串解析（避免引入额外的JSON库）
+            // worldtimeapi.org 格式: {"datetime":"2026-03-15T10:30:45.123456+00:00",...}
+            if (json.Contains("\"datetime\""))
+            {
+                var start = json.IndexOf("\"datetime\":\"") + 12;
+                var end = json.IndexOf("\"", start);
+                var datetimeStr = json.Substring(start, end - start);
+                return DateTime.Parse(datetimeStr);
+            }
+
+            // timeapi.io 格式: {"dateTime":"2026-03-15T10:30:45"}
+            if (json.Contains("\"dateTime\""))
+            {
+                var start = json.IndexOf("\"dateTime\":\"") + 12;
+                var end = json.IndexOf("\"", start);
+                var datetimeStr = json.Substring(start, end - start);
+                return DateTime.Parse(datetimeStr);
+            }
+
+            Logger.Warn("CloudCalibrationService", $"无法解析时间响应: {json.Substring(0, Math.Min(100, json.Length))}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn("CloudCalibrationService", $"解析时间响应失败: {ex.Message}");
             return null;
         }
     }

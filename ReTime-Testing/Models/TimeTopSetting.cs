@@ -30,6 +30,12 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("timeSettings")]
         public TimeSettingsData TimeSettings { get; set; } = new();
+
+        /// <summary>
+        /// 状态样式配置
+        /// </summary>
+        [JsonPropertyName("stateStyles")]
+        public Dictionary<string, StyleConfigData> StateStyles { get; set; } = new();
     }
 
     /// <summary>
@@ -132,5 +138,47 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("sleepThresholdMinutes")]
         public int SleepThresholdMinutes { get; set; } = 5;
+    }
+
+    /// <summary>
+    /// 样式配置数据
+    /// </summary>
+    public class StyleConfigData
+    {
+        /// <summary>
+        /// 前景色
+        /// </summary>
+        [JsonPropertyName("foregroundColor")]
+        public string? ForegroundColor { get; set; }
+
+        /// <summary>
+        /// 背景色
+        /// </summary>
+        [JsonPropertyName("backgroundColor")]
+        public string? BackgroundColor { get; set; }
+
+        /// <summary>
+        /// 透明度
+        /// </summary>
+        [JsonPropertyName("opacity")]
+        public double? Opacity { get; set; }
+
+        /// <summary>
+        /// 可见性
+        /// </summary>
+        [JsonPropertyName("visibility")]
+        public string? Visibility { get; set; }
+
+        /// <summary>
+        /// 是否启用
+        /// </summary>
+        [JsonPropertyName("isEnabled")]
+        public bool? IsEnabled { get; set; }
+
+        /// <summary>
+        /// 是否不确定动画
+        /// </summary>
+        [JsonPropertyName("isIndeterminate")]
+        public bool? IsIndeterminate { get; set; }
     }
 }
