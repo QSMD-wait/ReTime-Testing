@@ -54,6 +54,12 @@ public class ExecutionPlanGenerator
                 var startTime = date + ParseTime(item.StartTime);
                 var endTime = date + ParseTime(item.EndTime);
 
+                // 处理跨午夜场景：如果结束时间小于开始时间，说明跨午夜，结束时间应该加一天
+                if (endTime < startTime)
+                {
+                    endTime = endTime.AddDays(1);
+                }
+
                 // 开始时间点：空闲/等待 → 工作中
                 timePoints.Add(new TimePoint
                 {
