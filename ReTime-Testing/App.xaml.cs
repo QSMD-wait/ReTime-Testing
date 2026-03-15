@@ -20,10 +20,15 @@ namespace ReTime_Testing
         private MutexManager? _mutexManager;
         private TrayIconService? _trayIconService;
 
-        // 新增：时间服务字段
-        private ITimeService? _timeService;
-        private ScheduleManager? _scheduleManager;
-        private CloudCalibrationService? _cloudCalibrationService;
+        // 新增：时间服务字段（改为 internal 便于调试）
+        internal ITimeService? _timeService;
+        internal ScheduleManager? _scheduleManager;
+        internal CloudCalibrationService? _cloudCalibrationService;
+
+        // 公共属性用于访问服务
+        public ITimeService? TimeService => _timeService;
+        public ScheduleManager? ScheduleManager => _scheduleManager;
+        public CloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
 
         protected override void OnStartup(StartupEventArgs e)
         {

@@ -12,6 +12,7 @@ public class CloudCalibrationService
     private readonly Timer? _calibrationTimer;
     private int _failureCount;
     private int _currentInterval;
+    private DateTime _lastCalibrationTime;
 
     /// <summary>
     /// 是否启用云端校准
@@ -47,6 +48,21 @@ public class CloudCalibrationService
     /// 是否正在运行
     /// </summary>
     public bool IsRunning { get; private set; }
+
+    /// <summary>
+    /// 失败次数
+    /// </summary>
+    public int FailureCount => _failureCount;
+
+    /// <summary>
+    /// 当前校准间隔（秒）
+    /// </summary>
+    public int CurrentInterval => _currentInterval;
+
+    /// <summary>
+    /// 最后一次校准时间
+    /// </summary>
+    public DateTime LastCalibrationTime => _lastCalibrationTime;
 
     /// <summary>
     /// 构造函数
@@ -185,6 +201,7 @@ public class CloudCalibrationService
                         $"校准时间: 本地={localTime:HH:mm:ss}, 云端={cloudTime.Value:HH:mm:ss}, 偏差={offset.TotalSeconds:F2}秒");
 
                     _timeService.Calibrate(cloudTime.Value);
+                    _lastCalibrationTime = DateTime.Now;
 
                     // 重置失败计数器和间隔
                     _failureCount = 0;

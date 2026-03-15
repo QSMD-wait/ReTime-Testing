@@ -4,6 +4,7 @@ using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -51,6 +52,10 @@ namespace ReTime_Testing.ViewModels
 
         private readonly GlobalTimeTopDesktopService _service;
         private readonly MutexManager _mutexManager;
+        private ITimeService? _timeService;
+        private ScheduleManager? _scheduleManager;
+        private CloudCalibrationService? _cloudCalibrationService;
+        private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
         // 导航属性
         [ObservableProperty]
@@ -104,6 +109,49 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _positionText = "顶部";
 
+        // 新增：时间服务调试属性
+        [ObservableProperty]
+        private string _currentTime = "未知";
+
+        [ObservableProperty]
+        private bool _isCloudSynchronized = false;
+
+        // 新增：执行计划调试属性
+        [ObservableProperty]
+        private string _currentSegmentName = "未知";
+
+        [ObservableProperty]
+        private string _currentState = "未知";
+
+        [ObservableProperty]
+        private string _nextTimePoint = "无";
+
+        [ObservableProperty]
+        private bool _isActiveSegment = false;
+
+        // 新增：调度管理器调试属性
+        [ObservableProperty]
+        private bool _isScheduleManagerRunning = false;
+
+        [ObservableProperty]
+        private string _pollingInterval = "1秒";
+
+        [ObservableProperty]
+        private int _timePointCount = 0;
+
+        // 新增：云端校准服务调试属性
+        [ObservableProperty]
+        private bool _isCloudCalibrationRunning = false;
+
+        [ObservableProperty]
+        private int _calibrationFailureCount = 0;
+
+        [ObservableProperty]
+        private string _currentCalibrationInterval = "5分钟";
+
+        [ObservableProperty]
+        private string _lastCalibrationTime = "未校准";
+
         public TimeTopSettingViewModel()
         {
             _service = GlobalTimeTopDesktopService.Instance;
@@ -117,6 +165,125 @@ namespace ReTime_Testing.ViewModels
 
             // 初始化进度条位置
             UpdatePositionStatus();
+
+            // 延迟初始化新服务引用（在窗口加载后）
+            _refreshTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _refreshTimer.Tick += OnRefreshTimerTick;
+            _refreshTimer.Start();
+
+            // 立即执行一次刷新
+            RefreshDebugInfo();
+        }
+
+        /// <summary>
+        /// 初始化新服务
+        /// </summary>
+        private void InitializeNewServices()
+        {
+            // 从 App.xaml.cs 获取服务实例
+            var app = System.Windows.Application.Current as App;
+            if (app != null)
+            {
+                _timeService = app.TimeService;
+                _scheduleManager = app.ScheduleManager;
+                _cloudCalibrationService = app.CloudCalibrationService;
+
+                Logger.Info("TimeTopSettingViewModel", $"新服务引用已初始化: TimeService={_timeService != null}, ScheduleManager={_scheduleManager != null}, CloudCalibrationService={_cloudCalibrationService != null}");
+            }
+            else
+            {
+                Logger.Warn("TimeTopSettingViewModel", "无法获取 App 实例");
+            }
+        }
+
+        /// <summary>
+        /// 刷新定时器回调
+        /// </summary>
+        private void OnRefreshTimerTick(object? sender, EventArgs e)
+        {
+            RefreshDebugInfo();
+        }
+
+        /// <summary>
+        /// 刷新调试信息
+        /// </summary>
+        private void RefreshDebugInfo()
+        {
+            try
+            {
+                // 如果服务尚未初始化，尝试初始化
+                if (_timeService == null || _scheduleManager == null || _cloudCalibrationService == null)
+                {
+                    InitializeNewServices();
+                }
+
+                // 时间服务信息
+                if (_timeService != null)
+                {
+                    CurrentTime = _timeService.GetCurrentTime().ToString("HH:mm:ss");
+                    IsCloudSynchronized = _timeService.IsCloudSynchronized;
+                }
+                else
+                {
+                    CurrentTime = "未初始化";
+                    IsCloudSynchronized = false;
+                }
+
+                // 执行计划信息
+                if (_scheduleManager != null)
+                {
+                    IsScheduleManagerRunning = _scheduleManager.IsRunning;
+                    var plan = _scheduleManager.CurrentPlan;
+                    if (plan != null)
+                    {
+                        TimePointCount = plan.TimePoints.Count;
+                        CurrentSegmentName = plan.CurrentSegment?.Name ?? "未知";
+                        CurrentState = plan.CurrentSegment?.State.ToString() ?? "未知";
+                        NextTimePoint = plan.NextTimePoint?.Name ?? "无";
+                        IsActiveSegment = plan.CurrentSegment?.IsActive ?? false;
+                    }
+                    else
+                    {
+                        CurrentSegmentName = "未加载";
+                        CurrentState = "未加载";
+                        NextTimePoint = "未加载";
+                        IsActiveSegment = false;
+                    }
+                }
+                else
+                {
+                    IsScheduleManagerRunning = false;
+                    CurrentSegmentName = "未初始化";
+                    CurrentState = "未初始化";
+                    NextTimePoint = "未初始化";
+                    IsActiveSegment = false;
+                }
+
+                // 云端校准服务信息
+                if (_cloudCalibrationService != null)
+                {
+                    IsCloudCalibrationRunning = _cloudCalibrationService.IsRunning;
+                    CalibrationFailureCount = _cloudCalibrationService.FailureCount;
+                    CurrentCalibrationInterval = $"{_cloudCalibrationService.CurrentInterval}秒";
+                    LastCalibrationTime = _cloudCalibrationService.LastCalibrationTime > DateTime.MinValue 
+                        ? _cloudCalibrationService.LastCalibrationTime.ToString("HH:mm:ss") 
+                        : "未校准";
+                }
+                else
+                {
+                    IsCloudCalibrationRunning = false;
+                    CalibrationFailureCount = 0;
+                    CurrentCalibrationInterval = "未知";
+                    LastCalibrationTime = "未初始化";
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "刷新调试信息时发生异常", ex);
+            }
         }
 
         /// <summary>
@@ -216,11 +383,23 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void Cleanup()
         {
+            // 停止刷新定时器
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Tick -= OnRefreshTimerTick;
+            }
+
             // 取消订阅 Service 事件
             if (_service != null)
             {
                 _service.OnScheduleStateChanged -= OnScheduleStateChanged;
             }
+
+            // 清理服务引用
+            _timeService = null;
+            _scheduleManager = null;
+            _cloudCalibrationService = null;
         }
 
         /// <summary>
@@ -601,6 +780,294 @@ namespace ReTime_Testing.ViewModels
             {
                 Logger.Error("TimeTopSettingViewModel", "切换进度条位置到右侧时发生异常", ex);
             }
+        }
+
+        // ==================== 时间服务调试命令 ====================
+
+        /// <summary>
+        /// 手动校准时间向前
+        /// </summary>
+        [RelayCommand]
+        private void CalibrateTimeForward()
+        {
+            if (_timeService != null)
+            {
+                var newTime = _timeService.GetCurrentTime().AddSeconds(5);
+                _timeService.Calibrate(newTime);
+                Logger.Info("TimeTopSettingViewModel", $"时间已校准向前 5 秒: {newTime:HH:mm:ss}");
+                RefreshDebugInfo();
+            }
+        }
+
+        /// <summary>
+        /// 手动校准时间向后
+        /// </summary>
+        [RelayCommand]
+        private void CalibrateTimeBackward()
+        {
+            if (_timeService != null)
+            {
+                var newTime = _timeService.GetCurrentTime().AddSeconds(-5);
+                _timeService.Calibrate(newTime);
+                Logger.Info("TimeTopSettingViewModel", $"时间已校准向后 5 秒: {newTime:HH:mm:ss}");
+                RefreshDebugInfo();
+            }
+        }
+
+        // ==================== 执行计划调试命令 ====================
+
+        /// <summary>
+        /// 显示执行计划
+        /// </summary>
+        [RelayCommand]
+        private void ShowExecutionPlan()
+        {
+            Logger.Info("TimeTopSettingViewModel", "=== 执行计划详情 ===");
+            Logger.Info("TimeTopSettingViewModel", $"时间点数量: {TimePointCount}");
+            Logger.Info("TimeTopSettingViewModel", $"当前时间段: {CurrentSegmentName}");
+            Logger.Info("TimeTopSettingViewModel", $"当前状态: {CurrentState}");
+            Logger.Info("TimeTopSettingViewModel", $"下个时间点: {NextTimePoint}");
+            Logger.Info("TimeTopSettingViewModel", "====================");
+        }
+
+        /// <summary>
+        /// 应用当前状态
+        /// </summary>
+        [RelayCommand]
+        private void ApplyCurrentState()
+        {
+            if (_scheduleManager != null)
+            {
+                _scheduleManager.ApplyCurrentState();
+                Logger.Info("TimeTopSettingViewModel", "当前状态已重新应用");
+            }
+        }
+
+        // ==================== 调度管理器调试命令 ====================
+
+        /// <summary>
+        /// 停止调度管理器
+        /// </summary>
+        [RelayCommand]
+        private void StopScheduleManager()
+        {
+            if (_scheduleManager != null)
+            {
+                _scheduleManager.Stop();
+                IsScheduleManagerRunning = false;
+                Logger.Info("TimeTopSettingViewModel", "调度管理器已停止");
+            }
+        }
+
+        /// <summary>
+        /// 重启调度管理器
+        /// </summary>
+        [RelayCommand]
+        private void RestartScheduleManager()
+        {
+            if (_scheduleManager != null)
+            {
+                try
+                {
+                    // 保存当前执行计划
+                    var currentPlan = _scheduleManager.CurrentPlan;
+
+                    // 停止调度管理器
+                    _scheduleManager.Stop();
+
+                    // 重新初始化执行计划
+                    if (currentPlan != null)
+                    {
+                        _scheduleManager.Initialize(currentPlan);
+                        Logger.Info("TimeTopSettingViewModel", "调度管理器已重启，执行计划已重新应用");
+                    }
+                    else
+                    {
+                        Logger.Warn("TimeTopSettingViewModel", "无法重启调度管理器：执行计划为空");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("TimeTopSettingViewModel", "重启调度管理器时发生异常", ex);
+                }
+            }
+        }
+
+        // ==================== 云端校准服务调试命令 ====================
+
+        /// <summary>
+        /// 手动触发校准
+        /// </summary>
+        [RelayCommand]
+        private async Task TriggerManualCalibration()
+        {
+            try
+            {
+                if (_cloudCalibrationService != null)
+                {
+                    var success = await _cloudCalibrationService.CalibrateAsync();
+                    LastCalibrationTime = DateTime.Now.ToString("HH:mm:ss");
+                    Logger.Info("TimeTopSettingViewModel", $"手动校准{(success ? "成功" : "失败")}");
+                    RefreshDebugInfo();
+                }
+                else
+                {
+                    Logger.Warn("TimeTopSettingViewModel", "云端校准服务未初始化");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "手动触发校准时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 重置校准失败计数
+        /// </summary>
+        [RelayCommand]
+        private void ResetCalibrationFailures()
+        {
+            if (_cloudCalibrationService != null)
+            {
+                _cloudCalibrationService.Reset();
+                CalibrationFailureCount = 0;
+                Logger.Info("TimeTopSettingViewModel", "校准失败计数已重置");
+                RefreshDebugInfo();
+            }
+        }
+
+        // ==================== 样式优先级测试命令 ====================
+
+        /// <summary>
+        /// 应用默认样式
+        /// </summary>
+        [RelayCommand]
+        private void ApplyDefaultStyle()
+        {
+            _service.SetForeground(ProgressColors.DefaultBlue);
+            _service.SetOpacity(1.0);
+            _service.SetVisibility(Visibility.Visible);
+            Logger.Info("TimeTopSettingViewModel", "已应用默认样式");
+        }
+
+        /// <summary>
+        /// 应用配置文件样式
+        /// </summary>
+        [RelayCommand]
+        private void ApplyConfigStyle()
+        {
+            _service.SetForeground(new SolidColorBrush(Color.FromRgb(0x2D, 0x7D, 0x9A))); // 自定义蓝色
+            _service.SetOpacity(0.9);
+            Logger.Info("TimeTopSettingViewModel", "已应用配置文件样式");
+        }
+
+        /// <summary>
+        /// 应用时间表样式
+        /// </summary>
+        [RelayCommand]
+        private void ApplyScheduleStyle()
+        {
+            _service.SetForeground(new SolidColorBrush(Color.FromRgb(0xFF, 0x57, 0x33))); // 橙红色
+            _service.SetOpacity(1.0);
+            Logger.Info("TimeTopSettingViewModel", "已应用时间表样式");
+        }
+
+        // ==================== 综合测试命令 ====================
+
+        /// <summary>
+        /// 运行综合测试
+        /// </summary>
+        [RelayCommand]
+        private void RunComprehensiveTest()
+        {
+            Logger.Info("TimeTopSettingViewModel", "=== 开始综合测试 ===");
+
+            // 测试 1: 时间服务
+            if (_timeService != null)
+            {
+                var time = _timeService.GetCurrentTime();
+                Logger.Info("TimeTopSettingViewModel", $"[测试 1] 时间服务: {time:HH:mm:ss}, 云端同步: {_timeService.IsCloudSynchronized}");
+            }
+
+            // 测试 2: 状态切换
+            _service.SetLoading();
+            Logger.Info("TimeTopSettingViewModel", "[测试 2] 状态切换: Loading");
+
+            _service.SetProgress(50);
+            Logger.Info("TimeTopSettingViewModel", "[测试 2] 状态切换: Progress (50%)");
+
+            _service.SetSuccess();
+            Logger.Info("TimeTopSettingViewModel", "[测试 2] 状态切换: Success");
+
+            // 测试 3: 样式应用
+            ApplyDefaultStyle();
+            Logger.Info("TimeTopSettingViewModel", "[测试 3] 默认样式已应用");
+
+            ApplyConfigStyle();
+            Logger.Info("TimeTopSettingViewModel", "[测试 3] 配置文件样式已应用");
+
+            // 测试 4: 时间跳跃
+            if (_timeService != null)
+            {
+                var oldTime = _timeService.GetCurrentTime();
+                _timeService.Calibrate(oldTime.AddSeconds(10));
+                var newTime = _timeService.GetCurrentTime();
+                Logger.Info("TimeTopSettingViewModel", $"[测试 4] 时间跳跃: {oldTime:HH:mm:ss} → {newTime:HH:mm:ss}");
+            }
+
+            Logger.Info("TimeTopSettingViewModel", "=== 综合测试完成 ===");
+        }
+
+        /// <summary>
+        /// 记录所有服务的状态
+        /// </summary>
+        [RelayCommand]
+        private void LogAllServicesStatus()
+        {
+            Logger.Info("TimeTopSettingViewModel", "开始记录所有服务的当前状态...");
+            Logger.Info("TimeTopSettingViewModel", $"主服务: {(_service != null ? "正常" : "未初始化")}");
+            Logger.Info("TimeTopSettingViewModel", $"时间服务: {(_timeService != null ? "正常" : "未初始化")}");
+            Logger.Info("TimeTopSettingViewModel", $"调度管理器: {(_scheduleManager != null ? "正常" : "未初始化")}");
+            Logger.Info("TimeTopSettingViewModel", $"云校准服务: {(_cloudCalibrationService != null ? "正常" : "未初始化")}");
+
+            // 记录详细状态
+            Logger.Info("TimeTopSettingViewModel", $"当前时间: {CurrentTime}, 云同步: {IsCloudSynchronized}");
+            Logger.Info("TimeTopSettingViewModel", $"当前状态: {CurrentState}, 活动段: {IsActiveSegment}, 下个时间点: {NextTimePoint}");
+            Logger.Info("TimeTopSettingViewModel", "服务状态记录完毕。");
+        }
+
+        /// <summary>
+        /// 查看测试报告
+        /// </summary>
+        [RelayCommand]
+        private void ShowTestReport()
+        {
+            Logger.Info("TimeTopSettingViewModel", "=== 测试报告 ===");
+            Logger.Info("TimeTopSettingViewModel", "时间服务状态:");
+            Logger.Info("TimeTopSettingViewModel", $"  - 当前时间: {CurrentTime}");
+            Logger.Info("TimeTopSettingViewModel", $"  - 云端同步: {(IsCloudSynchronized ? "是" : "否")}");
+
+            Logger.Info("TimeTopSettingViewModel", "执行计划状态:");
+            Logger.Info("TimeTopSettingViewModel", $"  - 当前状态: {CurrentState}");
+            Logger.Info("TimeTopSettingViewModel", $"  - 是否活跃段: {IsActiveSegment}");
+            Logger.Info("TimeTopSettingViewModel", $"  - 下个时间点: {NextTimePoint}");
+
+            Logger.Info("TimeTopSettingViewModel", "调度管理器状态:");
+            Logger.Info("TimeTopSettingViewModel", $"  - 状态: {(IsScheduleRunning ? "运行中" : "已停止")}");
+
+            Logger.Info("TimeTopSettingViewModel", "云校准服务状态:");
+            if (_cloudCalibrationService != null)
+            {
+                Logger.Info("TimeTopSettingViewModel", $"  - 上次校准: {_cloudCalibrationService.LastCalibrationTime:yyyy-MM-dd HH:mm:ss}");
+                Logger.Info("TimeTopSettingViewModel", $"  - 失败次数: {_cloudCalibrationService.FailureCount}");
+                Logger.Info("TimeTopSettingViewModel", $"  - 当前间隔: {_cloudCalibrationService.CurrentInterval}秒");
+            }
+            else
+            {
+                Logger.Info("TimeTopSettingViewModel", "  - 未初始化");
+            }
+
+            Logger.Info("TimeTopSettingViewModel", "=== 测试报告结束 ===");
         }
     }
 }

@@ -271,7 +271,7 @@ public class ScheduleManager
     /// <summary>
     /// 应用当前状态
     /// </summary>
-    private void ApplyCurrentState()
+    public void ApplyCurrentState()
     {
         if (_currentPlan?.CurrentSegment == null) return;
 

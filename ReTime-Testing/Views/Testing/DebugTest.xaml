@@ -568,6 +568,541 @@
                            Foreground="Orange"
                            TextWrapping="Wrap"
                            Margin="0,0,0,32"/>
+
+                <!-- 时间服务调试 -->
+                <TextBlock Text="时间服务调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="测试绝对时间服务和云端校准功能"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 时间服务状态信息 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="时间服务状态"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前时间:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentTime}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       Foreground="Blue"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="云端同步:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IsCloudSynchronized}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCloudSynchronized}" Value="True">
+                                                <Setter Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCloudSynchronized}" Value="False">
+                                                <Setter Property="Foreground" Value="Orange"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 时间服务操作按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="手动校准 (+5秒)"
+                            Command="{Binding CalibrateTimeForwardCommand}"
+                            Width="140"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="手动校准时间向前5秒"/>
+
+                    <Button Content="手动校准 (-5秒)"
+                            Command="{Binding CalibrateTimeBackwardCommand}"
+                            Width="140"
+                            Height="32"
+                            ToolTip="手动校准时间向后5秒"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：手动校准用于测试时间跳跃处理功能"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- 执行计划调试 -->
+                <TextBlock Text="执行计划调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="查看当前执行计划和时间段状态"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 执行计划状态信息 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="执行计划状态"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前时间段:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentSegmentName}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前状态:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentState}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="下个时间点:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding NextTimePoint}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="活跃状态:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IsActiveSegment}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActiveSegment}" Value="True">
+                                                <Setter Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsActiveSegment}" Value="False">
+                                                <Setter Property="Foreground" Value="Gray"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 执行计划操作按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="显示执行计划"
+                            Command="{Binding ShowExecutionPlanCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="在日志中显示完整执行计划"/>
+
+                    <Button Content="应用当前状态"
+                            Command="{Binding ApplyCurrentStateCommand}"
+                            Width="120"
+                            Height="32"
+                            ToolTip="重新应用当前状态"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：执行计划详情会在日志窗口中显示"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- 调度管理器调试 -->
+                <TextBlock Text="调度管理器调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="测试调度管理器的轮询和状态切换功能"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 调度管理器状态信息 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="调度管理器状态"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="调度运行中:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IsScheduleManagerRunning}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsScheduleManagerRunning}" Value="True">
+                                                <Setter Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsScheduleManagerRunning}" Value="False">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="轮询间隔:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PollingInterval}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="时间点数量:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TimePointCount}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 调度管理器操作按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="停止调度"
+                            Command="{Binding StopScheduleManagerCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="停止调度管理器"/>
+
+                    <Button Content="重启调度"
+                            Command="{Binding RestartScheduleManagerCommand}"
+                            Width="120"
+                            Height="32"
+                            ToolTip="重新启动调度管理器"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：停止和重启调度会影响所有时间相关的功能"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- 云端校准服务调试 -->
+                <TextBlock Text="云端校准服务调试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="测试云端时间校准功能"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 云端校准服务状态信息 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="云端校准服务状态"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="校准服务运行中:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IsCloudCalibrationRunning}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCloudCalibrationRunning}" Value="True">
+                                                <Setter Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCloudCalibrationRunning}" Value="False">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="失败次数:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CalibrationFailureCount}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="Green"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CalibrationFailureCount}" Value="1">
+                                                <Setter Property="Foreground" Value="Orange"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CalibrationFailureCount}" Value="2">
+                                                <Setter Property="Foreground" Value="Orange"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CalibrationFailureCount}" Value="3">
+                                                <Setter Property="Foreground" Value="Orange"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CalibrationFailureCount}" Value="4">
+                                                <Setter Property="Foreground" Value="Orange"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CalibrationFailureCount}" Value="5">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前间隔:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentCalibrationInterval}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="上次校准时间:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding LastCalibrationTime}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 云端校准服务操作按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="手动触发校准"
+                            Command="{Binding TriggerManualCalibrationCommand}"
+                            Width="140"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="手动触发一次云端校准"/>
+
+                    <Button Content="重置失败计数"
+                            Command="{Binding ResetCalibrationFailuresCommand}"
+                            Width="140"
+                            Height="32"
+                            ToolTip="重置校准失败计数器"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：云端时间获取目前是模拟的，实际需要连接真实的时间服务"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- 样式优先级测试 -->
+                <TextBlock Text="样式优先级测试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="测试样式优先级：时间表 > 配置文件 > 默认值"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <!-- 样式测试按钮 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="默认样式"
+                            Command="{Binding ApplyDefaultStyleCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="应用默认样式"/>
+
+                    <Button Content="配置文件样式"
+                            Command="{Binding ApplyConfigStyleCommand}"
+                            Width="120"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="应用配置文件样式"/>
+
+                    <Button Content="时间表样式"
+                            Command="{Binding ApplyScheduleStyleCommand}"
+                            Width="120"
+                            Height="32"
+                            ToolTip="应用时间表样式"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：样式优先级测试用于验证样式覆盖逻辑"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
+
+                <!-- 综合测试 -->
+                <TextBlock Text="综合测试"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="运行完整的端到端测试"
+                           FontSize="12"
+                           Foreground="Gray"
+                           Margin="0,0,0,8"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Button Content="运行综合测试"
+                            Command="{Binding RunComprehensiveTestCommand}"
+                            Width="150"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            ToolTip="运行完整的端到端测试"/>
+
+                    <Button Content="查看测试报告"
+                            Command="{Binding ShowTestReportCommand}"
+                            Width="150"
+                            Height="32"
+                            ToolTip="显示测试结果报告"/>
+                </StackPanel>
+
+                <TextBlock Text="提示：综合测试会验证所有核心功能，结果会在日志窗口中显示"
+                           FontSize="12"
+                           Foreground="Orange"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,32"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>
