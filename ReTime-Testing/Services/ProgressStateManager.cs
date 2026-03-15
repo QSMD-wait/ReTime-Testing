@@ -31,7 +31,7 @@ namespace ReTime_Testing.Services
                 Value = 0,
                 IsIndeterminate = true,
                 Foreground = ProgressColors.DefaultBlue,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -48,7 +48,7 @@ namespace ReTime_Testing.Services
                 Value = 100,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.SuccessGreen,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -65,7 +65,7 @@ namespace ReTime_Testing.Services
                 Value = 100,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.ErrorRed,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -82,7 +82,7 @@ namespace ReTime_Testing.Services
                 Value = 50,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.PauseOrange,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -99,7 +99,7 @@ namespace ReTime_Testing.Services
                 Value = 0,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.DefaultBlue,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -116,7 +116,7 @@ namespace ReTime_Testing.Services
                 Value = 0,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.DefaultBlue,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Hidden,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -133,7 +133,7 @@ namespace ReTime_Testing.Services
                 Value = 100,
                 IsIndeterminate = false,
                 Foreground = ProgressColors.Gray,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = false,
                 Opacity = 0.5,
@@ -289,7 +289,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Loading => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -298,7 +298,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Progress => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -307,7 +307,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Success => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.SuccessGreen,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -316,7 +316,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Error => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.ErrorRed,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -325,7 +325,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Paused => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.PauseOrange,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -334,7 +334,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Hidden => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Hidden,
                     IsEnabled = true,
                     Opacity = 1.0,
@@ -343,7 +343,7 @@ namespace ReTime_Testing.Services
                 ProgressStateType.Disabled => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.Gray,
-                    BackgroundColor = Brushes.Transparent,
+                    BackgroundColor = ProgressColors.DefaultBackground,
                     Visibility = Visibility.Visible,
                     IsEnabled = false,
                     Opacity = 0.5,

@@ -32,9 +32,14 @@ public class ExecutionPlan
     public TimeSegment? CurrentSegment { get; set; }
 
     /// <summary>
-    /// 下一个时间点
+    /// 下一个待执行的时间点
     /// </summary>
     public TimePoint? NextTimePoint { get; set; }
+
+    /// <summary>
+    /// 最后一个已执行的时间点
+    /// </summary>
+    public TimePoint? LastExecutedTimePoint { get; set; }
 
     /// <summary>
     /// 构造函数
@@ -61,8 +66,11 @@ public class ExecutionPlan
         // 更新当前时间段
         CurrentSegment = TimeSegments.FirstOrDefault(seg => seg.Contains(currentTime));
 
-        // 更新下一个时间点：指向最后一个已执行的时间点（小于等于当前时间的最近时间点）
-        NextTimePoint = TimePoints.LastOrDefault(tp => tp.Time <= currentTime);
+        // 更新下一个待执行的时间点（大于当前时间的最近时间点）
+        NextTimePoint = TimePoints.FirstOrDefault(tp => tp.Time > currentTime);
+
+        // 更新最后一个已执行的时间点（小于等于当前时间的最近时间点）
+        LastExecutedTimePoint = TimePoints.LastOrDefault(tp => tp.Time <= currentTime);
     }
 
     /// <summary>
@@ -87,7 +95,8 @@ public class ExecutionPlan
         var plan = new ExecutionPlan(ScheduleId, Date)
         {
             CurrentSegment = CurrentSegment?.Clone(),
-            NextTimePoint = NextTimePoint?.Clone()
+            NextTimePoint = NextTimePoint?.Clone(),
+            LastExecutedTimePoint = LastExecutedTimePoint?.Clone()
         };
 
         plan.TimePoints.AddRange(TimePoints.Select(tp => tp.Clone()));

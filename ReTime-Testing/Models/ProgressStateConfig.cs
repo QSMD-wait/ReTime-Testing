@@ -167,7 +167,7 @@ namespace ReTime_Testing.Models
                 Value = 0,
                 IsIndeterminate = true,
                 Foreground = ProgressColors.DefaultBlue,
-                Background = Brushes.Transparent,
+                Background = ProgressColors.DefaultBackground,
                 Visibility = Visibility.Visible,
                 IsEnabled = true,
                 Opacity = 1.0,
@@ -247,6 +247,7 @@ namespace ReTime_Testing.Models
         private static readonly Brush _pauseOrange = new SolidColorBrush(Color.FromRgb(0x9d, 0x5d, 0x00));
         private static readonly Brush _successGreen = new SolidColorBrush(Color.FromRgb(0x00, 0x99, 0x00));
         private static readonly Brush _gray = new SolidColorBrush(Color.FromRgb(0x80, 0x80, 0x80));
+        private static readonly Brush _defaultBackground = new SolidColorBrush(Color.FromRgb(0x86, 0x86, 0x86));
 
         static ProgressColors()
         {
@@ -256,6 +257,7 @@ namespace ReTime_Testing.Models
             _pauseOrange.Freeze();
             _successGreen.Freeze();
             _gray.Freeze();
+            _defaultBackground.Freeze();
         }
 
         public static Brush DefaultBlue => _defaultBlue;
@@ -263,5 +265,6 @@ namespace ReTime_Testing.Models
         public static Brush PauseOrange => _pauseOrange;
         public static Brush SuccessGreen => _successGreen;
         public static Brush Gray => _gray;
+        public static Brush DefaultBackground => _defaultBackground;
     }
 }

@@ -130,11 +130,11 @@ public class ScheduleManager
             .FirstOrDefault(tp => tp.Time <= currentTime &&
                                  tp.Time.AddSeconds(5) > currentTime);
 
-        if (timePoint != null && _currentPlan.NextTimePoint != timePoint)
+        if (timePoint != null && _currentPlan.LastExecutedTimePoint != timePoint)
         {
             // 执行状态切换
             ExecuteTransition(timePoint);
-            _currentPlan.NextTimePoint = timePoint;
+            _currentPlan.LastExecutedTimePoint = timePoint;
         }
     }
 
@@ -232,12 +232,12 @@ public class ScheduleManager
                 if (missedPoints.Any())
                 {
                     Logger.Info("ScheduleManager", $"执行 {missedPoints.Count} 个错过的状态切换");
-    
+
                     // 按顺序执行
                     foreach (var point in missedPoints)
                     {
                         ExecuteTransition(point);
-                        _currentPlan.NextTimePoint = point;
+                        _currentPlan.LastExecutedTimePoint = point;
                     }
                 }
     
