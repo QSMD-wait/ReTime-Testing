@@ -125,10 +125,10 @@ public class ScheduleManager
     {
         if (_currentPlan == null) return;
 
-        // 查找当前时间点（1秒窗口内）
+        // 查找当前时间点（5秒窗口内，提高可靠性）
         var timePoint = _currentPlan.TimePoints
             .FirstOrDefault(tp => tp.Time <= currentTime &&
-                                 tp.Time.AddSeconds(1) > currentTime);
+                                 tp.Time.AddSeconds(5) > currentTime);
 
         if (timePoint != null && _currentPlan.NextTimePoint != timePoint)
         {
@@ -220,9 +220,10 @@ public class ScheduleManager
     {
         if (_currentPlan == null) return;
 
-        // 找出 [oldTime, newTime] 范围内的时间点
+        // 找出 (oldTime, newTime] 范围内的时间点
+        // 使用 >= 确保 oldTime 等于某个时间点时也能执行该状态切换
         var missedPoints = _currentPlan.TimePoints
-            .Where(tp => tp.Time > oldTime && tp.Time <= newTime)
+            .Where(tp => tp.Time >= oldTime && tp.Time <= newTime)
             .OrderBy(tp => tp.Time)
             .ToList();
 

@@ -64,18 +64,22 @@ namespace ReTime_Testing
         {
             try
             {
-                var calibrationService = new CloudCalibrationService(_timeService);
-                var cts = new CancellationTokenSource(timeout);
-                
+                // 使用已配置的 _cloudCalibrationService 实例
+                if (_cloudCalibrationService == null)
+                {
+                    Logger.Warn(GetType().FullName ?? "App", "云端校准服务未初始化");
+                    return null;
+                }
+
                 // 尝试手动触发校准
-                var success = await calibrationService.CalibrateAsync();
-                
+                var success = await _cloudCalibrationService.CalibrateAsync();
+
                 if (success)
                 {
                     // 返回当前时间（已校准）
                     return _timeService.GetCurrentTime();
                 }
-                
+
                 return null;
             }
             catch (OperationCanceledException)
@@ -110,12 +114,24 @@ namespace ReTime_Testing
                 _timeService = new AbsoluteTimeService();
                 Logger.Info(GetType().FullName ?? "App", "时间服务已初始化");
 
-                // 2. 尝试从云端获取时间（3秒超时）
+                // 2. 初始化云端校准服务（统一使用一个实例）
+                var timeTopSetting = configManager.LoadTimeTopSetting();
+                _cloudCalibrationService = new CloudCalibrationService(_timeService);
+                _cloudCalibrationService.Configure(
+                    enabled: timeTopSetting.TimeSettings.Calibration.Enabled,
+                    interval: timeTopSetting.TimeSettings.Calibration.IntervalSeconds,
+                    timeout: timeTopSetting.TimeSettings.Calibration.TimeoutSeconds,
+                    maxRetryCount: timeTopSetting.TimeSettings.Calibration.MaxRetryCount,
+                    backoffMultiplier: timeTopSetting.TimeSettings.Calibration.BackoffMultiplier,
+                    triggerThreshold: timeTopSetting.TimeSettings.Threshold.CalibrationTriggerSeconds
+                );
+                Logger.Info(GetType().FullName ?? "App", "云端校准服务已配置");
+
+                // 3. 尝试从云端获取时间（3秒超时）
                 try
                 {
-                    var cloudCalibrationService = new CloudCalibrationService(_timeService);
                     var cloudTime = await TryGetCloudTimeAsync(TimeSpan.FromSeconds(3));
-                    
+
                     if (cloudTime.HasValue)
                     {
                         _timeService.Calibrate(cloudTime.Value);
@@ -131,11 +147,11 @@ namespace ReTime_Testing
                     Logger.Warn(GetType().FullName ?? "App", $"云端时间获取异常: {ex.Message}，使用系统时间");
                 }
 
-                // 3. 初始化执行计划生成器
+                // 4. 初始化执行计划生成器
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
-                // 3. 生成执行计划
+                // 5. 生成执行计划
                 var selectedSchedule = scheduleManager.LoadSchedule(configManager.LoadTimeTopSetting().SelectedScheduleId);
                 if (selectedSchedule == null)
                 {
@@ -148,28 +164,19 @@ namespace ReTime_Testing
                     var executionPlan = planGenerator.Generate(selectedSchedule, DateTime.Today, currentTime);
                     Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
 
-                    // 4. 初始化调度管理器
+                    // 6. 初始化调度管理器
                     _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
                     _scheduleManager.Initialize(executionPlan);
                     Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
 
-                    // 5. 初始化云端校准服务（使用配置文件中的设置）
-                    var timeTopSetting = configManager.LoadTimeTopSetting();
-                    _cloudCalibrationService = new CloudCalibrationService(_timeService);
-                    _cloudCalibrationService.Configure(
-                        enabled: timeTopSetting.TimeSettings.Calibration.Enabled,
-                        interval: timeTopSetting.TimeSettings.Calibration.IntervalSeconds,
-                        timeout: timeTopSetting.TimeSettings.Calibration.TimeoutSeconds,
-                        maxRetryCount: timeTopSetting.TimeSettings.Calibration.MaxRetryCount,
-                        backoffMultiplier: timeTopSetting.TimeSettings.Calibration.BackoffMultiplier,
-                        triggerThreshold: timeTopSetting.TimeSettings.Threshold.CalibrationTriggerSeconds
-                    );
+                    // 7. 启动云端校准服务（长期运行）
                     _cloudCalibrationService.Start();
                     Logger.Info(GetType().FullName ?? "App", "云端校准服务已启动");
                 }
 
-                // 应用时间计划配置（Service 层处理所有业务逻辑）
-                GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule();
+                // 注意：不再调用 GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule()
+                // 因为现在使用新的 ScheduleManager 进行调度，避免双重调度冲突
+                // GlobalTimeTopDesktopService 保留状态管理功能（SetLoading, SetProgress 等）
 
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
