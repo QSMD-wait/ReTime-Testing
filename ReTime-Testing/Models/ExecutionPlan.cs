@@ -61,8 +61,8 @@ public class ExecutionPlan
         // 更新当前时间段
         CurrentSegment = TimeSegments.FirstOrDefault(seg => seg.Contains(currentTime));
 
-        // 更新下一个时间点
-        NextTimePoint = TimePoints.FirstOrDefault(tp => tp.Time > currentTime);
+        // 更新下一个时间点：指向最后一个已执行的时间点（小于等于当前时间的最近时间点）
+        NextTimePoint = TimePoints.LastOrDefault(tp => tp.Time <= currentTime);
     }
 
     /// <summary>

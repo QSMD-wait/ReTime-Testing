@@ -302,14 +302,6 @@ public class CloudCalibrationServiceTests
         _mockTimeService.Setup(x => x.GetCurrentTime()).Returns(testTime);
         _mockTimeService.Setup(x => x.IsCloudSynchronized).Returns(true);
 
-        var eventRaised = false;
-        TimeJumpedEventArgs? capturedArgs = null;
-        _mockTimeService.Object.TimeJumped += (sender, args) =>
-        {
-            eventRaised = true;
-            capturedArgs = args;
-        };
-
         // Act
         await _service.CalibrateAsync();
 

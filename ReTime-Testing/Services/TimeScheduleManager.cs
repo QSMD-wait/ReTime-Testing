@@ -45,11 +45,6 @@ namespace ReTime_Testing.Services
         public event Action<TimeSchedule>? OnScheduleChanged;
 
         /// <summary>
-        /// 时间计划添加事件
-        /// </summary>
-        public event Action<TimeSchedule>? OnScheduleAdded;
-
-        /// <summary>
         /// 时间计划删除事件
         /// </summary>
         public event Action<string>? OnScheduleDeleted;

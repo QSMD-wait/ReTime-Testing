@@ -143,16 +143,20 @@
                 
                 <!-- 时间控制按钮 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                    <Button Content="开始"
+                    <Button Content="开始（已废弃）"
                                Command="{Binding StartScheduleCommand}"
                                Width="120"
                                Height="32"
-                               Margin="0,0,8,0"/>
+                               Margin="0,0,8,0"
+                               IsEnabled="False"
+                               ToolTip="此功能已废弃，请使用 ScheduleManager"/>
 
-                    <Button Content="停止"
+                    <Button Content="停止（已废弃）"
                                Command="{Binding StopScheduleCommand}"
                                Width="120"
-                               Height="32"/>
+                               Height="32"
+                               IsEnabled="False"
+                               ToolTip="此功能已废弃，请使用 ScheduleManager"/>
                 </StackPanel>
 
                 <!-- 当前进度 -->

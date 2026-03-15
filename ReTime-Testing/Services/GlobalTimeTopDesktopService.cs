@@ -242,6 +242,7 @@ namespace ReTime_Testing.Services
         
         /// <summary>
         /// 设置调度时间
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
         /// <param name="startHour">开始小时</param>
         /// <param name="startMinute">开始分钟</param>
@@ -249,6 +250,7 @@ namespace ReTime_Testing.Services
         /// <param name="endHour">结束小时</param>
         /// <param name="endMinute">结束分钟</param>
         /// <param name="endSecond">结束秒数</param>
+        [Obsolete("使用 ScheduleManager 替代")]
         public void SetScheduleTime(int startHour, int startMinute, int startSecond, int endHour, int endMinute, int endSecond)
         {
             _startHour = startHour;
@@ -263,6 +265,7 @@ namespace ReTime_Testing.Services
         
         /// <summary>
         /// 启动调度（支持秒数）
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
         /// <param name="startHour">开始小时</param>
         /// <param name="startMinute">开始分钟</param>
@@ -271,6 +274,7 @@ namespace ReTime_Testing.Services
         /// <param name="endMinute">结束分钟</param>
         /// <param name="endSecond">结束秒数</param>
         /// <returns>是否成功启动</returns>
+        [Obsolete("使用 ScheduleManager 替代")]
         public bool StartSchedule(int startHour, int startMinute, int startSecond, int endHour, int endMinute, int endSecond)
         {
             // 检查调度是否已运行
@@ -311,7 +315,9 @@ namespace ReTime_Testing.Services
         
         /// <summary>
         /// 停止调度
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
+        [Obsolete("使用 ScheduleManager 替代")]
         public void StopSchedule()
         {
             if (_timer != null)
@@ -330,7 +336,9 @@ namespace ReTime_Testing.Services
         
         /// <summary>
         /// 调度定时器回调
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
+        [Obsolete("使用 ScheduleManager 替代")]
         private void OnScheduleTick(object? sender, EventArgs e)
         {
             var now = DateTime.Now.TimeOfDay;
@@ -382,9 +390,11 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 从时间计划配置应用调度
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
         /// <param name="schedule">时间计划配置</param>
         /// <returns>是否成功应用</returns>
+        [Obsolete("使用 ScheduleManager 替代")]
         public bool ApplyScheduleFromConfig(TimeSchedule schedule)
         {
             if (schedule == null || schedule.Schedules == null || schedule.Schedules.Count == 0)
@@ -452,9 +462,11 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 从时间字符串解析秒数
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
         /// <param name="timeString">时间字符串 (HH:mm:ss 格式)</param>
         /// <returns>秒数</returns>
+        [Obsolete("使用 ScheduleManager 替代")]
         private double ParseTimeFromScheduleItem(string timeString)
         {
             if (string.IsNullOrEmpty(timeString))
@@ -490,8 +502,10 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 初始化并应用时间计划配置（完整流程）
+        /// 已废弃：使用 ScheduleManager 替代
         /// </summary>
         /// <returns>是否成功应用</returns>
+        [Obsolete("使用 ScheduleManager 替代")]
         public bool InitializeAndApplySchedule()
         {
             try

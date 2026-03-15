@@ -278,7 +278,7 @@ public class AbsoluteTimeServiceTests
     }
 
     [Fact]
-    public void Calibrate_并发调用应该线程安全()
+    public async Task Calibrate_并发调用应该线程安全()
     {
         // Arrange
         var service = new AbsoluteTimeService();
@@ -311,7 +311,7 @@ public class AbsoluteTimeServiceTests
             }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty();
@@ -320,7 +320,7 @@ public class AbsoluteTimeServiceTests
     }
 
     [Fact]
-    public void GetCurrentTime_并发调用应该线程安全()
+    public async Task GetCurrentTime_并发调用应该线程安全()
     {
         // Arrange
         var service = new AbsoluteTimeService();
@@ -344,7 +344,7 @@ public class AbsoluteTimeServiceTests
             }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty();

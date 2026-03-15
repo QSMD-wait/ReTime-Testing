@@ -249,7 +249,7 @@ public class ExecutionPlanGenerator
     /// </summary>
     /// <param name="colorString">颜色字符串（如 #007ACC）</param>
     /// <returns>Brush</returns>
-    private Brush ParseColor(string colorString)
+    private Brush? ParseColor(string colorString)
     {
         try
         {

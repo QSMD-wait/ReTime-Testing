@@ -354,6 +354,10 @@ namespace ReTime_Testing.ViewModels
             _service.SetProgress(ProgressValue);
         }
 
+        /// <summary>
+        /// 开始调度（调试功能，已废弃）
+        /// </summary>
+        [Obsolete("请使用 ScheduleManager 替代", false)]
         [RelayCommand]
         private void StartSchedule()
         {
@@ -370,6 +374,10 @@ namespace ReTime_Testing.ViewModels
             }
         }
 
+        /// <summary>
+        /// 停止调度（调试功能，已废弃）
+        /// </summary>
+        [Obsolete("请使用 ScheduleManager 替代", false)]
         [RelayCommand]
         private void StopSchedule()
         {

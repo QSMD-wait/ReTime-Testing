@@ -139,27 +139,29 @@ public class ScheduleManager
     }
 
     /// <summary>
-    /// 执行状态切换
-    /// </summary>
-    /// <param name="timePoint">时间点</param>
-    private void ExecuteTransition(TimePoint timePoint)
-    {
-        Logger.Info("ScheduleManager", $"状态切换: {timePoint.FromState} → {timePoint.ToState} ({timePoint.Name})");
-
-        // 设置状态
-        _stateManager.SetState(timePoint.ToState, timePoint.StyleOverrides);
-
-        // 设置初始进度
-        if (timePoint.ToState == ProgressStateType.Progress)
-        {
-            _stateManager.UpdateProgress(0);
-        }
-        else if (timePoint.ToState == ProgressStateType.Success)
-        {
-            _stateManager.UpdateProgress(100);
-        }
-    }
-
+            /// 执行状态切换
+            /// </summary>
+            /// <param name="timePoint">时间点</param>
+            private void ExecuteTransition(TimePoint timePoint)
+            {
+                Logger.Info("ScheduleManager", $"状态切换: {timePoint.FromState} → {timePoint.ToState} ({timePoint.Name})");
+    
+                // 设置状态
+                _stateManager.SetState(timePoint.ToState, timePoint.StyleOverrides);
+    
+                // 设置初始进度
+                if (timePoint.ToState == ProgressStateType.Progress)
+                {
+                    _stateManager.UpdateProgress(0);
+                }
+                else if (timePoint.ToState == ProgressStateType.Success)
+                {
+                    _stateManager.UpdateProgress(100);
+                }
+    
+                // 更新当前时间段
+                UpdateCurrentSegment(_currentTime);
+            }
     /// <summary>
     /// 更新进度条
     /// </summary>
@@ -212,36 +214,36 @@ public class ScheduleManager
     }
 
     /// <summary>
-    /// 执行错过的状态切换
-    /// </summary>
-    /// <param name="oldTime">旧时间</param>
-    /// <param name="newTime">新时间</param>
-    private void ExecuteMissedTransitions(DateTime oldTime, DateTime newTime)
-    {
-        if (_currentPlan == null) return;
-
-        // 找出 (oldTime, newTime] 范围内的时间点
-        // 使用 >= 确保 oldTime 等于某个时间点时也能执行该状态切换
-        var missedPoints = _currentPlan.TimePoints
-            .Where(tp => tp.Time >= oldTime && tp.Time <= newTime)
-            .OrderBy(tp => tp.Time)
-            .ToList();
-
-        if (missedPoints.Any())
-        {
-            Logger.Info("ScheduleManager", $"执行 {missedPoints.Count} 个错过的状态切换");
-
-            // 按顺序执行
-            foreach (var point in missedPoints)
+            /// 执行错过的状态切换
+            /// </summary>
+            /// <param name="oldTime">旧时间</param>
+            /// <param name="newTime">新时间</param>
+            private void ExecuteMissedTransitions(DateTime oldTime, DateTime newTime)
             {
-                ExecuteTransition(point);
+                if (_currentPlan == null) return;
+    
+                // 找出 (oldTime, newTime] 范围内的时间点
+                // 使用 >= 确保 oldTime 等于某个时间点时也能执行该状态切换
+                var missedPoints = _currentPlan.TimePoints
+                    .Where(tp => tp.Time >= oldTime && tp.Time <= newTime)
+                    .OrderBy(tp => tp.Time)
+                    .ToList();
+    
+                if (missedPoints.Any())
+                {
+                    Logger.Info("ScheduleManager", $"执行 {missedPoints.Count} 个错过的状态切换");
+    
+                    // 按顺序执行
+                    foreach (var point in missedPoints)
+                    {
+                        ExecuteTransition(point);
+                        _currentPlan.NextTimePoint = point;
+                    }
+                }
+    
+                // 更新当前时间段
+                UpdateCurrentSegment(newTime);
             }
-        }
-
-        // 更新当前时间段
-        UpdateCurrentSegment(newTime);
-    }
-
     /// <summary>
     /// 重新计算当前状态
     /// </summary>

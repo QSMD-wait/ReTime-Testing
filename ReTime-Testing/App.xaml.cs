@@ -77,7 +77,7 @@ namespace ReTime_Testing
                 if (success)
                 {
                     // 返回当前时间（已校准）
-                    return _timeService.GetCurrentTime();
+                    return _timeService?.GetCurrentTime();
                 }
 
                 return null;
