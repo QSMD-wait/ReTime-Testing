@@ -212,6 +212,8 @@ namespace ReTime_Testing.Services
         /// <param name="overrides">样式覆盖（可选）</param>
         public void SetState(ProgressStateType stateType, StyleOverrides? overrides = null)
         {
+            Logger.Info("ProgressStateManager", $"设置状态: {_currentConfig.StateType} → {stateType}");
+
             // 1. 获取基础样式（按优先级：配置文件 > 默认值）
             var baseStyle = GetBaseStyle(stateType);
 
@@ -231,7 +233,12 @@ namespace ReTime_Testing.Services
 
             _currentConfig.SetInitialized();
 
+            // 标记需要通知（确保 EndBatchUpdate 触发回调）
+            _pendingNotify = true;
+
             EndBatchUpdate();
+
+            Logger.Info("ProgressStateManager", $"状态设置完成: {_currentConfig.StateType}");
         }
 
         /// <summary>

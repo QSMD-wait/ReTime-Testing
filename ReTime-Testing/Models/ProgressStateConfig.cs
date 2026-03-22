@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Media;
 
@@ -6,6 +7,7 @@ namespace ReTime_Testing.Models
     /// <summary>
     /// 进度条状态类型枚举
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum ProgressStateType
     {
         /// <summary>

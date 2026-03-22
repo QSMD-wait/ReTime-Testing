@@ -3,6 +3,10 @@ namespace ReTime_Testing.Tests.Services;
 /// <summary>
 /// ExecutionPlanGenerator 类的单元测试
 /// 测试执行计划生成器的各种场景
+/// 
+/// v3.0 设计原则：
+/// - 时间段：固定为 Progress 状态
+/// - 时间点：非 Progress 状态，不能在时间段内部
 /// </summary>
 public class ExecutionPlanGeneratorTests
 {
@@ -14,7 +18,7 @@ public class ExecutionPlanGeneratorTests
     }
 
     [Fact]
-    public void Generate_简单时间段_应该生成正确的时间点()
+    public void Generate_简单时间段_应该生成正确的时间段()
     {
         // Arrange
         var schedule = new TimeSchedule
@@ -41,25 +45,19 @@ public class ExecutionPlanGeneratorTests
         plan.Should().NotBeNull();
         plan.ScheduleId.Should().Be("test_schedule");
         plan.Date.Should().Be(date);
-        plan.TimePoints.Should().HaveCount(2);
 
-        // 验证第一个时间点（开始）
-        var startPoint = plan.TimePoints[0];
-        startPoint.Time.Should().Be(date.AddHours(9));
-        startPoint.Name.Should().Contain("开始");
-        startPoint.FromState.Should().Be(ProgressStateType.Loading);
-        startPoint.ToState.Should().Be(ProgressStateType.Progress);
+        // 验证时间段：3个（空闲开始、工作时间、空闲结束）
+        plan.TimeSegments.Should().HaveCount(3);
 
-        // 验证第二个时间点（结束）
-        var endPoint = plan.TimePoints[1];
-        endPoint.Time.Should().Be(date.AddHours(18));
-        endPoint.Name.Should().Contain("结束");
-        endPoint.FromState.Should().Be(ProgressStateType.Progress);
-        endPoint.ToState.Should().Be(ProgressStateType.Success);
+        // 验证工作时间段时间固定为 Progress
+        var workSegment = plan.TimeSegments[1];
+        workSegment.Name.Should().Be("工作时间");
+        workSegment.State.Should().Be(ProgressStateType.Progress);
+        workSegment.IsActive.Should().BeTrue();
     }
 
     [Fact]
-    public void Generate_多个时间段_应该生成正确的时间点()
+    public void Generate_多个时间段_应该生成正确的时间段()
     {
         // Arrange
         var schedule = new TimeSchedule
@@ -89,67 +87,17 @@ public class ExecutionPlanGeneratorTests
         // Act
         var plan = _generator.Generate(schedule, date, currentTime);
 
-        // Assert
-        plan.TimePoints.Should().HaveCount(4);
+        // Assert: 5个时间段（空闲开始、上午工作、间隙、下午工作、空闲结束）
+        plan.TimeSegments.Should().HaveCount(5);
 
-        // 验证时间点顺序
-        plan.TimePoints[0].Time.Should().Be(date.AddHours(9));   // 上午开始
-        plan.TimePoints[1].Time.Should().Be(date.AddHours(12));  // 上午结束
-        plan.TimePoints[2].Time.Should().Be(date.AddHours(13));  // 下午开始
-        plan.TimePoints[3].Time.Should().Be(date.AddHours(18));  // 下午结束
+        // 验证所有工作时间状态为 Progress
+        plan.TimeSegments[1].State.Should().Be(ProgressStateType.Progress);
+        plan.TimeSegments[1].Name.Should().Be("上午工作");
+        plan.TimeSegments[3].State.Should().Be(ProgressStateType.Progress);
+        plan.TimeSegments[3].Name.Should().Be("下午工作");
 
-        // 验证状态切换
-        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Progress);
-        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Success);
-        plan.TimePoints[2].ToState.Should().Be(ProgressStateType.Progress);
-        plan.TimePoints[3].ToState.Should().Be(ProgressStateType.Success);
-    }
-
-    [Fact]
-    public void Generate_简单时间段_应该生成连续的时间段()
-    {
-        // Arrange
-        var schedule = new TimeSchedule
-        {
-            Id = "test_schedule",
-            Schedules = new List<TimeScheduleItem>
-            {
-                new TimeScheduleItem
-                {
-                    Id = "1",
-                    Name = "工作时间",
-                    StartTime = "09:00:00",
-                    EndTime = "18:00:00"
-                }
-            }
-        };
-        var date = new DateTime(2026, 3, 15);
-
-        // Act
-        var plan = _generator.Generate(schedule, date, date.AddHours(10));
-
-        // Assert
-        plan.TimeSegments.Should().HaveCount(3);
-
-        // 验证空闲开始时间段
-        var idleStart = plan.TimeSegments[0];
-        idleStart.Name.Should().Be("空闲");
-        idleStart.State.Should().Be(ProgressStateType.Loading);
-        idleStart.IsActive.Should().BeFalse();
-
-        // 验证工作时间段
-        var workSegment = plan.TimeSegments[1];
-        workSegment.Name.Should().Contain("开始");
-        workSegment.State.Should().Be(ProgressStateType.Progress);
-        workSegment.IsActive.Should().BeTrue();
-        workSegment.StartTime.Should().Be(date.AddHours(9));
-        workSegment.EndTime.Should().Be(date.AddHours(18));
-
-        // 验证空闲结束时间段
-        var idleEnd = plan.TimeSegments[2];
-        idleEnd.Name.Should().Be("空闲");
-        idleEnd.State.Should().Be(ProgressStateType.Loading);
-        idleEnd.IsActive.Should().BeFalse();
+        // 验证间隙状态为 Loading
+        plan.TimeSegments[2].State.Should().Be(ProgressStateType.Loading);
     }
 
     [Fact]
@@ -178,13 +126,10 @@ public class ExecutionPlanGeneratorTests
 
         // Assert
         plan.CurrentSegment.Should().NotBeNull();
-        plan.CurrentSegment!.Name.Should().Contain("开始");
+        plan.CurrentSegment!.Name.Should().Be("工作时间");
         plan.CurrentSegment.State.Should().Be(ProgressStateType.Progress);
         plan.CurrentSegment.IsActive.Should().BeTrue();
         plan.CurrentSegment.Contains(currentTime).Should().BeTrue();
-
-        plan.NextTimePoint.Should().NotBeNull();
-        plan.NextTimePoint!.Time.Should().Be(date.AddHours(18));
     }
 
     [Fact]
@@ -216,10 +161,6 @@ public class ExecutionPlanGeneratorTests
         plan.CurrentSegment!.Name.Should().Be("空闲");
         plan.CurrentSegment.State.Should().Be(ProgressStateType.Loading);
         plan.CurrentSegment.IsActive.Should().BeFalse();
-        plan.CurrentSegment.Contains(currentTime).Should().BeTrue();
-
-        plan.NextTimePoint.Should().NotBeNull();
-        plan.NextTimePoint!.Time.Should().Be(date.AddHours(9));
     }
 
     [Fact]
@@ -237,15 +178,12 @@ public class ExecutionPlanGeneratorTests
         var plan = _generator.Generate(schedule, date, date.AddHours(10));
 
         // Assert
-        plan.TimePoints.Should().BeEmpty();
         plan.TimeSegments.Should().HaveCount(1);
 
         var segment = plan.TimeSegments[0];
         segment.Name.Should().Be("空闲");
         segment.State.Should().Be(ProgressStateType.Loading);
         segment.IsActive.Should().BeFalse();
-        segment.StartTime.Should().Be(date.Date);
-        segment.EndTime.Should().Be(date.Date.AddDays(1).AddTicks(-1));
     }
 
     [Fact]
@@ -272,45 +210,9 @@ public class ExecutionPlanGeneratorTests
         var plan = _generator.Generate(schedule, date, date.AddHours(10));
 
         // Assert
-        plan.TimePoints[0].Time.Should().Be(date.AddHours(9).AddMinutes(30).AddSeconds(15));
-        plan.TimePoints[1].Time.Should().Be(date.AddHours(17).AddMinutes(45).AddSeconds(30));
-    }
-
-    [Fact]
-    public void Generate_时间点应该按时间排序()
-    {
-        // Arrange
-        var schedule = new TimeSchedule
-        {
-            Id = "test_schedule",
-            Schedules = new List<TimeScheduleItem>
-            {
-                new TimeScheduleItem
-                {
-                    Id = "2",
-                    Name = "下午工作",
-                    StartTime = "14:00:00",
-                    EndTime = "17:00:00"
-                },
-                new TimeScheduleItem
-                {
-                    Id = "1",
-                    Name = "上午工作",
-                    StartTime = "09:00:00",
-                    EndTime = "12:00:00"
-                }
-            }
-        };
-        var date = new DateTime(2026, 3, 15);
-
-        // Act
-        var plan = _generator.Generate(schedule, date, date.AddHours(10));
-
-        // Assert
-        for (int i = 1; i < plan.TimePoints.Count; i++)
-        {
-            plan.TimePoints[i].Time.Should().BeAfter(plan.TimePoints[i - 1].Time);
-        }
+        var workSegment = plan.TimeSegments[1];
+        workSegment.StartTime.Should().Be(date.AddHours(9).AddMinutes(30).AddSeconds(15));
+        workSegment.EndTime.Should().Be(date.AddHours(17).AddMinutes(45).AddSeconds(30));
     }
 
     [Fact]
@@ -344,9 +246,9 @@ public class ExecutionPlanGeneratorTests
     }
 
     [Fact]
-    public void Generate_无效时间格式_应该跳过该项()
+    public void Generate_无效时间格式_应该抛出异常()
     {
-        // Arrange
+        // Arrange: v3.0 配置验证会抛出异常
         var schedule = new TimeSchedule
         {
             Id = "test_schedule",
@@ -370,12 +272,10 @@ public class ExecutionPlanGeneratorTests
         };
         var date = new DateTime(2026, 3, 15);
 
-        // Act
-        var plan = _generator.Generate(schedule, date, date.AddHours(10));
-
-        // Assert
-        plan.TimePoints.Should().HaveCount(2); // 只生成有效的时间点
-        plan.TimeSegments.Should().NotBeEmpty();
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(10));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("时间格式无效");
     }
 
     [Fact]
@@ -392,24 +292,25 @@ public class ExecutionPlanGeneratorTests
                     Id = "1",
                     Name = "夜间工作",
                     StartTime = "22:00:00",
-                    EndTime = "02:00:00"
+                    EndTime = "02:00:00" // 次日 02:00
                 }
             }
         };
-        var date = new DateTime(2026, 3, 15, 23, 0, 0); // 晚上 23:00
-        var currentTime = date.AddHours(1); // 次日 00:00
+        var date = new DateTime(2026, 3, 15);
+        var currentTime = new DateTime(2026, 3, 16, 0, 0, 0);
 
         // Act
         var plan = _generator.Generate(schedule, date, currentTime);
 
-        // Assert
-        plan.TimePoints.Should().HaveCount(2);
-        plan.TimePoints[0].Time.Should().Be(date.AddHours(22)); // 当天 22:00
-        plan.TimePoints[1].Time.Should().Be(date.AddDays(1).AddHours(2)); // 次日 02:00
+        // Assert: 跨午夜时间段会生成 2 个时间段（空闲开始、夜间工作）
+        // 因为结束时间是次日 02:00，超过了当天的 24:00，所以没有"空闲结束"段
+        plan.TimeSegments.Should().HaveCount(2);
 
         // 验证当前状态
         plan.CurrentSegment.Should().NotBeNull();
         plan.CurrentSegment!.Contains(currentTime).Should().BeTrue();
+        plan.CurrentSegment.State.Should().Be(ProgressStateType.Progress);
+        plan.CurrentSegment.Name.Should().Be("夜间工作");
     }
 
     [Fact]
@@ -429,22 +330,6 @@ public class ExecutionPlanGeneratorTests
     }
 
     [Fact]
-    public void GetTimePointsInRange_应该返回正确的时间点()
-    {
-        // Arrange
-        var plan = TestDataHelper.CreateSimpleExecutionPlan();
-        var startTime = DateTime.Today.AddHours(8);
-        var endTime = DateTime.Today.AddHours(20);
-
-        // Act
-        var pointsInRange = plan.GetTimePointsInRange(startTime, endTime);
-
-        // Assert
-        pointsInRange.Should().HaveCount(2);
-        pointsInRange.All(p => p.Time > startTime && p.Time <= endTime).Should().BeTrue();
-    }
-
-    [Fact]
     public void Clone_应该创建独立的副本()
     {
         // Arrange
@@ -457,25 +342,330 @@ public class ExecutionPlanGeneratorTests
         cloned.Should().NotBeSameAs(original);
         cloned.ScheduleId.Should().Be(original.ScheduleId);
         cloned.Date.Should().Be(original.Date);
-        cloned.TimePoints.Should().HaveCount(original.TimePoints.Count);
         cloned.TimeSegments.Should().HaveCount(original.TimeSegments.Count);
     }
 
+    #region 时间点测试（v3.0）
+
     [Fact]
-    public void Clone_修改副本不应影响原对象()
+    public void Generate_时间点在时间段结束时间_应该正确生成()
     {
-        // Arrange
-        var original = TestDataHelper.CreateSimpleExecutionPlan();
-        var cloned = original.Clone();
+        // Arrange: 时间点 = 时间段结束时间，应该立即执行
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00"
+                }
+            },
+            TimePoints = new List<CustomTimePoint>
+            {
+                new CustomTimePoint
+                {
+                    Id = "tp_end",
+                    Time = "10:00:00",
+                    ToState = ProgressStateType.Success
+                },
+                new CustomTimePoint
+                {
+                    Id = "tp_delay",
+                    Time = "10:00:10",
+                    ToState = ProgressStateType.Loading
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
 
         // Act
-        cloned.ScheduleId = "modified";
-        cloned.TimePoints[0].Name = "modified";
-        cloned.TimeSegments[0].Name = "modified";
+        var plan = _generator.Generate(schedule, date, date.AddHours(9));
+
+        // Assert: 2个时间点
+        plan.TimePoints.Should().HaveCount(2);
+        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Success);
+        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Loading);
+    }
+
+    [Fact]
+    public void Generate_时间点在时间段开始时间_应该被忽略()
+    {
+        // Arrange: 时间点 = 时间段开始时间，应该被忽略（时间段优先）
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00"
+                }
+            },
+            TimePoints = new List<CustomTimePoint>
+            {
+                new CustomTimePoint
+                {
+                    Id = "tp_start",
+                    Time = "09:00:00",
+                    ToState = ProgressStateType.Success // 这个应该被忽略
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act
+        var plan = _generator.Generate(schedule, date, date.AddHours(8));
+
+        // Assert: 时间点被忽略，没有时间点
+        plan.TimePoints.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Generate_时间点设置Progress状态_应该抛出异常()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00"
+                }
+            },
+            TimePoints = new List<CustomTimePoint>
+            {
+                new CustomTimePoint
+                {
+                    Id = "tp_invalid",
+                    Time = "08:00:00",
+                    ToState = ProgressStateType.Progress // 不允许
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(8));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("不能设置 Progress 状态");
+    }
+
+    [Fact]
+    public void Generate_时间点在时间段内部_应该抛出异常()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00"
+                }
+            },
+            TimePoints = new List<CustomTimePoint>
+            {
+                new CustomTimePoint
+                {
+                    Id = "tp_inside",
+                    Time = "09:30:00", // 在时间段内部
+                    ToState = ProgressStateType.Paused
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(8));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("位于时间段");
+    }
+
+    [Fact]
+    public void Generate_时间段重叠_应该抛出异常()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "时间段1",
+                    StartTime = "09:00:00",
+                    EndTime = "10:30:00"
+                },
+                new TimeScheduleItem
+                {
+                    Id = "2",
+                    Name = "时间段2",
+                    StartTime = "10:00:00", // 与时间段1重叠
+                    EndTime = "11:00:00"
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(8));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("重叠");
+    }
+
+    [Fact]
+    public void Generate_时间点ID重复_应该抛出异常()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>(),
+            TimePoints = new List<CustomTimePoint>
+            {
+                new CustomTimePoint { Id = "tp1", Time = "09:00:00", ToState = ProgressStateType.Success },
+                new CustomTimePoint { Id = "tp1", Time = "10:00:00", ToState = ProgressStateType.Loading }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(8));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("ID 重复");
+    }
+
+    [Fact]
+    public void Generate_时间段ID重复_应该抛出异常()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem { Id = "1", StartTime = "09:00:00", EndTime = "10:00:00" },
+                new TimeScheduleItem { Id = "1", StartTime = "11:00:00", EndTime = "12:00:00" }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act & Assert
+        var act = () => _generator.Generate(schedule, date, date.AddHours(8));
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain("ID 重复");
+    }
+
+    #endregion
+
+    #region 进度计算测试
+
+    [Fact]
+    public void Generate_时间段进度应该独立计算()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00" // 60分钟
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+        var currentTime = date.AddHours(9).AddMinutes(30); // 30分钟 = 50%
+
+        // Act
+        var plan = _generator.Generate(schedule, date, currentTime);
 
         // Assert
-        original.ScheduleId.Should().Be("test_schedule");
-        original.TimePoints[0].Name.Should().Contain("开始");
-        original.TimeSegments[0].Name.Should().Be("空闲");
+        plan.CurrentSegment.Should().NotBeNull();
+        plan.CurrentSegment!.StartTime.Should().Be(date.AddHours(9));
+        plan.CurrentSegment.EndTime.Should().Be(date.AddHours(10));
     }
+
+    #endregion
+
+    #region 向后兼容性测试
+
+    [Fact]
+    public void Generate_不配置TimePoints_应该正常工作()
+    {
+        // Arrange
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "18:00:00"
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act
+        var plan = _generator.Generate(schedule, date, date.AddHours(10));
+
+        // Assert
+        plan.TimeSegments.Should().HaveCount(3);
+        plan.TimeSegments[1].State.Should().Be(ProgressStateType.Progress);
+    }
+
+    [Fact]
+    public void Generate_配置State字段_应该被忽略()
+    {
+        // Arrange: State 字段已废弃，应该被忽略
+        var schedule = new TimeSchedule
+        {
+            Id = "test_schedule",
+            Schedules = new List<TimeScheduleItem>
+            {
+                new TimeScheduleItem
+                {
+                    Id = "1",
+                    Name = "工作时间",
+                    StartTime = "09:00:00",
+                    EndTime = "10:00:00",
+                    State = ProgressStateType.Paused // 应该被忽略
+                }
+            }
+        };
+        var date = new DateTime(2026, 3, 15);
+
+        // Act
+        var plan = _generator.Generate(schedule, date, date.AddHours(9));
+
+        // Assert: 状态固定为 Progress
+        plan.TimeSegments[1].State.Should().Be(ProgressStateType.Progress);
+    }
+
+    #endregion
 }

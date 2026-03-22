@@ -69,8 +69,10 @@ public class ExecutionPlan
         // 更新下一个待执行的时间点（大于当前时间的最近时间点）
         NextTimePoint = TimePoints.FirstOrDefault(tp => tp.Time > currentTime);
 
-        // 更新最后一个已执行的时间点（小于等于当前时间的最近时间点）
-        LastExecutedTimePoint = TimePoints.LastOrDefault(tp => tp.Time <= currentTime);
+        // ❌ 不要在这里自动更新 LastExecutedTimePoint
+        // LastExecutedTimePoint 应该只在 ExecuteTransition 中手动更新
+        // 以避免跳过未执行的时间点
+        // LastExecutedTimePoint = TimePoints.LastOrDefault(tp => tp.Time <= currentTime);
     }
 
     /// <summary>

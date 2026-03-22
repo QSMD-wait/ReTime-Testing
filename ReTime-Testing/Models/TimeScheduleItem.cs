@@ -32,6 +32,14 @@ namespace ReTime_Testing.Models
         public string EndTime { get; set; } = "00:00:00";
 
         /// <summary>
+        /// 状态类型（已废弃，时间段固定为 Progress）
+        /// 保留此字段仅用于向后兼容，运行时会被忽略
+        /// </summary>
+        [JsonPropertyName("state")]
+        [Obsolete("时间段状态固定为 Progress，此字段已废弃")]
+        public ProgressStateType State { get; set; } = ProgressStateType.Progress;
+
+        /// <summary>
         /// 样式覆盖配置
         /// </summary>
         [JsonPropertyName("styles")]

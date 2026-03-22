@@ -125,43 +125,88 @@ public class ScheduleManager
     {
         if (_currentPlan == null) return;
 
-        // 查找当前时间点（5秒窗口内，提高可靠性）
-        var timePoint = _currentPlan.TimePoints
-            .FirstOrDefault(tp => tp.Time <= currentTime &&
-                                 tp.Time.AddSeconds(5) > currentTime);
+        // 查找所有应该执行但尚未执行的时间点
+        // 条件：时间点时间 <= 当前时间，且未被标记为已执行
+        var lastExecutedTime = _currentPlan.LastExecutedTimePoint?.Time ?? DateTime.MinValue;
+        
+        var pendingTimePoints = _currentPlan.TimePoints
+            .Where(tp => tp.Time <= currentTime && tp.Time > lastExecutedTime)
+            .OrderBy(tp => tp.Time)
+            .ToList();
 
-        if (timePoint != null && _currentPlan.LastExecutedTimePoint != timePoint)
+        if (pendingTimePoints.Any())
         {
-            // 执行状态切换
-            ExecuteTransition(timePoint);
-            _currentPlan.LastExecutedTimePoint = timePoint;
+            Logger.Info("ScheduleManager", $"发现 {pendingTimePoints.Count} 个待执行的时间点 (当前时间: {currentTime:HH:mm:ss}, 上次执行: {lastExecutedTime:HH:mm:ss})");
+
+            foreach (var timePoint in pendingTimePoints)
+            {
+                Logger.Info("ScheduleManager", $"执行时间点: {timePoint.Id} ({timePoint.Time:HH:mm:ss}) - {timePoint.FromState} → {timePoint.ToState}");
+
+                // 执行状态切换
+                ExecuteTransition(timePoint);
+                _currentPlan.LastExecutedTimePoint = timePoint;
+            }
         }
     }
 
     /// <summary>
-            /// 执行状态切换
-            /// </summary>
-            /// <param name="timePoint">时间点</param>
-            private void ExecuteTransition(TimePoint timePoint)
+    /// 执行状态切换
+    /// </summary>
+    /// <param name="timePoint">时间点</param>
+    private void ExecuteTransition(TimePoint timePoint)
+    {
+        Logger.Info("ScheduleManager", $"状态切换: {timePoint.FromState} → {timePoint.ToState} ({timePoint.Name})");
+
+        // 1. 先更新当前时间段（使用时间点的时间，而不是当前轮询时间）
+        // 这样 CurrentSegment 会在状态设置前正确更新
+        UpdateCurrentSegment(timePoint.Time);
+
+        // 2. 设置状态和进度（使用批量更新确保只触发一次回调）
+        _stateManager.BatchUpdate(manager =>
+        {
+            // 设置状态
+            manager.SetState(timePoint.ToState, timePoint.StyleOverrides);
+
+            // 设置进度
+            if (timePoint.ToState == ProgressStateType.Progress)
             {
-                Logger.Info("ScheduleManager", $"状态切换: {timePoint.FromState} → {timePoint.ToState} ({timePoint.Name})");
-    
-                // 设置状态
-                _stateManager.SetState(timePoint.ToState, timePoint.StyleOverrides);
-    
-                // 设置初始进度
-                if (timePoint.ToState == ProgressStateType.Progress)
-                {
-                    _stateManager.UpdateProgress(0);
-                }
-                else if (timePoint.ToState == ProgressStateType.Success)
-                {
-                    _stateManager.UpdateProgress(100);
-                }
-    
-                // 更新当前时间段
-                UpdateCurrentSegment(_currentTime);
+                // 蓝图设计：恢复时进度跳变到当前时间对应的进度
+                var progress = CalculateProgressForTime(_currentTime);
+                manager.UpdateProgress(progress);
             }
+            else if (timePoint.ToState == ProgressStateType.Success)
+            {
+                manager.UpdateProgress(100);
+            }
+            else if (timePoint.ToState == ProgressStateType.Loading)
+            {
+                // Loading 状态不需要进度值（不确定动画）
+                manager.UpdateProgress(0);
+            }
+            // Paused 状态：保持当前进度不变，不调用 UpdateProgress
+        });
+    }
+
+    /// <summary>
+    /// 计算指定时间的进度值
+    /// 进度基于时间段自身计算（0% → 100%）
+    /// </summary>
+    /// <param name="currentTime">当前时间</param>
+    /// <returns>进度值 0-100</returns>
+    private double CalculateProgressForTime(DateTime currentTime)
+    {
+        if (_currentPlan?.CurrentSegment == null) return 0;
+
+        var segment = _currentPlan.CurrentSegment;
+
+        // 进度基于时间段自身计算
+        var totalDuration = segment.EndTime - segment.StartTime;
+        var elapsed = currentTime - segment.StartTime;
+        var progress = (elapsed.TotalSeconds / totalDuration.TotalSeconds) * 100;
+
+        return Math.Clamp(progress, 0, 100);
+    }
+
     /// <summary>
     /// 更新进度条
     /// </summary>
@@ -172,14 +217,12 @@ public class ScheduleManager
 
         var segment = _currentPlan.CurrentSegment;
 
-        // 只有活跃时间段才更新进度
-        if (segment.IsActive)
+        // 只有在活跃时间段内 且 当前状态为 Progress 时才更新进度
+        // 如果被时间点切换到其他状态（Paused、Success等），进度更新被抑制
+        if (segment.IsActive && _stateManager.CurrentConfig.StateType == ProgressStateType.Progress)
         {
-            var totalDuration = segment.EndTime - segment.StartTime;
-            var elapsed = currentTime - segment.StartTime;
-            var progress = (elapsed.TotalSeconds / totalDuration.TotalSeconds) * 100;
-
-            _stateManager.UpdateProgress(Math.Clamp(progress, 0, 100));
+            var progress = CalculateProgressForTime(currentTime);
+            _stateManager.UpdateProgress(progress);
         }
     }
 
@@ -267,8 +310,20 @@ public class ScheduleManager
     {
         if (_currentPlan == null) return;
 
+        var oldSegment = _currentPlan.CurrentSegment;
+        
         // 调用 ExecutionPlan 的 UpdateCurrentState 方法
         _currentPlan.UpdateCurrentState(currentTime);
+        
+        var newSegment = _currentPlan.CurrentSegment;
+        
+        if (oldSegment?.State != newSegment?.State)
+        {
+            Logger.Info("ScheduleManager", $"时间段状态变化: {oldSegment?.State} → {newSegment?.State} (时间: {currentTime:HH:mm:ss})");
+        }
+        
+        // ⚠️ 不要立即应用状态，避免覆盖 ExecuteTransition 设置的状态
+        // 状态应该在 ExecuteTransition 中设置，然后在下一个轮询周期中应用
     }
 
     /// <summary>
@@ -280,21 +335,22 @@ public class ScheduleManager
 
         var segment = _currentPlan.CurrentSegment;
 
-        Logger.Info("ScheduleManager", $"应用当前状态: {segment.State} - {segment.Name}");
+        Logger.Info("ScheduleManager", $"应用当前状态: {segment.State} - {segment.Name} (时间: {_currentTime:HH:mm:ss})");
 
-        // 设置状态
-        _stateManager.SetState(segment.State, segment.StyleOverrides);
-
-        // 如果是活跃状态，计算当前进度
-        if (segment.IsActive)
+        // 使用批量更新确保只触发一次回调
+        _stateManager.BatchUpdate(manager =>
         {
-            var currentTime = _timeService.GetCurrentTime();
-            var totalDuration = segment.EndTime - segment.StartTime;
-            var elapsed = currentTime - segment.StartTime;
-            var progress = (elapsed.TotalSeconds / totalDuration.TotalSeconds) * 100;
+            // 设置状态
+            manager.SetState(segment.State, segment.StyleOverrides);
 
-            _stateManager.UpdateProgress(Math.Clamp(progress, 0, 100));
-        }
+            // 如果是活跃状态，计算当前进度
+            if (segment.IsActive)
+            {
+                var currentTime = _timeService.GetCurrentTime();
+                var progress = CalculateProgressForTime(currentTime);
+                manager.UpdateProgress(progress);
+            }
+        });
     }
 
     /// <summary>

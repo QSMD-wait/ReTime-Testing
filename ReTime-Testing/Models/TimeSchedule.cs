@@ -31,6 +31,13 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("schedules")]
         public List<TimeScheduleItem> Schedules { get; set; } = new();
+
+        /// <summary>
+        /// 自定义时间点列表（可选）
+        /// 用于覆盖自动生成的开始/结束时间点，或添加额外的时间点
+        /// </summary>
+        [JsonPropertyName("timePoints")]
+        public List<CustomTimePoint> TimePoints { get; set; } = new();
     }
 
     /// <summary>

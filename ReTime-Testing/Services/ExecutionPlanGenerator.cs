@@ -8,8 +8,19 @@ namespace ReTime_Testing.Services;
 /// 执行计划生成器
 /// 从时间计划生成执行计划
 /// </summary>
+/// <remarks>
+/// 设计原则（v3.0）：
+/// - 时间段：固定为 Progress 状态，负责进度显示
+/// - 时间点：非 Progress 状态，负责状态切换
+/// - 时间点不能在时间段内部
+/// - 时间点 = 时间段开始时间 → 忽略
+/// - 时间点 = 时间段结束时间 → 立即执行
+/// - 每个时间段进度独立计算 0% → 100%
+/// </remarks>
 public class ExecutionPlanGenerator
 {
+    private readonly TimeScheduleValidator _validator = new();
+
     /// <summary>
     /// 生成执行计划
     /// </summary>
@@ -17,159 +28,136 @@ public class ExecutionPlanGenerator
     /// <param name="date">计划日期</param>
     /// <param name="currentTime">当前时间</param>
     /// <returns>执行计划</returns>
+    /// <exception cref="InvalidOperationException">配置验证失败时抛出</exception>
     public ExecutionPlan Generate(TimeSchedule schedule, DateTime date, DateTime currentTime)
     {
+        // 1. 验证配置
+        var validationResult = _validator.Validate(schedule);
+        if (!validationResult.IsValid)
+        {
+            var errorMessage = string.Join("\n", validationResult.Errors);
+            throw new InvalidOperationException($"配置验证失败:\n{errorMessage}");
+        }
+
+        // 输出警告
+        foreach (var warning in validationResult.Warnings)
+        {
+            Logger.Warn("ExecutionPlanGenerator", warning);
+        }
+
         var plan = new ExecutionPlan
         {
             ScheduleId = schedule.Id,
             Date = date
         };
 
-        // 1. 生成时间点
-        plan.TimePoints = GenerateTimePoints(schedule, date);
+        // 2. 生成时间段列表（固定为 Progress）
+        plan.TimeSegments = GenerateTimeSegments(schedule, date);
 
-        // 2. 生成时间段
-        plan.TimeSegments = GenerateTimeSegments(schedule, date, plan.TimePoints);
+        // 3. 生成时间点列表（过滤无效时间点）
+        plan.TimePoints = GenerateTimePoints(schedule, date, plan.TimeSegments);
 
-        // 3. 计算当前状态
+        // 4. 计算当前状态
         plan.UpdateCurrentState(currentTime);
 
         return plan;
     }
 
     /// <summary>
-    /// 生成时间点列表
-    /// </summary>
-    /// <param name="schedule">时间计划</param>
-    /// <param name="date">计划日期</param>
-    /// <returns>时间点列表（按时间排序）</returns>
-    private List<TimePoint> GenerateTimePoints(TimeSchedule schedule, DateTime date)
-    {
-        var timePoints = new List<TimePoint>();
-
-        foreach (var item in schedule.Schedules)
-        {
-            try
-            {
-                var startTime = date + ParseTime(item.StartTime);
-                var endTime = date + ParseTime(item.EndTime);
-
-                // 处理跨午夜场景：如果结束时间小于开始时间，说明跨午夜，结束时间应该加一天
-                if (endTime < startTime)
-                {
-                    endTime = endTime.AddDays(1);
-                }
-
-                // 开始时间点：空闲/等待 → 工作中
-                timePoints.Add(new TimePoint
-                {
-                    Time = startTime,
-                    Name = $"{item.Name} 开始",
-                    FromState = ProgressStateType.Loading,
-                    ToState = ProgressStateType.Progress
-                });
-
-                // 结束时间点：工作中 → 已完成
-                timePoints.Add(new TimePoint
-                {
-                    Time = endTime,
-                    Name = $"{item.Name} 结束",
-                    FromState = ProgressStateType.Progress,
-                    ToState = ProgressStateType.Success
-                });
-            }
-            catch (Exception ex)
-            {
-                // 跳过无法解析的时间项
-                Logger.Warn("ExecutionPlanGenerator", $"生成时间点失败: {item.Name}, 错误: {ex.Message}");
-            }
-        }
-
-        // 按时间排序
-        return timePoints.OrderBy(tp => tp.Time).ToList();
-    }
-
-    /// <summary>
     /// 生成时间段列表
+    /// 时间段固定为 Progress 状态
     /// </summary>
     /// <param name="schedule">时间计划</param>
     /// <param name="date">计划日期</param>
-    /// <param name="timePoints">时间点列表</param>
     /// <returns>时间段列表</returns>
-    private List<TimeSegment> GenerateTimeSegments(
-        TimeSchedule schedule,
-        DateTime date,
-        List<TimePoint> timePoints)
+    private List<TimeSegment> GenerateTimeSegments(TimeSchedule schedule, DateTime date)
     {
         var segments = new List<TimeSegment>();
+        var dayStart = date.Date;
+        var dayEnd = date.Date.AddDays(1).AddTicks(-1);
 
-        // 如果没有时间点，返回一个全天的空闲时间段
-        if (!timePoints.Any())
+        // 如果没有时间段，返回一个全天的空闲时间段
+        if (schedule.Schedules.Count == 0)
         {
             segments.Add(new TimeSegment
             {
-                Id = "idle_full_day",
+                Id = "segment_full_day",
                 Name = "空闲",
-                StartTime = date.Date,
-                EndTime = date.Date.AddDays(1).AddTicks(-1),
+                StartTime = dayStart,
+                EndTime = dayEnd,
                 State = ProgressStateType.Loading,
                 IsActive = false
             });
             return segments;
         }
 
-        // 添加开始前的空闲时间段
-        var firstPoint = timePoints.First();
-        if (firstPoint.Time > date.Date)
-        {
-            segments.Add(new TimeSegment
+        // 解析并排序时间段
+        var scheduleItems = schedule.Schedules
+            .Select(item =>
             {
-                Id = "idle_start",
-                Name = "空闲",
-                StartTime = date.Date,
-                EndTime = firstPoint.Time,
-                State = ProgressStateType.Loading,
-                IsActive = false
-            });
-        }
+                try
+                {
+                    var startTime = CombineDateAndTime(date, item.StartTime);
+                    var endTime = CombineDateAndTime(date, item.EndTime);
+                    if (endTime < startTime)
+                    {
+                        endTime = endTime.AddDays(1);
+                    }
+                    return new { Item = item, StartTime = startTime, EndTime = endTime };
+                }
+                catch
+                {
+                    return null;
+                }
+            })
+            .Where(x => x != null)
+            .OrderBy(x => x!.StartTime)
+            .ToList();
 
-        // 添加各个时间段（每两个时间点为一个时间段）
-        for (int i = 0; i < timePoints.Count; i += 2)
+        // 生成时间段
+        DateTime lastEnd = dayStart;
+        int segmentIndex = 0;
+
+        foreach (var current in scheduleItems)
         {
-            if (i + 1 < timePoints.Count)
+            // 如果当前时间段开始时间大于上一个结束时间，添加间隙段（Loading）
+            if (current!.StartTime > lastEnd)
             {
-                var startPoint = timePoints[i];
-                var endPoint = timePoints[i + 1];
-
-                // 查找对应的时间计划项
-                var scheduleItem = schedule.Schedules.FirstOrDefault(s =>
-                    s.Name.Contains(startPoint.Name.Replace(" 开始", "")) ||
-                    s.Name.Contains(startPoint.Name.Replace(" 结束", "")));
-
                 segments.Add(new TimeSegment
                 {
-                    Id = $"segment_{i / 2}",
-                    Name = startPoint.Name,
-                    StartTime = startPoint.Time,
-                    EndTime = endPoint.Time,
-                    State = startPoint.ToState,
-                    IsActive = true,
-                    StyleOverrides = scheduleItem != null ? ParseStyleOverrides(scheduleItem) : null
+                    Id = $"segment_gap_{segmentIndex++}",
+                    Name = "空闲",
+                    StartTime = lastEnd,
+                    EndTime = current.StartTime,
+                    State = ProgressStateType.Loading,
+                    IsActive = false
                 });
             }
+
+            // 添加时间段（固定为 Progress）
+            segments.Add(new TimeSegment
+            {
+                Id = $"segment_{current.Item.Id}",
+                Name = current.Item.Name,
+                StartTime = current.StartTime,
+                EndTime = current.EndTime,
+                State = ProgressStateType.Progress,  // 固定为 Progress
+                IsActive = true,
+                StyleOverrides = ParseStyle(current.Item.Styles)
+            });
+
+            lastEnd = current.EndTime;
         }
 
-        // 添加结束后的空闲时间段
-        var lastPoint = timePoints.Last();
-        var endOfDay = date.Date.AddDays(1).AddTicks(-1);
-        if (lastPoint.Time < endOfDay)
+        // 添加最后的间隙段（Loading）
+        if (lastEnd < dayEnd)
         {
             segments.Add(new TimeSegment
             {
-                Id = "idle_end",
+                Id = "segment_end",
                 Name = "空闲",
-                StartTime = lastPoint.Time,
-                EndTime = endOfDay,
+                StartTime = lastEnd,
+                EndTime = dayEnd,
                 State = ProgressStateType.Loading,
                 IsActive = false
             });
@@ -179,69 +167,100 @@ public class ExecutionPlanGenerator
     }
 
     /// <summary>
-    /// 解析时间字符串
+    /// 生成时间点列表
+    /// 过滤掉与时间段开始时间相同的时间点
     /// </summary>
-    /// <param name="timeString">时间字符串（HH:mm:ss 格式）</param>
-    /// <returns>TimeSpan</returns>
-    private TimeSpan ParseTime(string timeString)
+    /// <param name="schedule">时间计划</param>
+    /// <param name="date">计划日期</param>
+    /// <param name="segments">时间段列表</param>
+    /// <returns>时间点列表</returns>
+    private List<TimePoint> GenerateTimePoints(TimeSchedule schedule, DateTime date, List<TimeSegment> segments)
     {
-        return TimeSpan.Parse(timeString);
+        var timePoints = new List<TimePoint>();
+
+        // 获取所有时间段的开始时间（用于过滤）
+        var segmentStartTimes = segments
+            .Where(s => s.State == ProgressStateType.Progress)
+            .Select(s => s.StartTime)
+            .ToHashSet();
+
+        foreach (var custom in schedule.TimePoints)
+        {
+            try
+            {
+                var customTime = CombineDateAndTime(date, custom.Time);
+
+                // 如果时间点与时间段开始时间相同，忽略（时间段优先）
+                if (segmentStartTimes.Contains(customTime))
+                {
+                    Logger.Info("ExecutionPlanGenerator", $"时间点 {custom.Id} ({custom.Time}) 与时间段开始时间相同，已忽略");
+                    continue;
+                }
+
+                timePoints.Add(new TimePoint
+                {
+                    Id = custom.Id,
+                    Name = string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
+                    Time = customTime,
+                    ToState = custom.ToState,
+                    StyleOverrides = ParseStyle(custom.Style)
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ExecutionPlanGenerator", $"生成时间点失败: {custom.Id}, 错误: {ex.Message}");
+            }
+        }
+
+        // 按时间排序
+        timePoints = timePoints.OrderBy(tp => tp.Time).ToList();
+
+        // 自动计算 fromState
+        for (int i = 0; i < timePoints.Count; i++)
+        {
+            if (i == 0)
+            {
+                timePoints[i].FromState = ProgressStateType.Loading;
+            }
+            else
+            {
+                timePoints[i].FromState = timePoints[i - 1].ToState;
+            }
+        }
+
+        return timePoints;
+    }
+
+    /// <summary>
+    /// 合并日期和时间字符串
+    /// </summary>
+    /// <param name="date">日期</param>
+    /// <param name="timeString">时间字符串（HH:mm:ss 格式）</param>
+    /// <returns>DateTime</returns>
+    private DateTime CombineDateAndTime(DateTime date, string timeString)
+    {
+        var time = TimeSpan.Parse(timeString);
+        return date.Date.Add(time);
     }
 
     /// <summary>
     /// 解析样式覆盖
     /// </summary>
-    /// <param name="scheduleItem">时间计划项</param>
-    /// <returns>样式覆盖</returns>
-    private StyleOverrides? ParseStyleOverrides(TimeScheduleItem scheduleItem)
+    /// <param name="styleData">样式数据</param>
+    /// <returns>样式覆盖对象</returns>
+    private StyleOverrides? ParseStyle(StyleOverridesData? styleData)
     {
-        if (scheduleItem.Styles == null) return null;
+        if (styleData == null) return null;
 
-        var overrides = new StyleOverrides();
-
-        // 解析前景色
-        if (!string.IsNullOrEmpty(scheduleItem.Styles.ForegroundColor))
+        return new StyleOverrides
         {
-            overrides.ForegroundColor = ParseColor(scheduleItem.Styles.ForegroundColor);
-        }
-
-        // 解析背景色
-        if (!string.IsNullOrEmpty(scheduleItem.Styles.BackgroundColor))
-        {
-            overrides.BackgroundColor = ParseColor(scheduleItem.Styles.BackgroundColor);
-        }
-
-        // 解析透明度
-        if (scheduleItem.Styles.Opacity.HasValue)
-        {
-            overrides.Opacity = scheduleItem.Styles.Opacity.Value;
-        }
-
-        // 解析可见性
-        if (!string.IsNullOrEmpty(scheduleItem.Styles.Visibility))
-        {
-            overrides.Visibility = ParseVisibility(scheduleItem.Styles.Visibility);
-        }
-
-        // 解析启用状态
-        if (scheduleItem.Styles.IsEnabled.HasValue)
-        {
-            overrides.IsEnabled = scheduleItem.Styles.IsEnabled.Value;
-        }
-
-        // 解析不确定动画
-        if (scheduleItem.Styles.IsIndeterminate.HasValue)
-        {
-            overrides.IsIndeterminate = scheduleItem.Styles.IsIndeterminate.Value;
-        }
-
-        // 如果没有任何覆盖，返回null
-        if (!overrides.HasAnyOverride)
-        {
-            return null;
-        }
-
-        return overrides;
+            ForegroundColor = ParseColor(styleData.ForegroundColor),
+            BackgroundColor = ParseColor(styleData.BackgroundColor),
+            Opacity = styleData.Opacity,
+            Visibility = ParseVisibility(styleData.Visibility),
+            IsEnabled = styleData.IsEnabled,
+            IsIndeterminate = styleData.IsIndeterminate
+        };
     }
 
     /// <summary>
@@ -249,8 +268,10 @@ public class ExecutionPlanGenerator
     /// </summary>
     /// <param name="colorString">颜色字符串（如 #007ACC）</param>
     /// <returns>Brush</returns>
-    private Brush? ParseColor(string colorString)
+    private Brush? ParseColor(string? colorString)
     {
+        if (string.IsNullOrEmpty(colorString)) return null;
+
         try
         {
             if (colorString.StartsWith("#"))
@@ -271,8 +292,10 @@ public class ExecutionPlanGenerator
     /// </summary>
     /// <param name="visibilityString">可见性字符串</param>
     /// <returns>Visibility</returns>
-    private Visibility ParseVisibility(string visibilityString)
+    private Visibility ParseVisibility(string? visibilityString)
     {
+        if (string.IsNullOrEmpty(visibilityString)) return Visibility.Visible;
+
         return visibilityString.ToLower() switch
         {
             "visible" => Visibility.Visible,

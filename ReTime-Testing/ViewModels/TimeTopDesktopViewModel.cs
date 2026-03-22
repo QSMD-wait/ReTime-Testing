@@ -65,6 +65,8 @@ namespace ReTime_Testing.ViewModels
                     return;
                 }
 
+                Logger.Info("TimeTopDesktopViewModel", $"UI更新: State={config.StateType}, Foreground={config.Foreground}, Background={config.Background}");
+
                 ProgressValue = config.Value;
                 IsIndeterminate = config.IsIndeterminate;
                 Foreground = config.Foreground ?? ProgressColors.DefaultBlue;

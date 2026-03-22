@@ -7,6 +7,11 @@ namespace ReTime_Testing.Models;
 public class TimePoint
 {
     /// <summary>
+    /// 时间点唯一标识
+    /// </summary>
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>
     /// 绝对时间
     /// </summary>
     public DateTime Time { get; set; }
