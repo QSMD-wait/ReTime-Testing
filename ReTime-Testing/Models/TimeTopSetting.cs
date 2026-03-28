@@ -71,7 +71,7 @@ namespace ReTime_Testing.Models
         /// 是否启用云端校准
         /// </summary>
         [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get; set; } = false;
 
         /// <summary>
         /// 校准间隔（秒）
@@ -162,23 +162,5 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("opacity")]
         public double? Opacity { get; set; }
-
-        /// <summary>
-        /// 可见性
-        /// </summary>
-        [JsonPropertyName("visibility")]
-        public string? Visibility { get; set; }
-
-        /// <summary>
-        /// 是否启用
-        /// </summary>
-        [JsonPropertyName("isEnabled")]
-        public bool? IsEnabled { get; set; }
-
-        /// <summary>
-        /// 是否不确定动画
-        /// </summary>
-        [JsonPropertyName("isIndeterminate")]
-        public bool? IsIndeterminate { get; set; }
     }
 }

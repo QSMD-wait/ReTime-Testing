@@ -1,4 +1,3 @@
-using System.Windows;
 using System.Windows.Media;
 
 namespace ReTime_Testing.Models;
@@ -25,21 +24,6 @@ public class StyleOverrides
     public double? Opacity { get; set; }
 
     /// <summary>
-    /// 可见性（null 表示使用默认值）
-    /// </summary>
-    public Visibility? Visibility { get; set; }
-
-    /// <summary>
-    /// 是否启用（null 表示使用默认值）
-    /// </summary>
-    public bool? IsEnabled { get; set; }
-
-    /// <summary>
-    /// 是否不确定模式（null 表示使用默认值）
-    /// </summary>
-    public bool? IsIndeterminate { get; set; }
-
-    /// <summary>
     /// 创建空的样式覆盖（全部使用默认值）
     /// </summary>
     public static StyleOverrides None => new StyleOverrides();
@@ -50,8 +34,5 @@ public class StyleOverrides
     public bool HasAnyOverride =>
         ForegroundColor != null ||
         BackgroundColor != null ||
-        Opacity != null ||
-        Visibility != null ||
-        IsEnabled != null ||
-        IsIndeterminate != null;
+        Opacity != null;
 }

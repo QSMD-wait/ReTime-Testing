@@ -224,12 +224,16 @@ namespace ReTime_Testing.Services
             BeginBatchUpdate();
 
             _currentConfig.StateType = stateType;
-            _currentConfig.IsIndeterminate = stateType == ProgressStateType.Loading;
+            
+            // 样式属性（可被覆盖）
             _currentConfig.Foreground = finalStyle.ForegroundColor;
             _currentConfig.Background = finalStyle.BackgroundColor ?? Brushes.Transparent;
-            _currentConfig.Visibility = finalStyle.Visibility;
-            _currentConfig.IsEnabled = finalStyle.IsEnabled;
             _currentConfig.Opacity = finalStyle.Opacity;
+
+            // 状态属性（使用状态默认值，不可被样式覆盖）
+            _currentConfig.IsIndeterminate = stateType == ProgressStateType.Loading;
+            _currentConfig.Visibility = GetDefaultVisibility(stateType);
+            _currentConfig.IsEnabled = stateType != ProgressStateType.Disabled;
 
             _currentConfig.SetInitialized();
 
@@ -239,6 +243,20 @@ namespace ReTime_Testing.Services
             EndBatchUpdate();
 
             Logger.Info("ProgressStateManager", $"状态设置完成: {_currentConfig.StateType}");
+        }
+
+        /// <summary>
+        /// 获取状态默认可见性
+        /// </summary>
+        /// <param name="stateType">状态类型</param>
+        /// <returns>默认可见性</returns>
+        private Visibility GetDefaultVisibility(ProgressStateType stateType)
+        {
+            return stateType switch
+            {
+                ProgressStateType.Hidden => Visibility.Hidden,
+                _ => Visibility.Visible
+            };
         }
 
         /// <summary>
@@ -297,64 +315,43 @@ namespace ReTime_Testing.Services
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = true
+                    Opacity = 1.0
                 },
                 ProgressStateType.Progress => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = false
+                    Opacity = 1.0
                 },
                 ProgressStateType.Success => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.SuccessGreen,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = false
+                    Opacity = 1.0
                 },
                 ProgressStateType.Error => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.ErrorRed,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = false
+                    Opacity = 1.0
                 },
                 ProgressStateType.Paused => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.PauseOrange,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = false
+                    Opacity = 1.0
                 },
                 ProgressStateType.Hidden => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.DefaultBlue,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Hidden,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    IsIndeterminate = false
+                    Opacity = 1.0
                 },
                 ProgressStateType.Disabled => new StyleConfig
                 {
                     ForegroundColor = ProgressColors.Gray,
                     BackgroundColor = ProgressColors.DefaultBackground,
-                    Visibility = Visibility.Visible,
-                    IsEnabled = false,
-                    Opacity = 0.5,
-                    IsIndeterminate = false
+                    Opacity = 0.5
                 },
                 _ => new StyleConfig()
             };
@@ -372,10 +369,7 @@ namespace ReTime_Testing.Services
             {
                 ForegroundColor = defaultStyle.ForegroundColor,
                 BackgroundColor = defaultStyle.BackgroundColor,
-                Visibility = defaultStyle.Visibility,
-                IsEnabled = defaultStyle.IsEnabled,
-                Opacity = defaultStyle.Opacity,
-                IsIndeterminate = defaultStyle.IsIndeterminate
+                Opacity = defaultStyle.Opacity
             };
 
             // 覆盖前景色
@@ -394,24 +388,6 @@ namespace ReTime_Testing.Services
             if (styleData.Opacity.HasValue)
             {
                 result.Opacity = styleData.Opacity.Value;
-            }
-
-            // 覆盖可见性
-            if (!string.IsNullOrEmpty(styleData.Visibility))
-            {
-                result.Visibility = ParseVisibility(styleData.Visibility);
-            }
-
-            // 覆盖启用状态
-            if (styleData.IsEnabled.HasValue)
-            {
-                result.IsEnabled = styleData.IsEnabled.Value;
-            }
-
-            // 覆盖不确定动画
-            if (styleData.IsIndeterminate.HasValue)
-            {
-                result.IsIndeterminate = styleData.IsIndeterminate.Value;
             }
 
             return result;
@@ -440,22 +416,6 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 解析可见性字符串
-        /// </summary>
-        /// <param name="visibilityString">可见性字符串</param>
-        /// <returns>Visibility</returns>
-        private Visibility ParseVisibility(string visibilityString)
-        {
-            return visibilityString.ToLower() switch
-            {
-                "visible" => Visibility.Visible,
-                "hidden" => Visibility.Hidden,
-                "collapsed" => Visibility.Collapsed,
-                _ => Visibility.Visible
-            };
-        }
-
-        /// <summary>
         /// 应用覆盖样式
         /// </summary>
         /// <param name="baseStyle">基础样式</param>
@@ -476,26 +436,6 @@ namespace ReTime_Testing.Services
             // BackgroundColor
             result.BackgroundColor = overrides.BackgroundColor != null ? overrides.BackgroundColor : baseStyle.BackgroundColor;
 
-            // Visibility
-            if (overrides.Visibility.HasValue)
-            {
-                result.Visibility = overrides.Visibility.Value;
-            }
-            else
-            {
-                result.Visibility = baseStyle.Visibility;
-            }
-
-            // IsEnabled
-            if (overrides.IsEnabled.HasValue)
-            {
-                result.IsEnabled = overrides.IsEnabled.Value;
-            }
-            else
-            {
-                result.IsEnabled = baseStyle.IsEnabled;
-            }
-
             // Opacity
             if (overrides.Opacity.HasValue)
             {
@@ -504,16 +444,6 @@ namespace ReTime_Testing.Services
             else
             {
                 result.Opacity = baseStyle.Opacity;
-            }
-
-            // IsIndeterminate
-            if (overrides.IsIndeterminate.HasValue)
-            {
-                result.IsIndeterminate = overrides.IsIndeterminate.Value;
-            }
-            else
-            {
-                result.IsIndeterminate = baseStyle.IsIndeterminate;
             }
 
             return result;
@@ -640,9 +570,6 @@ namespace ReTime_Testing.Services
     {
         public Brush ForegroundColor { get; set; } = ProgressColors.DefaultBlue;
         public Brush? BackgroundColor { get; set; }
-        public Visibility Visibility { get; set; } = Visibility.Visible;
-        public bool IsEnabled { get; set; } = true;
         public double Opacity { get; set; } = 1.0;
-        public bool IsIndeterminate { get; set; } = false;
     }
 }

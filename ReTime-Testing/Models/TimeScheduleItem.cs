@@ -68,23 +68,5 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("opacity")]
         public double? Opacity { get; set; }
-
-        /// <summary>
-        /// 可见性
-        /// </summary>
-        [JsonPropertyName("visibility")]
-        public string? Visibility { get; set; }
-
-        /// <summary>
-        /// 是否启用
-        /// </summary>
-        [JsonPropertyName("isEnabled")]
-        public bool? IsEnabled { get; set; }
-
-        /// <summary>
-        /// 是否不确定动画
-        /// </summary>
-        [JsonPropertyName("isIndeterminate")]
-        public bool? IsIndeterminate { get; set; }
     }
 }

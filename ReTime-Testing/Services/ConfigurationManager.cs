@@ -373,6 +373,9 @@ namespace ReTime_Testing.Services
             if (target.TimeSettings.Threshold == null)
                 target.TimeSettings.Threshold = new ThresholdSettings();
 
+            // 确保 Calibration.Enabled 使用默认值（默认关闭）
+            // 注意：JSON 反序列化时如果字段不存在会使用类的默认值
+
             return target;
         }
 
@@ -412,7 +415,7 @@ namespace ReTime_Testing.Services
                     {
                         Calibration = new CalibrationSettings
                         {
-                            Enabled = true,
+                            Enabled = false,
                             IntervalSeconds = 300,
                             TimeoutSeconds = 3,
                             MaxRetryCount = 5,

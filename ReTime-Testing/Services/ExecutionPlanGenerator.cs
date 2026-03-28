@@ -325,10 +325,7 @@ public class ExecutionPlanGenerator
         {
             ForegroundColor = ParseColor(styleData.ForegroundColor),
             BackgroundColor = ParseColor(styleData.BackgroundColor),
-            Opacity = styleData.Opacity,
-            Visibility = ParseVisibility(styleData.Visibility),
-            IsEnabled = styleData.IsEnabled,
-            IsIndeterminate = styleData.IsIndeterminate
+            Opacity = styleData.Opacity
         };
     }
 
@@ -354,23 +351,5 @@ public class ExecutionPlanGenerator
         {
             return null;
         }
-    }
-
-    /// <summary>
-    /// 解析可见性字符串
-    /// </summary>
-    /// <param name="visibilityString">可见性字符串</param>
-    /// <returns>Visibility</returns>
-    private Visibility ParseVisibility(string? visibilityString)
-    {
-        if (string.IsNullOrEmpty(visibilityString)) return Visibility.Visible;
-
-        return visibilityString.ToLower() switch
-        {
-            "visible" => Visibility.Visible,
-            "hidden" => Visibility.Hidden,
-            "collapsed" => Visibility.Collapsed,
-            _ => Visibility.Visible
-        };
     }
 }

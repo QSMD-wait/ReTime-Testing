@@ -161,11 +161,23 @@ public class ScheduleManager
         // 这样 CurrentSegment 会在状态设置前正确更新
         UpdateCurrentSegment(timePoint.Time);
 
-        // 2. 设置状态和进度（使用批量更新确保只触发一次回调）
+        // 2. 确定要应用的样式
+        StyleOverrides? styleToApply = timePoint.StyleOverrides;
+
+        // 如果切换到 Progress 状态且时间点没有自定义样式，使用时间段的样式
+        if (timePoint.ToState == ProgressStateType.Progress && 
+            (styleToApply == null || !styleToApply.HasAnyOverride) &&
+            _currentPlan?.CurrentSegment?.StyleOverrides != null)
+        {
+            styleToApply = _currentPlan.CurrentSegment.StyleOverrides;
+            Logger.Info("ScheduleManager", $"使用时间段样式: {_currentPlan.CurrentSegment.Name}");
+        }
+
+        // 3. 设置状态和进度（使用批量更新确保只触发一次回调）
         _stateManager.BatchUpdate(manager =>
         {
             // 设置状态
-            manager.SetState(timePoint.ToState, timePoint.StyleOverrides);
+            manager.SetState(timePoint.ToState, styleToApply);
 
             // 设置进度
             if (timePoint.ToState == ProgressStateType.Progress)
