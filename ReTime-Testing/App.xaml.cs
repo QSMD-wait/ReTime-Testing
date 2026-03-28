@@ -192,8 +192,8 @@ namespace ReTime_Testing
                 _trayIconService.ExitRequested += ExitApplication;
 
                 // 使用 WindowManager 打开主窗口和调试测试窗口
-                WindowManager.ShowMainWindow();
-                WindowManager.ShowDebugTest();
+                // WindowManager.ShowMainWindow();
+                // WindowManager.ShowDebugTest();
 
                 // 使用 DesktopWindowManager 打开进度条窗口（默认顶部）
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
