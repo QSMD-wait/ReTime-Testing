@@ -348,9 +348,9 @@ public class ExecutionPlanGeneratorTests
     #region 时间点测试（v3.0）
 
     [Fact]
-    public void Generate_时间点在时间段结束时间_应该正确生成()
+    public void Generate_时间点在时间段结束时间_应该覆盖自动生成()
     {
-        // Arrange: 时间点 = 时间段结束时间，应该立即执行
+        // Arrange: 时间点 = 时间段结束时间，应该覆盖自动生成的结束时间点
         var schedule = new TimeSchedule
         {
             Id = "test_schedule",
@@ -385,16 +385,17 @@ public class ExecutionPlanGeneratorTests
         // Act
         var plan = _generator.Generate(schedule, date, date.AddHours(9));
 
-        // Assert: 2个时间点
-        plan.TimePoints.Should().HaveCount(2);
-        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Success);
-        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Loading);
+        // Assert: 3个时间点（开始自动 + 结束覆盖 + 延迟）
+        plan.TimePoints.Should().HaveCount(3);
+        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Progress); // 自动生成的开始
+        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Success);  // 覆盖的结束
+        plan.TimePoints[2].ToState.Should().Be(ProgressStateType.Loading);  // 延迟
     }
 
     [Fact]
-    public void Generate_时间点在时间段开始时间_应该被忽略()
+    public void Generate_时间点在时间段开始时间_应该覆盖自动生成()
     {
-        // Arrange: 时间点 = 时间段开始时间，应该被忽略（时间段优先）
+        // Arrange: 时间点 = 时间段开始时间，应该覆盖自动生成的开始时间点
         var schedule = new TimeSchedule
         {
             Id = "test_schedule",
@@ -414,7 +415,7 @@ public class ExecutionPlanGeneratorTests
                 {
                     Id = "tp_start",
                     Time = "09:00:00",
-                    ToState = ProgressStateType.Success // 这个应该被忽略
+                    ToState = ProgressStateType.Paused // 覆盖自动生成的开始时间点
                 }
             }
         };
@@ -423,8 +424,10 @@ public class ExecutionPlanGeneratorTests
         // Act
         var plan = _generator.Generate(schedule, date, date.AddHours(8));
 
-        // Assert: 时间点被忽略，没有时间点
-        plan.TimePoints.Should().BeEmpty();
+        // Assert: 2个时间点（开始覆盖 + 结束自动）
+        plan.TimePoints.Should().HaveCount(2);
+        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Paused);   // 覆盖的开始
+        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Loading);  // 自动生成的结束
     }
 
     [Fact]

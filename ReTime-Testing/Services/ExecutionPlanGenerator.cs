@@ -168,7 +168,7 @@ public class ExecutionPlanGenerator
 
     /// <summary>
     /// 生成时间点列表
-    /// 过滤掉与时间段开始时间相同的时间点
+    /// 自动生成时间段开始/结束时间点，自定义时间点可覆盖
     /// </summary>
     /// <param name="schedule">时间计划</param>
     /// <param name="date">计划日期</param>
@@ -178,10 +178,83 @@ public class ExecutionPlanGenerator
     {
         var timePoints = new List<TimePoint>();
 
-        // 获取所有时间段的开始时间（用于过滤）
-        var segmentStartTimes = segments
+        // 1. 获取所有 Progress 时间段（用于自动生成时间点）
+        var progressSegments = segments
             .Where(s => s.State == ProgressStateType.Progress)
-            .Select(s => s.StartTime)
+            .ToList();
+
+        // 2. 构建自定义时间点的时间集合（用于检测覆盖）
+        var customTimePoints = new Dictionary<DateTime, CustomTimePoint>();
+        foreach (var custom in schedule.TimePoints)
+        {
+            try
+            {
+                var customTime = CombineDateAndTime(date, custom.Time);
+                customTimePoints[customTime] = custom;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ExecutionPlanGenerator", $"解析自定义时间点失败: {custom.Id}, 错误: {ex.Message}");
+            }
+        }
+
+        // 3. 自动生成时间段开始/结束时间点
+        foreach (var segment in progressSegments)
+        {
+            // 时间段开始时间点：Loading → Progress
+            if (customTimePoints.TryGetValue(segment.StartTime, out var customStart))
+            {
+                // 自定义时间点覆盖
+                timePoints.Add(new TimePoint
+                {
+                    Id = customStart.Id,
+                    Name = string.IsNullOrEmpty(customStart.Name) ? segment.Name + " 开始" : customStart.Name,
+                    Time = segment.StartTime,
+                    ToState = customStart.ToState,
+                    StyleOverrides = ParseStyle(customStart.Style)
+                });
+            }
+            else
+            {
+                // 自动生成
+                timePoints.Add(new TimePoint
+                {
+                    Id = $"auto_start_{segment.Id}",
+                    Name = $"{segment.Name} 开始",
+                    Time = segment.StartTime,
+                    ToState = ProgressStateType.Progress
+                });
+            }
+
+            // 时间段结束时间点：Progress → Loading
+            if (customTimePoints.TryGetValue(segment.EndTime, out var customEnd))
+            {
+                // 自定义时间点覆盖
+                timePoints.Add(new TimePoint
+                {
+                    Id = customEnd.Id,
+                    Name = string.IsNullOrEmpty(customEnd.Name) ? segment.Name + " 结束" : customEnd.Name,
+                    Time = segment.EndTime,
+                    ToState = customEnd.ToState,
+                    StyleOverrides = ParseStyle(customEnd.Style)
+                });
+            }
+            else
+            {
+                // 自动生成
+                timePoints.Add(new TimePoint
+                {
+                    Id = $"auto_end_{segment.Id}",
+                    Name = $"{segment.Name} 结束",
+                    Time = segment.EndTime,
+                    ToState = ProgressStateType.Loading
+                });
+            }
+        }
+
+        // 4. 添加不在时间段开始/结束时间的自定义时间点
+        var segmentTimes = progressSegments
+            .SelectMany(s => new[] { s.StartTime, s.EndTime })
             .ToHashSet();
 
         foreach (var custom in schedule.TimePoints)
@@ -189,33 +262,29 @@ public class ExecutionPlanGenerator
             try
             {
                 var customTime = CombineDateAndTime(date, custom.Time);
-
-                // 如果时间点与时间段开始时间相同，忽略（时间段优先）
-                if (segmentStartTimes.Contains(customTime))
+                // 如果不在时间段开始/结束时间，则添加（中间插入的时间点）
+                if (!segmentTimes.Contains(customTime))
                 {
-                    Logger.Info("ExecutionPlanGenerator", $"时间点 {custom.Id} ({custom.Time}) 与时间段开始时间相同，已忽略");
-                    continue;
+                    timePoints.Add(new TimePoint
+                    {
+                        Id = custom.Id,
+                        Name = string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
+                        Time = customTime,
+                        ToState = custom.ToState,
+                        StyleOverrides = ParseStyle(custom.Style)
+                    });
                 }
-
-                timePoints.Add(new TimePoint
-                {
-                    Id = custom.Id,
-                    Name = string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
-                    Time = customTime,
-                    ToState = custom.ToState,
-                    StyleOverrides = ParseStyle(custom.Style)
-                });
             }
             catch (Exception ex)
             {
-                Logger.Warn("ExecutionPlanGenerator", $"生成时间点失败: {custom.Id}, 错误: {ex.Message}");
+                Logger.Warn("ExecutionPlanGenerator", $"生成自定义时间点失败: {custom.Id}, 错误: {ex.Message}");
             }
         }
 
-        // 按时间排序
+        // 5. 按时间排序
         timePoints = timePoints.OrderBy(tp => tp.Time).ToList();
 
-        // 自动计算 fromState
+        // 6. 自动计算 fromState
         for (int i = 0; i < timePoints.Count; i++)
         {
             if (i == 0)
