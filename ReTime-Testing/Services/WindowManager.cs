@@ -4,6 +4,7 @@ using System.Windows;
 using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
 using ReTime_Testing.Views.Testing;
+using ReTime_Testing.Views.TimeScheduleEditor;
 
 namespace ReTime_Testing.Services
 {
@@ -16,6 +17,7 @@ namespace ReTime_Testing.Services
         private static Window? _mainWindow;
         private static Window? _timeTopSetting;
         private static Window? _debugTest;
+        private static Window? _timeScheduleEditor;
 
         /// <summary>
         /// 获取或创建主窗口（MainWindow）
@@ -57,6 +59,19 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 获取或创建时间计划表编辑器窗口（TimeScheduleEditor）
+        /// </summary>
+        public static Window GetTimeScheduleEditor()
+        {
+            if (_timeScheduleEditor == null || !_timeScheduleEditor.IsLoaded)
+            {
+                _timeScheduleEditor = new TimeScheduleEditor();
+                _timeScheduleEditor.Closed += (s, e) => _timeScheduleEditor = null;
+            }
+            return _timeScheduleEditor;
+        }
+
+        /// <summary>
         /// 显示主窗口
         /// </summary>
         public static void ShowMainWindow()
@@ -87,6 +102,16 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 显示时间计划表编辑器窗口
+        /// </summary>
+        public static void ShowTimeScheduleEditor()
+        {
+            var window = GetTimeScheduleEditor();
+            window.Show();
+            window.Activate();
+        }
+
+        /// <summary>
         /// 关闭所有窗口
         /// </summary>
         public static void CloseAllWindows()
@@ -94,6 +119,7 @@ namespace ReTime_Testing.Services
             _mainWindow?.Close();
             _timeTopSetting?.Close();
             _debugTest?.Close();
+            _timeScheduleEditor?.Close();
         }
 
         /// <summary>
@@ -104,6 +130,7 @@ namespace ReTime_Testing.Services
             _mainWindow = null;
             _timeTopSetting = null;
             _debugTest = null;
+            _timeScheduleEditor = null;
         }
     }
 }
