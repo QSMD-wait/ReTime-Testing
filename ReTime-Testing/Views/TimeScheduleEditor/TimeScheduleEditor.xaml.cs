@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
@@ -19,7 +21,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     }
 
     /// <summary>
-    /// 时间段/时间点列表项（统一展示）
+    /// 统一列表项（时间段+时间点）
     /// </summary>
     public class ScheduleItemListItem
     {
@@ -27,21 +29,31 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         public string Name { get; set; } = "";
         public string StartTime { get; set; } = "";
         public string EndTime { get; set; } = "";
-        public string TypeIcon { get; set; } = "\uE787"; // 默认时间段图标
-        public bool IsTimePoint { get; set; } // false=时间段, true=时间点
+        public string TypeIcon { get; set; } = "\uE787";
+        public bool IsTimePoint { get; set; }
+        public ProgressStateType ToState { get; set; }
     }
 
     /// <summary>
     /// TimeScheduleEditor.xaml 的交互逻辑
     /// </summary>
-    public partial class TimeScheduleEditor : Window
+    public partial class TimeScheduleEditor : Window, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
         private readonly TimeScheduleManager _scheduleManager;
+
+        // 当前编辑的计划表（内存中）
+        private TimeSchedule? _currentSchedule;
 
         // 计划表列表
         public ObservableCollection<ScheduleListItem> Schedules { get; } = new();
 
-        // 选中计划表的所有时间段和时间点
+        // 时间段+时间点统一列表
         public ObservableCollection<ScheduleItemListItem> ScheduleItems { get; } = new();
 
         // 当前选中的计划表
@@ -52,12 +64,61 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             set
             {
                 _selectedSchedule = value;
+                // 加载选中的计划表到内存
+                if (value != null)
+                {
+                    _currentSchedule = _scheduleManager.LoadSchedule(value.Id);
+                }
+                else
+                {
+                    _currentSchedule = null;
+                }
                 LoadScheduleItems();
             }
         }
 
-        // 当前选中的时间段/时间点
+        // 当前选中的时间段或时间点
         private ScheduleItemListItem? _selectedScheduleItem;
+        public ScheduleItemListItem? SelectedScheduleItem
+        {
+            get => _selectedScheduleItem;
+            set
+            {
+                _selectedScheduleItem = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(EditPanelVisibility));
+                OnPropertyChanged(nameof(EmptyStateVisibility));
+                OnPropertyChanged(nameof(IsSegmentSelected));
+                OnPropertyChanged(nameof(IsTimePointSelected));
+            }
+        }
+
+        /// <summary>
+        /// 编辑面板可见性
+        /// </summary>
+        public Visibility EditPanelVisibility => SelectedScheduleItem != null
+            ? Visibility.Visible : Visibility.Collapsed;
+
+        /// <summary>
+        /// 空状态占位可见性
+        /// </summary>
+        public Visibility EmptyStateVisibility => SelectedScheduleItem == null
+            ? Visibility.Visible : Visibility.Collapsed;
+
+        /// <summary>
+        /// 是否选中时间段（非时间点）
+        /// </summary>
+        public bool IsSegmentSelected => SelectedScheduleItem != null && !SelectedScheduleItem.IsTimePoint;
+
+        /// <summary>
+        /// 是否选中时间点
+        /// </summary>
+        public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.IsTimePoint;
+
+        /// <summary>
+        /// 目标状态选项列表
+        /// </summary>
+        public Array ToStateOptions => Enum.GetValues(typeof(ProgressStateType));
 
         public TimeScheduleEditor()
         {
@@ -101,49 +162,55 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
 
         /// <summary>
-        /// 加载选中计划表的时间段和时间点
+        /// 加载选中计划表的时间段和时间点（混合显示，按起始时间排序）
         /// </summary>
         private void LoadScheduleItems()
         {
             ScheduleItems.Clear();
 
-            if (_selectedSchedule == null) return;
+            if (_currentSchedule == null) return;
 
-            var schedule = _scheduleManager.LoadSchedule(_selectedSchedule.Id);
-            if (schedule == null) return;
+            var items = new List<ScheduleItemListItem>();
 
             // 加载时间段
-            if (schedule.Schedules != null)
+            if (_currentSchedule.Schedules != null)
             {
-                foreach (var item in schedule.Schedules)
+                foreach (var item in _currentSchedule.Schedules)
                 {
-                    ScheduleItems.Add(new ScheduleItemListItem
+                    items.Add(new ScheduleItemListItem
                     {
                         Id = item.Id,
                         Name = item.Name,
                         StartTime = item.StartTime,
                         EndTime = item.EndTime,
-                        TypeIcon = "\uE787", // 时间段图标
+                        TypeIcon = "\uE787",
                         IsTimePoint = false
                     });
                 }
             }
 
             // 加载时间点
-            if (schedule.TimePoints != null)
+            if (_currentSchedule.TimePoints != null)
             {
-                foreach (var point in schedule.TimePoints)
+                foreach (var point in _currentSchedule.TimePoints)
                 {
-                    ScheduleItems.Add(new ScheduleItemListItem
+                    items.Add(new ScheduleItemListItem
                     {
                         Id = point.Id,
                         Name = point.Name,
                         StartTime = point.Time,
-                        EndTime = "", // 时间点只有单个时间
-                        TypeIcon = "\uE823", // 时间点图标
-                        IsTimePoint = true
+                        TypeIcon = "\uE823",
+                        IsTimePoint = true,
+                        ToState = point.ToState
                     });
                 }
+            }
+
+            // 按起始时间排序后添加到列表
+            var sortedItems = items.OrderBy(i => TimeSpan.Parse(i.StartTime)).ToList();
+            foreach (var item in sortedItems)
+            {
+                ScheduleItems.Add(item);
             }
         }
 
@@ -159,7 +226,6 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             if (schedule != null)
             {
                 RefreshScheduleList();
-                // 选中新创建的计划表
                 SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
             }
         }
@@ -186,7 +252,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnAddTimeSegmentClick(object sender, RoutedEventArgs e)
         {
-            if (_selectedSchedule == null) return;
+            if (_currentSchedule == null) return;
 
             var newSegment = new TimeScheduleItem
             {
@@ -196,10 +262,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 EndTime = "12:00:00"
             };
 
-            if (_scheduleManager.AddTimeSegment(_selectedSchedule.Id, newSegment))
-            {
-                LoadScheduleItems();
-            }
+            _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
+            _currentSchedule.Schedules.Add(newSegment);
+            LoadScheduleItems();
         }
 
         /// <summary>
@@ -207,20 +272,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnAddTimePointClick(object sender, RoutedEventArgs e)
         {
-            if (_selectedSchedule == null) return;
+            if (_currentSchedule == null) return;
 
             var newTimePoint = new CustomTimePoint
             {
-                Id = $"timepoint_{DateTime.Now:yyyyMMddHHmmss}",
+                Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间点",
                 Time = "09:00:00",
-                ToState = ProgressStateType.Progress
+                ToState = ProgressStateType.Success
             };
 
-            if (_scheduleManager.AddTimePoint(_selectedSchedule.Id, newTimePoint))
-            {
-                LoadScheduleItems();
-            }
+            _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
+            _currentSchedule.TimePoints.Add(newTimePoint);
+            LoadScheduleItems();
         }
 
         /// <summary>
@@ -228,26 +292,30 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnDeleteScheduleItemClick(object sender, RoutedEventArgs e)
         {
-            if (_selectedSchedule == null || _selectedScheduleItem == null) return;
+            if (_currentSchedule == null || _selectedScheduleItem == null) return;
 
-            bool success;
             if (_selectedScheduleItem.IsTimePoint)
             {
-                success = _scheduleManager.RemoveTimePoint(_selectedSchedule.Id, _selectedScheduleItem.Id);
+                var point = _currentSchedule.TimePoints?.FirstOrDefault(p => p.Id == _selectedScheduleItem.Id);
+                if (point != null)
+                {
+                    _currentSchedule.TimePoints!.Remove(point);
+                }
             }
             else
             {
-                success = _scheduleManager.RemoveTimeSegment(_selectedSchedule.Id, _selectedScheduleItem.Id);
+                var segment = _currentSchedule.Schedules?.FirstOrDefault(s => s.Id == _selectedScheduleItem.Id);
+                if (segment != null)
+                {
+                    _currentSchedule.Schedules!.Remove(segment);
+                }
             }
 
-            if (success)
-            {
-                LoadScheduleItems();
-            }
+            LoadScheduleItems();
         }
 
         /// <summary>
-        /// 重新排序时间段（按开始时间）
+        /// 重新排序（按开始时间）
         /// </summary>
         private void OnRefreshOrderClick(object sender, RoutedEventArgs e)
         {
@@ -290,8 +358,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnSaveButtonClick(object sender, RoutedEventArgs e)
         {
-            // 保存操作由 TimeScheduleManager 自动处理
-            // 这里可以添加额外的保存逻辑或提示
+            if (_currentSchedule == null) return;
+
+            _scheduleManager.SaveSchedule(_currentSchedule);
         }
     }
 }
