@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace ReTime_Testing.Models
 {
@@ -44,6 +44,12 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("styles")]
         public StyleOverridesData? Styles { get; set; }
+
+        /// <summary>
+        /// 描述信息
+        /// </summary>
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
     }
 
     /// <summary>

@@ -47,5 +47,11 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("style")]
         public StyleOverridesData? Style { get; set; }
+
+        /// <summary>
+        /// 描述信息
+        /// </summary>
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
     }
 }
