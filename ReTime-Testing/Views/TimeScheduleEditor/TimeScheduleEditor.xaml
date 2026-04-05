@@ -47,7 +47,7 @@
                         <ColumnDefinition Width="320" MinWidth="250" MaxWidth="450"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 1. 左侧面板：时间表列表 -->
+                    <!-- 1. 左侧面板：计划表列表 -->
                     <Grid Grid.Column="0" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -56,33 +56,35 @@
 
                         <!-- 操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0">
-                            <ui:AppBarButton Label="添加" ToolTip="新建时间表">
+                            <ui:AppBarButton Label="添加" ToolTip="新建计划表">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="复制" ToolTip="复制选中的时间表">
+                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                         </ui:CommandBar>
 
-                        <!-- 时间表列表 -->
-                        <ListBox Grid.Row="1" Margin="4">
-                            <ListBox.ItemTemplate>
+                        <!-- 计划表列表 -->
+                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding TimeSchedules}"
+                                  IsEnabled="True" SelectionMode="Single"
+                                  VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch" Margin="4">
-                                        <TextBlock Text="{Binding Settings.Metadata.Name}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
                                         <ui:FontIcon Glyph="&#xE4D2;" HorizontalAlignment="Right"
-                                                       ToolTip="此时间表正在活动"
+                                                       ToolTip="此计划表正在活动"
                                                        Visibility="Collapsed"
                                                        FontSize="14"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
                                     </Grid>
                                 </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </Grid>
 
                     <!-- 第一个分隔条 -->
@@ -101,19 +103,14 @@
 
                         <!-- 操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0">
-                            <ui:AppBarButton Label="上课" ToolTip="添加上课时间点">
+                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="课间" ToolTip="添加课间休息时间点">
+                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Airplane}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarButton Label="分割线" ToolTip="添加分割线">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Home}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                             
@@ -128,12 +125,12 @@
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                             
-                            <ui:AppBarButton Label="时间表信息" ToolTip="编辑时间表基本信息">
+                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="删除时间表" ToolTip="删除该时间表">
+                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
                                 </ui:AppBarButton.Icon>
@@ -141,12 +138,14 @@
                         </ui:CommandBar>
 
                         <!-- 时间点列表 -->
-                        <ListBox Grid.Row="1" Margin="4">
-                            <ListBox.ItemTemplate>
+                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding TimePoints}"
+                                  IsEnabled="True" SelectionMode="Single"
+                                  VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="8,4">
                                         <!-- 类型图标 -->
-                                        <ui:FontIcon Glyph="&#xE47A;" FontSize="14" Margin="0,0,8,0"
+                                        <ui:FontIcon Glyph="{Binding TypeIcon}" FontSize="14" Margin="0,0,8,0"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                         <!-- 名称 -->
                                         <TextBlock Text="{Binding Name}" Width="80" VerticalAlignment="Center"/>
@@ -158,8 +157,8 @@
                                         </TextBlock>
                                     </StackPanel>
                                 </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </Grid>
 
                     <!-- 第二个分隔条 -->
@@ -174,34 +173,50 @@
                                   Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
                         <StackPanel Margin="16">
                             <!-- 标题 -->
-                            <TextBlock Text="时间表信息" FontSize="16" FontWeight="SemiBold"
+                            <TextBlock Text="时间段/时间点编辑" FontSize="16" FontWeight="SemiBold"
                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
 
-                            <!-- 时间表名称 -->
-                            <StackPanel>
+                            <!-- 名称 -->
+                            <StackPanel Margin="0,16,0,0">
                                 <TextBlock Text="名称" FontSize="12" Margin="0,0,0,4"
                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                <TextBox Text="默认工作时间"/>
+                                <TextBox Text="上午工作"/>
                             </StackPanel>
+
+                            <!-- 开始时间 -->
+                            <StackPanel Margin="0,12,0,0">
+                                <TextBlock Text="开始时间" FontSize="12" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                <TextBox Text="09:00:00"/>
+                            </StackPanel>
+
+                            <!-- 结束时间 -->
+                            <StackPanel Margin="0,12,0,0">
+                                <TextBlock Text="结束时间" FontSize="12" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                <TextBox Text="12:00:00"/>
+                            </StackPanel>
+
+                            <!-- 类型 -->
+                            <StackPanel Margin="0,12,0,0">
+                                <TextBlock Text="类型" FontSize="12" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                <ComboBox SelectedIndex="0">
+                                    <ComboBoxItem Content="时间段"/>
+                                    <ComboBoxItem Content="时间点"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- 分隔线 -->
+                            <Separator Margin="0,16,0,16" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
                             <!-- 描述 -->
                             <StackPanel>
                                 <TextBlock Text="描述" FontSize="12" Margin="0,0,0,4"
                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                <TextBox Text="标准的 9:00 - 18:00 工作时间"
+                                <TextBox Text="上午的工作时间段"
                                             TextWrapping="Wrap" AcceptsReturn="True" MinHeight="60"/>
                             </StackPanel>
-
-                            <!-- 分隔线 -->
-                            <Separator Margin="0,8,0,8" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
-
-                            <!-- 时间点编辑（预留） -->
-                            <TextBlock Text="编辑时间点" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-
-                            <TextBlock Text="请在中间列表中选择一个时间段进行编辑"
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
