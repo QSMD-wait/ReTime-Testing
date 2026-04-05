@@ -56,12 +56,12 @@
 
                         <!-- 操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0">
-                            <ui:AppBarButton Label="添加" ToolTip="新建计划表">
+                            <ui:AppBarButton Label="添加" ToolTip="新建计划表" Click="OnAddScheduleClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表">
+                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表" Click="OnCopyScheduleClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}"/>
                                 </ui:AppBarButton.Icon>
@@ -69,7 +69,8 @@
                         </ui:CommandBar>
 
                         <!-- 计划表列表 -->
-                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding TimeSchedules}"
+                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding Schedules}"
+                                  SelectedItem="{Binding SelectedSchedule, Mode=TwoWay}"
                                   IsEnabled="True" SelectionMode="Single"
                                   VirtualizingPanel.VirtualizationMode="Recycling">
                             <ListView.ItemTemplate>
@@ -103,42 +104,42 @@
 
                         <!-- 操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0">
-                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段">
+                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段" Click="OnAddTimeSegmentClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点">
+                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点" Click="OnAddTimePointClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Airplane}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            
-                            <ui:AppBarButton Label="删除" ToolTip="删除选中的时间点">
+
+                            <ui:AppBarButton Label="删除" ToolTip="删除选中的时间段或时间点" Click="OnDeleteScheduleItemClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="刷新" ToolTip="重新排序">
+                            <ui:AppBarButton Label="刷新" ToolTip="重新排序" Click="OnRefreshOrderClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            
-                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息">
+
+                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息" Click="OnEditScheduleInfoClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表">
+                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表" Click="OnDeleteScheduleClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                         </ui:CommandBar>
 
-                        <!-- 时间点列表 -->
-                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding TimePoints}"
+                        <!-- 时间段/时间点列表 -->
+                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding ScheduleItems}"
                                   IsEnabled="True" SelectionMode="Single"
                                   VirtualizingPanel.VirtualizationMode="Recycling">
                             <ListView.ItemTemplate>
