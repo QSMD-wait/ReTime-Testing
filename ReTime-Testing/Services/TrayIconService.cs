@@ -35,6 +35,11 @@ namespace ReTime_Testing.Services
         public event Action? OpenDebugRequested;
 
         /// <summary>
+        /// 打开时间计划表编辑器请求事件
+        /// </summary>
+        public event Action? OpenTimeScheduleEditorRequested;
+
+        /// <summary>
         /// 关于请求事件
         /// </summary>
         public event Action? AboutRequested;
@@ -157,6 +162,11 @@ namespace ReTime_Testing.Services
             var openDebugItem = CreateMenuItem("打开调试", "\uE713");
             openDebugItem.Click += (s, e) => OpenDebugRequested?.Invoke();
             contextMenu.Items.Add(openDebugItem);
+
+            // 打开时间计划表编辑器菜单项
+            var openEditorItem = CreateMenuItem("时间计划表编辑器", "\uE787"); // 使用日历图标
+            openEditorItem.Click += (s, e) => OpenTimeScheduleEditorRequested?.Invoke();
+            contextMenu.Items.Add(openEditorItem);
 
             // 关于菜单项
             var aboutItem = CreateMenuItem("关于", "\uE946");

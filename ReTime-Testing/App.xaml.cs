@@ -188,13 +188,14 @@ namespace ReTime_Testing
                 // 订阅托盘图标事件
                 _trayIconService.OpenSettingRequested += OpenSetting;
                 _trayIconService.OpenDebugRequested += OpenDebugTest;
+                _trayIconService.OpenTimeScheduleEditorRequested += OpenTimeScheduleEditor; // 订阅新事件
                 _trayIconService.AboutRequested += OpenMainWindow;
                 _trayIconService.ExitRequested += ExitApplication;
 
                 // 使用 WindowManager 打开主窗口和调试测试窗口
                 // WindowManager.ShowMainWindow();
                 // WindowManager.ShowDebugTest();
-                WindowManager.ShowTimeScheduleEditor();
+                // WindowManager.ShowTimeScheduleEditor();
 
                 // 使用 DesktopWindowManager 打开进度条窗口（默认顶部）
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
@@ -326,6 +327,22 @@ namespace ReTime_Testing
             catch (Exception ex)
             {
                 Logger.Error(GetType().FullName ?? "App", "打开调试测试窗口时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 打开时间计划编辑器
+        /// </summary>
+        private void OpenTimeScheduleEditor()
+        {
+            try
+            {
+                WindowManager.ShowTimeScheduleEditor();
+                Logger.Info(GetType().FullName ?? "App", "时间计划编辑器已打开");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "打开时间计划编辑器时发生异常", ex);
             }
         }
 
