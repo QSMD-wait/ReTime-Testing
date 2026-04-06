@@ -88,6 +88,25 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     }
 
     /// <summary>
+    /// 时间格式验证器
+    /// </summary>
+    public static class TimeFormatValidator
+    {
+        // 匹配 HH:mm:ss 格式（小时:分钟:秒）
+        private static readonly System.Text.RegularExpressions.Regex TimeFormatRegex =
+            new(@"^(\d{1,2}):([0-5]?\d):([0-5]?\d)$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
+        /// 验证时间格式是否为 HH:mm:ss
+        /// </summary>
+        public static bool IsValidFormat(string? timeString)
+        {
+            if (string.IsNullOrEmpty(timeString)) return false;
+            return TimeFormatRegex.IsMatch(timeString);
+        }
+    }
+
+    /// <summary>
     /// TimeScheduleEditor.xaml 的交互逻辑
     /// </summary>
     public partial class TimeScheduleEditor : Window, INotifyPropertyChanged
@@ -285,10 +304,37 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var segments = ScheduleItems.Where(i => !i.IsTimePoint).ToList();
             var timePoints = ScheduleItems.Where(i => i.IsTimePoint).ToList();
 
-            // 验证时间段结束时间 >= 开始时间
+            // 验证时间格式（先检查空值，再检查格式，最后检查逻辑）
             foreach (var seg in segments)
             {
-                if (!string.IsNullOrEmpty(seg.StartTime) && !string.IsNullOrEmpty(seg.EndTime))
+                // 检查空值
+                bool hasStartError = false;
+                bool hasEndError = false;
+
+                if (string.IsNullOrEmpty(seg.StartTime))
+                {
+                    seg.StartTimeError = "不能为空";
+                    hasStartError = true;
+                }
+                else if (!TimeFormatValidator.IsValidFormat(seg.StartTime))
+                {
+                    seg.StartTimeError = "格式应为 HH:mm:ss";
+                    hasStartError = true;
+                }
+
+                if (string.IsNullOrEmpty(seg.EndTime))
+                {
+                    seg.EndTimeError = "不能为空";
+                    hasEndError = true;
+                }
+                else if (!TimeFormatValidator.IsValidFormat(seg.EndTime))
+                {
+                    seg.EndTimeError = "格式应为 HH:mm:ss";
+                    hasEndError = true;
+                }
+
+                // 格式正确后，验证结束时间 >= 开始时间
+                if (!hasStartError && !hasEndError && !string.IsNullOrEmpty(seg.StartTime) && !string.IsNullOrEmpty(seg.EndTime))
                 {
                     try
                     {
@@ -306,6 +352,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 }
             }
 
+            // 验证时间点格式
+            foreach (var tp in timePoints)
+            {
+                if (string.IsNullOrEmpty(tp.StartTime))
+                {
+                    tp.StartTimeError = "不能为空";
+                }
+                else if (!TimeFormatValidator.IsValidFormat(tp.StartTime))
+                {
+                    tp.StartTimeError = "格式应为 HH:mm:ss";
+                }
+            }
+
             // 验证时间段重叠（只标记有问题的项）
             for (int i = 0; i < segments.Count; i++)
             {
@@ -313,6 +372,13 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 {
                     var a = segments[i];
                     var b = segments[j];
+
+                    // 跳过格式无效的项
+                    if (!TimeFormatValidator.IsValidFormat(a.StartTime) ||
+                        !TimeFormatValidator.IsValidFormat(a.EndTime) ||
+                        !TimeFormatValidator.IsValidFormat(b.StartTime) ||
+                        !TimeFormatValidator.IsValidFormat(b.EndTime))
+                        continue;
 
                     if (!TryParseTime(a.StartTime, out var aStart) ||
                         !TryParseTime(a.EndTime, out var aEnd) ||
@@ -324,8 +390,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     if (aEnd < aStart) aEnd = aEnd.Add(TimeSpan.FromDays(1));
                     if (bEnd < bStart) bEnd = bEnd.Add(TimeSpan.FromDays(1));
 
-                    // 允许边界重合：a.End == b.Start 或 b.End == a.Start
-                    if (aEnd > bStart && bStart < aEnd && aStart < bEnd && bStart < aEnd)
+                    // 允许边界重合：a.End == b.Start 或 b.End == a.Start 时不视为重叠
+                    // 重叠条件：a.Start < b.End && b.Start < a.End
+                    if (aStart < bEnd && bStart < aEnd)
                     {
                         a.StartTimeError = "与其他时间段重叠";
                         b.StartTimeError = "与其他时间段重叠";
@@ -336,11 +403,20 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 验证时间点不在时间段内部
             foreach (var tp in timePoints)
             {
+                // 跳过格式无效的时间点
+                if (!TimeFormatValidator.IsValidFormat(tp.StartTime))
+                    continue;
+
                 if (!TryParseTime(tp.StartTime, out var tpTime))
                     continue;
 
                 foreach (var seg in segments)
                 {
+                    // 跳过格式无效的时间段
+                    if (!TimeFormatValidator.IsValidFormat(seg.StartTime) ||
+                        !TimeFormatValidator.IsValidFormat(seg.EndTime))
+                        continue;
+
                     if (!TryParseTime(seg.StartTime, out var segStart) ||
                         !TryParseTime(seg.EndTime, out var segEnd))
                         continue;
@@ -546,6 +622,104 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 {
                     SelectedSchedule = Schedules[0];
                 }
+            }
+        }
+
+        /// <summary>
+        /// 加载按钮点击事件 - 弹出 ContentDialog 选择计划表
+        /// </summary>
+        private async void OnReloadButtonClick(object sender, RoutedEventArgs e)
+        {
+            // 获取所有计划表列表
+            var scheduleList = _scheduleManager.GetScheduleList();
+            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().SelectedScheduleId;
+
+            // 构建列表项
+            var items = new System.Collections.Generic.List<ScheduleListItem>();
+            foreach (var info in scheduleList)
+            {
+                items.Add(new ScheduleListItem
+                {
+                    Id = info.Id,
+                    Name = info.Name,
+                    IsActivated = info.Id == currentSelectedId
+                });
+            }
+
+            // 创建列表视图（使用 WPF 原生 ListView 避免歧义）
+            var listView = new System.Windows.Controls.ListView
+            {
+                ItemsSource = items,
+                SelectionMode = System.Windows.Controls.SelectionMode.Single,
+                MinWidth = 300,
+                MinHeight = 200,
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+
+            // 设置数据模板
+            listView.ItemTemplate = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(Grid));
+            factory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+            var textBlock = new FrameworkElementFactory(typeof(TextBlock));
+            textBlock.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            textBlock.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            factory.AppendChild(textBlock);
+            listView.ItemTemplate.VisualTree = factory;
+
+            // 选中当前计划表
+            var currentItem = items.FirstOrDefault(i => i.Id == _selectedSchedule?.Id);
+            if (currentItem != null)
+            {
+                listView.SelectedItem = currentItem;
+            }
+
+            // 创建 ContentDialog
+            var dialog = new ContentDialog
+            {
+                Title = "选择时间计划表",
+                Content = new ScrollViewer
+                {
+                    Content = listView,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    MaxHeight = 300
+                },
+                CloseButtonText = "取消",
+                PrimaryButtonText = "加载",
+                DefaultButton = ContentDialogButton.Primary
+            };
+
+            // 显示对话框
+            var result = await dialog.ShowAsync();
+
+            // 处理结果
+            if (result == ContentDialogResult.Primary && listView.SelectedItem is ScheduleListItem selectedItem)
+            {
+                // 修改配置文件中的 SelectedScheduleId
+                var setting = ConfigurationManager.Instance.LoadTimeTopSetting();
+                setting.SelectedScheduleId = selectedItem.Id;
+                ConfigurationManager.Instance.SaveTimeTopSetting(setting);
+
+                // 提示重启应用 - 使用 ContentDialog
+                var confirmDialog = new ContentDialog
+                {
+                    Title = "切换成功",
+                    Content = $"已切换到计划表 \"{selectedItem.Name}\"\n\n请重启应用以使更改生效。",
+                    CloseButtonText = "确定",
+                    DefaultButton = ContentDialogButton.Close
+                };
+                await confirmDialog.ShowAsync();
+            }
+            else if (result == ContentDialogResult.Primary && listView.SelectedItem == null)
+            {
+                // 用户点击加载但未选中，显示提示
+                var warnDialog = new ContentDialog
+                {
+                    Title = "提示",
+                    Content = "请选择一个计划表",
+                    CloseButtonText = "确定",
+                    DefaultButton = ContentDialogButton.Close
+                };
+                await warnDialog.ShowAsync();
             }
         }
 

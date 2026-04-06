@@ -242,6 +242,11 @@
                        VerticalAlignment="Top"
                        DefaultLabelPosition="Right"
                        IsOpen="False">
+            <ui:AppBarButton Label="加载" Click="OnReloadButtonClick" RenderTransformOrigin="-0.822,0.675">
+                <ui:AppBarButton.Icon>
+                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"/>
+                </ui:AppBarButton.Icon>
+            </ui:AppBarButton>
             <ui:AppBarButton Label="保存" Click="OnSaveButtonClick" RenderTransformOrigin="-0.822,0.675">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Save}"/>
