@@ -1,4 +1,4 @@
-﻿using ReTime_Testing.Models;
+using ReTime_Testing.Models;
 using System.IO;
 using System.Text.Json;
 
@@ -74,9 +74,9 @@ namespace ReTime_Testing.Services
         {
             try
             {
-                var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
-                ApplicationRootDirectory = assemblyDirectory ?? Environment.CurrentDirectory;
+                // 使用 AppContext.BaseDirectory 替代 Assembly.Location，避免单文件发布警告
+                var applicationRootDirectory = AppContext.BaseDirectory;
+                ApplicationRootDirectory = Path.GetFullPath(applicationRootDirectory);
 
                 DataDirectory = Path.Combine(ApplicationRootDirectory, "data");
                 GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
@@ -84,7 +84,7 @@ namespace ReTime_Testing.Services
                 TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeSchedules");
                 TimeTopSettingFilePath = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeTopSetting.json");
 
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
+                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
             }
             catch (Exception ex)
