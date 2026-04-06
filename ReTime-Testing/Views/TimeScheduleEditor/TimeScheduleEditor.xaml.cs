@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -23,15 +24,67 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     /// <summary>
     /// 统一列表项（时间段+时间点）
     /// </summary>
-    public class ScheduleItemListItem
+    public class ScheduleItemListItem : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
-        public string StartTime { get; set; } = "";
-        public string EndTime { get; set; } = "";
+        public string _startTime = "";
+        public string StartTime
+        {
+            get => _startTime;
+            set
+            {
+                _startTime = value;
+                OnPropertyChanged();
+            }
+        }
+        public string _endTime = "";
+        public string EndTime
+        {
+            get => _endTime;
+            set
+            {
+                _endTime = value;
+                OnPropertyChanged();
+            }
+        }
         public string TypeIcon { get; set; } = "\uE787";
         public bool IsTimePoint { get; set; }
         public ProgressStateType ToState { get; set; }
+
+        // 验证错误信息
+        private string _startTimeError = "";
+        public string StartTimeError
+        {
+            get => _startTimeError;
+            set
+            {
+                _startTimeError = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasStartTimeError));
+            }
+        }
+
+        private string _endTimeError = "";
+        public string EndTimeError
+        {
+            get => _endTimeError;
+            set
+            {
+                _endTimeError = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasEndTimeError));
+            }
+        }
+
+        public bool HasStartTimeError => !string.IsNullOrEmpty(StartTimeError);
+        public bool HasEndTimeError => !string.IsNullOrEmpty(EndTimeError);
     }
 
     /// <summary>
@@ -212,6 +265,107 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             {
                 ScheduleItems.Add(item);
             }
+
+            // 加载后进行初始验证
+            ValidateAllItems();
+        }
+
+        /// <summary>
+        /// 验证所有列表项（时间重叠、结束时间<开始时间）
+        /// </summary>
+        private void ValidateAllItems()
+        {
+            // 清空所有错误
+            foreach (var item in ScheduleItems)
+            {
+                item.StartTimeError = "";
+                item.EndTimeError = "";
+            }
+
+            var segments = ScheduleItems.Where(i => !i.IsTimePoint).ToList();
+            var timePoints = ScheduleItems.Where(i => i.IsTimePoint).ToList();
+
+            // 验证时间段结束时间 >= 开始时间
+            foreach (var seg in segments)
+            {
+                if (!string.IsNullOrEmpty(seg.StartTime) && !string.IsNullOrEmpty(seg.EndTime))
+                {
+                    try
+                    {
+                        var start = TimeSpan.Parse(seg.StartTime);
+                        var end = TimeSpan.Parse(seg.EndTime);
+                        if (end < start)
+                        {
+                            seg.EndTimeError = "结束时间不能早于开始时间";
+                        }
+                    }
+                    catch
+                    {
+                        seg.StartTimeError = "时间格式无效";
+                    }
+                }
+            }
+
+            // 验证时间段重叠（只标记有问题的项）
+            for (int i = 0; i < segments.Count; i++)
+            {
+                for (int j = i + 1; j < segments.Count; j++)
+                {
+                    var a = segments[i];
+                    var b = segments[j];
+
+                    if (!TryParseTime(a.StartTime, out var aStart) ||
+                        !TryParseTime(a.EndTime, out var aEnd) ||
+                        !TryParseTime(b.StartTime, out var bStart) ||
+                        !TryParseTime(b.EndTime, out var bEnd))
+                        continue;
+
+                    // 处理跨午夜
+                    if (aEnd < aStart) aEnd = aEnd.Add(TimeSpan.FromDays(1));
+                    if (bEnd < bStart) bEnd = bEnd.Add(TimeSpan.FromDays(1));
+
+                    // 允许边界重合：a.End == b.Start 或 b.End == a.Start
+                    if (aEnd > bStart && bStart < aEnd && aStart < bEnd && bStart < aEnd)
+                    {
+                        a.StartTimeError = "与其他时间段重叠";
+                        b.StartTimeError = "与其他时间段重叠";
+                    }
+                }
+            }
+
+            // 验证时间点不在时间段内部
+            foreach (var tp in timePoints)
+            {
+                if (!TryParseTime(tp.StartTime, out var tpTime))
+                    continue;
+
+                foreach (var seg in segments)
+                {
+                    if (!TryParseTime(seg.StartTime, out var segStart) ||
+                        !TryParseTime(seg.EndTime, out var segEnd))
+                        continue;
+
+                    if (segEnd < segStart) segEnd = segEnd.Add(TimeSpan.FromDays(1));
+
+                    // 时间点在时间段内部（注意边界）
+                    if (tpTime > segStart && tpTime < segEnd)
+                    {
+                        tp.StartTimeError = "位于时间段内部";
+                    }
+                }
+            }
+        }
+
+        private bool TryParseTime(string timeString, out TimeSpan result)
+        {
+            result = TimeSpan.Zero;
+            if (string.IsNullOrEmpty(timeString)) return false;
+            return TimeSpan.TryParse(timeString, out result);
+        }
+
+        private bool IsOverlap(TimeSpan start1, TimeSpan end1, TimeSpan start2, TimeSpan end2)
+        {
+            return start1 < end2 && start2 < end1;
         }
 
         /// <summary>
@@ -254,12 +408,30 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null) return;
 
+            string startTime = "09:00:00";
+            string endTime = "10:00:00";
+
+            // 如果选中了时间段，使用该时间段的结束时间作为起始时间
+            if (SelectedScheduleItem != null && !SelectedScheduleItem.IsTimePoint && !string.IsNullOrEmpty(SelectedScheduleItem.EndTime))
+            {
+                try
+                {
+                    var baseTime = TimeSpan.Parse(SelectedScheduleItem.EndTime);
+                    startTime = baseTime.ToString(@"hh\:mm\:ss");
+                    endTime = baseTime.Add(TimeSpan.FromMinutes(10)).ToString(@"hh\:mm\:ss");
+                }
+                catch
+                {
+                    // 解析失败，使用默认值
+                }
+            }
+
             var newSegment = new TimeScheduleItem
             {
                 Id = $"segment_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间段",
-                StartTime = "09:00:00",
-                EndTime = "12:00:00"
+                StartTime = startTime,
+                EndTime = endTime
             };
 
             _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
@@ -274,11 +446,27 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null) return;
 
+            string time = "09:00:00";
+
+            // 如果选中了时间点或时间段，使用该时间/结束时间作为时间
+            if (SelectedScheduleItem != null && !string.IsNullOrEmpty(SelectedScheduleItem.StartTime))
+            {
+                try
+                {
+                    var baseTime = TimeSpan.Parse(SelectedScheduleItem.StartTime);
+                    time = baseTime.ToString(@"hh\:mm\:ss");
+                }
+                catch
+                {
+                    // 解析失败，使用默认值
+                }
+            }
+
             var newTimePoint = new CustomTimePoint
             {
                 Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间点",
-                Time = "09:00:00",
+                Time = time,
                 ToState = ProgressStateType.Success
             };
 
@@ -319,7 +507,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnRefreshOrderClick(object sender, RoutedEventArgs e)
         {
-            // TODO: 实现重新排序逻辑
+            ValidateAllItems();
+        }
+
+        /// <summary>
+        /// 时间输入框文本变化时触发验证
+        /// </summary>
+        private void OnTimeTextChanged(object sender, TextChangedEventArgs e)
+        {
+            ValidateAllItems();
         }
 
         /// <summary>
@@ -360,7 +556,62 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null) return;
 
+            // 先验证
+            ValidateAllItems();
+
+            // 检查是否有验证错误
+            var hasError = ScheduleItems.Any(i => i.HasStartTimeError || i.HasEndTimeError);
+            if (hasError)
+            {
+                SaveValidationInfoBar.Message = "存在验证错误，请修正后再保存";
+                SaveValidationInfoBar.IsOpen = true;
+                return;
+            }
+
+            // 将 UI 修改同步回 _currentSchedule
+            _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
+            _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
+            _currentSchedule.Schedules.Clear();
+            _currentSchedule.TimePoints.Clear();
+
+            foreach (var item in ScheduleItems)
+            {
+                if (item.IsTimePoint)
+                {
+                    _currentSchedule.TimePoints.Add(new CustomTimePoint
+                    {
+                        Id = item.Id,
+                        Name = item.Name,
+                        Time = item.StartTime,
+                        ToState = item.ToState
+                    });
+                }
+                else
+                {
+                    _currentSchedule.Schedules.Add(new TimeScheduleItem
+                    {
+                        Id = item.Id,
+                        Name = item.Name,
+                        StartTime = item.StartTime,
+                        EndTime = item.EndTime
+                    });
+                }
+            }
+
+            // 使用完整验证器进行最终验证
+            var validator = new TimeScheduleValidator();
+            var result = validator.Validate(_currentSchedule);
+            if (!result.IsValid)
+            {
+                SaveValidationInfoBar.Message = string.Join("\n", result.Errors);
+                SaveValidationInfoBar.IsOpen = true;
+                return;
+            }
+
             _scheduleManager.SaveSchedule(_currentSchedule);
+
+            // 保存成功后关闭 InfoBar
+            SaveValidationInfoBar.IsOpen = false;
         }
     }
 }

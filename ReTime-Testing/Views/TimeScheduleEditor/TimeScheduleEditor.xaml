@@ -195,20 +195,32 @@
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="开始时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
+                                                       FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
+                                                       Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </StackPanel>
 
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="结束时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.EndTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.EndTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBlock Text="{Binding SelectedScheduleItem.EndTimeError}"
+                                                       FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
+                                                       Visibility="{Binding SelectedScheduleItem.HasEndTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </StackPanel>
 
                                         <!-- 时间点专用：时间+目标状态 -->
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
+                                                       FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
+                                                       Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         </StackPanel>
 
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -236,6 +248,16 @@
                 </ui:AppBarButton.Icon>
             </ui:AppBarButton>
         </ui:CommandBar>
+
+        <!-- 保存时验证失败的 InfoBar -->
+        <ui:InfoBar x:Name="SaveValidationInfoBar"
+                    Grid.Column="0" Grid.ColumnSpan="2"
+                    Title="验证失败"
+                    IsOpen="False"
+                    Severity="Error"
+                    VerticalAlignment="Bottom"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,16,16"/>
     </Grid>
 
 </Window>
