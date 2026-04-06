@@ -16,7 +16,7 @@
         MinHeight="500">
     
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" ScrollViewer.PanningMode="VerticalOnly">
             <StackPanel Margin="32">
                 <TextBlock Text="TimeTopDesktop 设置"
                            FontSize="24"
