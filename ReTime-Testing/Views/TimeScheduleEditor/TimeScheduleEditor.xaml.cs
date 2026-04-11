@@ -249,15 +249,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             {
                 foreach (var item in _currentSchedule.Schedules)
                 {
-                    items.Add(new ScheduleItemListItem
-                    {
-                        Id = item.Id,
-                        Name = item.Name,
-                        StartTime = item.StartTime,
-                        EndTime = item.EndTime,
-                        TypeIcon = "\uE787",
-                        IsTimePoint = false
-                    });
+                    items.Add(ScheduleItemConverter.ToListItem(item));
                 }
             }
 
@@ -266,20 +258,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             {
                 foreach (var point in _currentSchedule.TimePoints)
                 {
-                    items.Add(new ScheduleItemListItem
-                    {
-                        Id = point.Id,
-                        Name = point.Name,
-                        StartTime = point.Time,
-                        TypeIcon = "\uE823",
-                        IsTimePoint = true,
-                        ToState = point.ToState
-                    });
+                    items.Add(ScheduleItemConverter.ToListItem(point));
                 }
             }
 
             // 按起始时间排序后添加到列表
-            var sortedItems = items.OrderBy(i => TimeSpan.Parse(i.StartTime)).ToList();
+            var sortedItems = items
+                .Where(i => TryParseTime(i.StartTime, out _))  // 跳过无效时间
+                .OrderBy(i => TimeSpan.Parse(i.StartTime))
+                .ToList();
             foreach (var item in sortedItems)
             {
                 ScheduleItems.Add(item);
@@ -439,9 +426,30 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             return TimeSpan.TryParse(timeString, out result);
         }
 
-        private bool IsOverlap(TimeSpan start1, TimeSpan end1, TimeSpan start2, TimeSpan end2)
+        /// <summary>
+        /// 计算新时间项的默认时间
+        /// </summary>
+        /// <param name="isTimePoint">是否为时间点</param>
+        /// <param name="defaultStartTime">默认起始时间（时间段）或时间（时间点）</param>
+        /// <param name="defaultEndTime">默认结束时间（仅时间段）</param>
+        private void ComputeDefaultTime(bool isTimePoint, out string defaultStartTime, out string defaultEndTime)
         {
-            return start1 < end2 && start2 < end1;
+            defaultStartTime = "09:00:00";
+            defaultEndTime = "10:00:00";
+
+            // 如果选中了时间项，使用其时间作为默认值
+            if (SelectedScheduleItem != null && !string.IsNullOrEmpty(SelectedScheduleItem.StartTime))
+            {
+                if (TryParseTime(SelectedScheduleItem.StartTime, out var baseTime))
+                {
+                    defaultStartTime = baseTime.ToString(@"hh\:mm\:ss");
+                    if (!isTimePoint)
+                    {
+                        // 时间段：结束时间 = 起始时间 + 10分钟
+                        defaultEndTime = baseTime.Add(TimeSpan.FromMinutes(10)).ToString(@"hh\:mm\:ss");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -484,23 +492,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null) return;
 
-            string startTime = "09:00:00";
-            string endTime = "10:00:00";
-
-            // 如果选中了时间段，使用该时间段的结束时间作为起始时间
-            if (SelectedScheduleItem != null && !SelectedScheduleItem.IsTimePoint && !string.IsNullOrEmpty(SelectedScheduleItem.EndTime))
-            {
-                try
-                {
-                    var baseTime = TimeSpan.Parse(SelectedScheduleItem.EndTime);
-                    startTime = baseTime.ToString(@"hh\:mm\:ss");
-                    endTime = baseTime.Add(TimeSpan.FromMinutes(10)).ToString(@"hh\:mm\:ss");
-                }
-                catch
-                {
-                    // 解析失败，使用默认值
-                }
-            }
+            // 计算默认时间
+            ComputeDefaultTime(isTimePoint: false, out var startTime, out var endTime);
 
             var newSegment = new TimeScheduleItem
             {
@@ -522,27 +515,14 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null) return;
 
-            string time = "09:00:00";
-
-            // 如果选中了时间点或时间段，使用该时间/结束时间作为时间
-            if (SelectedScheduleItem != null && !string.IsNullOrEmpty(SelectedScheduleItem.StartTime))
-            {
-                try
-                {
-                    var baseTime = TimeSpan.Parse(SelectedScheduleItem.StartTime);
-                    time = baseTime.ToString(@"hh\:mm\:ss");
-                }
-                catch
-                {
-                    // 解析失败，使用默认值
-                }
-            }
+            // 计算默认时间
+            ComputeDefaultTime(isTimePoint: true, out var startTime, out _);
 
             var newTimePoint = new CustomTimePoint
             {
                 Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间点",
-                Time = time,
+                Time = startTime,
                 ToState = ProgressStateType.Success
             };
 
@@ -583,6 +563,33 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private void OnRefreshOrderClick(object sender, RoutedEventArgs e)
         {
+            // 按起始时间排序
+            var sortedItems = ScheduleItems
+                .Where(i => TryParseTime(i.StartTime, out _))
+                .OrderBy(i => TimeSpan.Parse(i.StartTime))
+                .ToList();
+
+            // 检查是否需要重新排序
+            bool needsReorder = false;
+            for (int i = 0; i < sortedItems.Count; i++)
+            {
+                if (ScheduleItems[i].Id != sortedItems[i].Id)
+                {
+                    needsReorder = true;
+                    break;
+                }
+            }
+
+            if (needsReorder)
+            {
+                ScheduleItems.Clear();
+                foreach (var item in sortedItems)
+                {
+                    ScheduleItems.Add(item);
+                }
+            }
+
+            // 验证所有项
             ValidateAllItems();
         }
 
@@ -630,11 +637,20 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private async void OnReloadButtonClick(object sender, RoutedEventArgs e)
         {
-            // 获取所有计划表列表
+            var items = BuildScheduleListItems();
+            var listView = CreateScheduleListView(items);
+            var dialog = CreateSelectScheduleDialog(listView);
+            await HandleScheduleSelection(dialog, listView, items);
+        }
+
+        /// <summary>
+        /// 构建计划表列表项
+        /// </summary>
+        private System.Collections.Generic.List<ScheduleListItem> BuildScheduleListItems()
+        {
             var scheduleList = _scheduleManager.GetScheduleList();
             var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().SelectedScheduleId;
 
-            // 构建列表项
             var items = new System.Collections.Generic.List<ScheduleListItem>();
             foreach (var info in scheduleList)
             {
@@ -645,8 +661,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     IsActivated = info.Id == currentSelectedId
                 });
             }
+            return items;
+        }
 
-            // 创建列表视图（使用 WPF 原生 ListView 避免歧义）
+        /// <summary>
+        /// 创建计划表列表视图
+        /// </summary>
+        private System.Windows.Controls.ListView CreateScheduleListView(
+            System.Collections.Generic.List<ScheduleListItem> items)
+        {
             var listView = new System.Windows.Controls.ListView
             {
                 ItemsSource = items,
@@ -673,8 +696,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 listView.SelectedItem = currentItem;
             }
 
-            // 创建 ContentDialog
-            var dialog = new ContentDialog
+            return listView;
+        }
+
+        /// <summary>
+        /// 创建选择计划表对话框
+        /// </summary>
+        private ContentDialog CreateSelectScheduleDialog(System.Windows.Controls.ListView listView)
+        {
+            return new ContentDialog
             {
                 Title = "选择时间计划表",
                 Content = new ScrollViewer
@@ -683,23 +713,35 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     MaxHeight = 300
                 },
-                CloseButtonText = "取消",
-                PrimaryButtonText = "加载",
-                DefaultButton = ContentDialogButton.Primary
+                CloseButtonText = "加载",
+                PrimaryButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close
             };
+        }
 
-            // 显示对话框
+        /// <summary>
+        /// 处理计划表选择结果
+        /// </summary>
+        private async Task HandleScheduleSelection(
+            ContentDialog dialog,
+            System.Windows.Controls.ListView listView,
+            System.Collections.Generic.List<ScheduleListItem> items)
+        {
             var result = await dialog.ShowAsync();
 
-            // 处理结果
-            if (result == ContentDialogResult.Primary && listView.SelectedItem is ScheduleListItem selectedItem)
+            // 处理结果 - None 是点击加载（默认按钮），Primary 是点击取消
+            if (result == ContentDialogResult.Primary)
             {
-                // 修改配置文件中的 SelectedScheduleId
+                return;
+            }
+
+            // 用户点击加载
+            if (listView.SelectedItem is ScheduleListItem selectedItem)
+            {
                 var setting = ConfigurationManager.Instance.LoadTimeTopSetting();
                 setting.SelectedScheduleId = selectedItem.Id;
                 ConfigurationManager.Instance.SaveTimeTopSetting(setting);
 
-                // 提示重启应用 - 使用 ContentDialog
                 var confirmDialog = new ContentDialog
                 {
                     Title = "切换成功",
@@ -709,9 +751,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 };
                 await confirmDialog.ShowAsync();
             }
-            else if (result == ContentDialogResult.Primary && listView.SelectedItem == null)
+            else if (result == ContentDialogResult.None && listView.SelectedItem == null && listView.Items.Count > 0)
             {
-                // 用户点击加载但未选中，显示提示
                 var warnDialog = new ContentDialog
                 {
                     Title = "提示",
