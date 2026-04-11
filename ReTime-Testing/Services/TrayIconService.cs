@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,7 +16,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TrayIconService : IDisposable
     {
-        private static readonly Lazy<TrayIconService> _instance = 
+        private static readonly Lazy<TrayIconService> _instance =
             new Lazy<TrayIconService>(() => new TrayIconService());
 
         public static TrayIconService Instance => _instance.Value;
@@ -49,6 +50,28 @@ namespace ReTime_Testing.Services
         /// </summary>
         public event Action? ExitRequested;
 
+        /// <summary>
+        /// 重启请求事件
+        /// </summary>
+        public event Action? RestartRequested;
+
+        /// <summary>
+        /// 托盘图标服务配置
+        /// </summary>
+        public class TrayIconConfig
+        {
+            public string Title { get; set; } = "ReTime-Testing";
+            public string? IconPath { get; set; }
+        }
+
+        /// <summary>
+        /// 托盘图标配置
+        /// </summary>
+        private TrayIconConfig _config = new()
+        {
+            Title = "ReTime-Testing"
+        };
+
         private TrayIconService()
         {
         }
@@ -56,34 +79,46 @@ namespace ReTime_Testing.Services
         /// <summary>
         /// 初始化托盘图标服务
         /// </summary>
-        public void Initialize()
+        public void Initialize(TrayIconConfig? config = null)
         {
             if (_trayIcon != null)
                 return;
 
+            // 使用默认配置或传入的配置
+            _config = config ?? new TrayIconConfig();
+
+            InitializeIcon();
+        }
+
+        /// <summary>
+        /// 初始化托盘图标
+        /// </summary>
+        private void InitializeIcon()
+        {
             try
             {
                 // 尝试无窗口模式创建 TaskbarIcon
                 _trayIcon = new TaskbarIcon
                 {
-                    Icon = GetDefaultIcon(),
-                    ToolTipText = "ReTime-Testing",
+                    Icon = LoadIcon(),
+                    ToolTipText = _config.Title,
                     Visibility = Visibility.Visible
                 };
 
                 // 设置右键菜单
                 SetupContextMenu();
 
-                // 绑定事件（只需要双击事件）
+                // 绑定双击事件
                 _trayIcon.TrayMouseDoubleClick += OnTrayMouseDoubleClick;
+
+                // 左键单击显示菜单
+                _trayIcon.TrayLeftMouseDown += OnTrayLeftMouseDown;
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（无窗口模式）");
             }
             catch (Exception ex)
             {
                 Logger.Error("TrayIconService", "初始化系统托盘图标时发生异常", ex);
-
-                // 如果无窗口模式失败，回退到有窗口模式
                 Logger.Warn("TrayIconService", "无窗口模式失败，尝试使用窗口承载模式");
                 InitializeWithWindow();
             }
@@ -118,16 +153,19 @@ namespace ReTime_Testing.Services
                 // 创建 TaskbarIcon
                 _trayIcon = new TaskbarIcon
                 {
-                    Icon = GetDefaultIcon(),
-                    ToolTipText = "ReTime-Testing",
+                    Icon = LoadIcon(),
+                    ToolTipText = _config.Title,
                     Visibility = Visibility.Visible
                 };
 
                 // 设置右键菜单
                 SetupContextMenu();
 
-                // 绑定事件（只需要双击事件）
+                // 绑定双击事件
                 _trayIcon.TrayMouseDoubleClick += OnTrayMouseDoubleClick;
+
+                // 左键单击显示菜单
+                _trayIcon.TrayLeftMouseDown += OnTrayLeftMouseDown;
 
                 // 将 TaskbarIcon 添加到窗口
                 _trayIconWindow.Content = _trayIcon;
@@ -142,53 +180,68 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 设置右键菜单（默认样式，背景不透明）
+        /// 加载图标
+        /// </summary>
+        private Icon LoadIcon()
+        {
+            // 优先使用自定义图标
+            if (!string.IsNullOrEmpty(_config.IconPath) && File.Exists(_config.IconPath))
+            {
+                try
+                {
+                    return new Icon(_config.IconPath);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn("TrayIconService", $"加载自定义图标失败: {ex.Message}");
+                }
+            }
+
+            // 使用系统应用图标作为默认图标
+            return SystemIcons.Application;
+        }
+
+        /// <summary>
+        /// 设置右键菜单
         /// </summary>
         private void SetupContextMenu()
         {
             var contextMenu = new ContextMenu
             {
-                Background = System.Windows.Media.Brushes.White,  // 白色背景，不透明
-                BorderBrush = System.Windows.Media.Brushes.Gray,  // 灰色边框
+                Background = System.Windows.Media.Brushes.White,
+                BorderBrush = System.Windows.Media.Brushes.Gray,
                 BorderThickness = new Thickness(1)
             };
 
-            // 打开设置菜单项
-            var openSettingItem = CreateMenuItem("打开设置", "\uE713");
-            openSettingItem.Click += (s, e) => OpenSettingRequested?.Invoke();
+            // 总是添加菜单项（事件检查移至点击时）
+            var openSettingItem = CreateMenuItem("打开设置", "\uE713", () => OpenSettingRequested?.Invoke());
             contextMenu.Items.Add(openSettingItem);
 
-            // 打开调试菜单项
-            var openDebugItem = CreateMenuItem("打开调试", "\uE713");
-            openDebugItem.Click += (s, e) => OpenDebugRequested?.Invoke();
+            var openDebugItem = CreateMenuItem("打开调试", "\uE713", () => OpenDebugRequested?.Invoke());
             contextMenu.Items.Add(openDebugItem);
 
-            // 打开时间计划表编辑器菜单项
-            var openEditorItem = CreateMenuItem("时间计划表编辑器", "\uE787"); // 使用日历图标
-            openEditorItem.Click += (s, e) => OpenTimeScheduleEditorRequested?.Invoke();
+            var openEditorItem = CreateMenuItem("时间计划表编辑器", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke());
             contextMenu.Items.Add(openEditorItem);
 
-            // 关于菜单项
-            var aboutItem = CreateMenuItem("关于", "\uE946");
-            aboutItem.Click += (s, e) => AboutRequested?.Invoke();
+            var aboutItem = CreateMenuItem("关于", "\uE946", () => AboutRequested?.Invoke());
             contextMenu.Items.Add(aboutItem);
 
-            // 分隔符
             var separator = new Separator();
             contextMenu.Items.Add(separator);
 
-            // 退出菜单项
-            var exitItem = CreateMenuItem("退出", "\uE711");
-            exitItem.Click += (s, e) => ExitRequested?.Invoke();
+            var restartItem = CreateMenuItem("重启", "\uE72C", () => RestartRequested?.Invoke());
+            contextMenu.Items.Add(restartItem);
+
+            var exitItem = CreateMenuItem("退出", "\uE711", () => ExitRequested?.Invoke());
             contextMenu.Items.Add(exitItem);
 
             _trayIcon!.ContextMenu = contextMenu;
         }
 
         /// <summary>
-        /// 创建菜单项（默认样式）
+        /// 创建菜单项
         /// </summary>
-        private MenuItem CreateMenuItem(string header, string iconGlyph)
+        private MenuItem CreateMenuItem(string header, string iconGlyph, Action click)
         {
             var menuItem = new MenuItem
             {
@@ -209,18 +262,21 @@ namespace ReTime_Testing.Services
                 Orientation = Orientation.Horizontal
             };
             stackPanel.Children.Add(iconTextBlock);
-            stackPanel.Children.Add(new TextBlock { Text = header, VerticalAlignment = VerticalAlignment.Center });
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = header,
+                VerticalAlignment = VerticalAlignment.Center
+            });
 
             menuItem.Header = stackPanel;
-
-            // 设置 CommandTarget 为 MenuItem 自身，消除绑定警告
+            menuItem.Click += (s, e) => click.Invoke();
             menuItem.CommandTarget = menuItem;
 
             return menuItem;
         }
 
         /// <summary>
-        /// 左键双击事件处理 - 打开设置窗口
+        /// 左键双击事件处理
         /// </summary>
         private void OnTrayMouseDoubleClick(object sender, RoutedEventArgs e)
         {
@@ -228,23 +284,22 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 获取默认图标
+        /// 左键单击 - 显示上下文菜单
         /// </summary>
-        private Icon GetDefaultIcon()
+        private void OnTrayLeftMouseDown(object sender, RoutedEventArgs e)
         {
-            // 使用系统应用图标作为默认图标
-            return SystemIcons.Application;
+            if (_trayIcon?.ContextMenu != null)
+            {
+                _trayIcon.ContextMenu.IsOpen = true;
+            }
         }
 
         /// <summary>
-        /// 显示气球提示
+        /// 显示气泡提示
         /// </summary>
         public void ShowBalloon(string title, string message, BalloonIcon icon = BalloonIcon.Info)
         {
-            if (_trayIcon != null)
-            {
-                _trayIcon.ShowBalloonTip(title, message, icon);
-            }
+            _trayIcon?.ShowBalloonTip(title, message, icon);
         }
 
         /// <summary>
