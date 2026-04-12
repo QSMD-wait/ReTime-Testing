@@ -715,7 +715,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 },
                 CloseButtonText = "加载",
                 PrimaryButtonText = "取消",
-                DefaultButton = ContentDialogButton.Close
+                DefaultButton = ContentDialogButton.Close,
+                IsShadowEnabled = false
             };
         }
 
@@ -747,7 +748,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     Title = "切换成功",
                     Content = $"已切换到计划表 \"{selectedItem.Name}\"\n\n请重启应用以使更改生效。",
                     CloseButtonText = "确定",
-                    DefaultButton = ContentDialogButton.Close
+                    DefaultButton = ContentDialogButton.Close,
+                    IsShadowEnabled = false
                 };
                 await confirmDialog.ShowAsync();
             }
@@ -758,7 +760,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     Title = "提示",
                     Content = "请选择一个计划表",
                     CloseButtonText = "确定",
-                    DefaultButton = ContentDialogButton.Close
+                    DefaultButton = ContentDialogButton.Close,
+                    IsShadowEnabled = false
                 };
                 await warnDialog.ShowAsync();
             }
