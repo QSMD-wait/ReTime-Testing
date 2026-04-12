@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Hardcodet.Wpf.TaskbarNotification;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Services;
@@ -213,27 +214,38 @@ namespace ReTime_Testing.Services
                 BorderThickness = new Thickness(1)
             };
 
-            // 总是添加菜单项（事件检查移至点击时）
-            var openSettingItem = CreateMenuItem("打开设置", "\uE713", () => OpenSettingRequested?.Invoke());
-            contextMenu.Items.Add(openSettingItem);
-
-            var openDebugItem = CreateMenuItem("打开调试", "\uE713", () => OpenDebugRequested?.Invoke());
-            contextMenu.Items.Add(openDebugItem);
-
-            var openEditorItem = CreateMenuItem("时间计划表编辑器", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke());
-            contextMenu.Items.Add(openEditorItem);
-
-            var aboutItem = CreateMenuItem("关于", "\uE946", () => AboutRequested?.Invoke());
+            // 1. 应用名称（顶部）
+            var aboutItem = CreateMenuItem("ReTime - Testing", "\uE946", () => AboutRequested?.Invoke());
             contextMenu.Items.Add(aboutItem);
 
-            var separator = new Separator();
-            contextMenu.Items.Add(separator);
+            // 2. 分隔符
+            contextMenu.Items.Add(new Separator());
 
+            // 3. 编辑时间计划
+            var openEditorItem = CreateMenuItem("编辑时间计划", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke());
+            contextMenu.Items.Add(openEditorItem);
+
+            // 4. 设置
+            var openSettingItem = CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke());
+            contextMenu.Items.Add(openSettingItem);
+
+            // 5. 调试
+            var openDebugItem = CreateMenuItem("调试", "\uE90F", () => OpenDebugRequested?.Invoke());
+            contextMenu.Items.Add(openDebugItem);
+
+            // 6. 分隔符
+            contextMenu.Items.Add(new Separator());
+
+            // 7. 重启
             var restartItem = CreateMenuItem("重启", "\uE72C", () => RestartRequested?.Invoke());
             contextMenu.Items.Add(restartItem);
 
+            // 8. 退出
             var exitItem = CreateMenuItem("退出", "\uE711", () => ExitRequested?.Invoke());
             contextMenu.Items.Add(exitItem);
+
+            // 添加外部点击关闭监听器
+            AddMenuExternalClickListener(contextMenu);
 
             _trayIcon!.ContextMenu = contextMenu;
         }
@@ -292,6 +304,46 @@ namespace ReTime_Testing.Services
             {
                 _trayIcon.ContextMenu.IsOpen = true;
             }
+        }
+
+        /// <summary>
+        /// 添加菜单外部点击监听器，处理菜单外部点击时自动关闭
+        /// </summary>
+        private void AddMenuExternalClickListener(ContextMenu menu)
+        {
+            // 使用PreviewMouseLeftButtonDown检测点击是否在菜单外部
+            menu.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                // 检查点击位置是否在菜单内部
+                var hitResult = VisualTreeHelper.HitTest(menu, e.GetPosition(menu));
+                if (hitResult?.VisualHit != null)
+                {
+                    // 尝试获取FrameworkElement（如果HitTest返回的不是FE，向上查找）
+                    DependencyObject? current = hitResult.VisualHit as FrameworkElement;
+                    if (current == null && hitResult.VisualHit is DependencyObject dobj)
+                    {
+                        current = dobj;
+                    }
+
+                    // 向上查找，看是否在MenuItem内或在菜单内部
+                    while (current != null)
+                    {
+                        if (current is MenuItem)
+                            return; // 在MenuItem内，不处理
+                        if (current is Separator)
+                        {
+                            menu.IsOpen = false;
+                            return;
+                        }
+                        if (current == menu)
+                            return; // 在菜单内部，不处理
+                        current = VisualTreeHelper.GetParent(current);
+                    }
+                }
+
+                // 点击在菜单外部，关闭菜单
+                menu.IsOpen = false;
+            };
         }
 
         /// <summary>

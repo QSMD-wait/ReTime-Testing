@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.Media;
 using System.Windows;
 using ReTime_Testing.Models;
@@ -190,6 +191,7 @@ namespace ReTime_Testing
                 _trayIconService.OpenDebugRequested += OpenDebugTest;
                 _trayIconService.OpenTimeScheduleEditorRequested += OpenTimeScheduleEditor; // 订阅新事件
                 _trayIconService.AboutRequested += OpenMainWindow;
+                _trayIconService.RestartRequested += RestartApplication;
                 _trayIconService.ExitRequested += ExitApplication;
 
                 // 使用 WindowManager 打开主窗口和调试测试窗口
@@ -343,6 +345,46 @@ namespace ReTime_Testing
             catch (Exception ex)
             {
                 Logger.Error(GetType().FullName ?? "App", "打开时间计划编辑器时发生异常", ex);
+            }
+        }
+
+        /// <summary>
+        /// 重启应用程序
+        /// </summary>
+        private async void RestartApplication()
+        {
+            try
+            {
+                Logger.Info(GetType().FullName ?? "App", "应用程序重启请求");
+
+                // 1. 停止所有服务
+                _scheduleManager?.Stop();
+                _cloudCalibrationService?.Stop();
+
+                // 2. 清理托盘图标
+                _trayIconService?.Dispose();
+
+                // 3. 释放互斥锁
+                _mutexManager?.Release();
+
+                // 4. 启动新进程
+                var exePath = Environment.ProcessPath;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true
+                    });
+                }
+
+                // 5. 延迟后退出
+                await Task.Delay(1500);
+                Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "重启应用程序时发生异常", ex);
             }
         }
 
