@@ -1,10 +1,10 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using Hardcodet.Wpf.TaskbarNotification;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Services;
@@ -25,6 +25,81 @@ namespace ReTime_Testing.Services
         private Window? _trayIconWindow;
         private TaskbarIcon? _trayIcon;
         private bool _disposed = false;
+
+        // 全局鼠标钩子
+        private static IntPtr _hookId = IntPtr.Zero;
+        private ContextMenu? _menuToClose;
+
+        // 可配置的延迟关闭时间（毫秒）
+        private const int MenuCloseDelayMs = 150;
+
+        // P/Invoke
+        private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        private const int WH_MOUSE_LL = 14;
+        private const int WM_LBUTTONDOWN = 0x0201;
+
+        private static readonly LowLevelMouseProc _mouseProc = MouseHookCallback;
+
+        private static IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && wParam == (IntPtr)WM_LBUTTONDOWN)
+            {
+                try
+                {
+                    var instance = _instance.Value;
+                    if (instance._menuToClose != null && instance._menuToClose.IsOpen)
+                    {
+                        // 延迟关闭，给菜单时间处理点击
+                        var timer = new System.Windows.Threading.DispatcherTimer
+                        {
+                            Interval = TimeSpan.FromMilliseconds(MenuCloseDelayMs)
+                        };
+                        timer.Tick += (s, args) =>
+                        {
+                            timer.Stop();
+                            try
+                            {
+                                if (instance._menuToClose != null && instance._menuToClose.IsOpen)
+                                {
+                                    instance._menuToClose.IsOpen = false;
+                                    instance._menuToClose = null;
+                                }
+                            }
+                            catch { }
+                        };
+                        timer.Start();
+                    }
+                }
+                catch { }
+            }
+            return CallNextHookEx(_hookId, nCode, wParam, lParam);
+        }
+
+        /// <summary>
+        /// 停止全局鼠标钩子
+        /// </summary>
+        private static void StopMouseHook()
+        {
+            if (_hookId != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_hookId);
+                _hookId = IntPtr.Zero;
+            }
+        }
 
         /// <summary>
         /// 打开设置请求事件
@@ -85,9 +160,7 @@ namespace ReTime_Testing.Services
             if (_trayIcon != null)
                 return;
 
-            // 使用默认配置或传入的配置
             _config = config ?? new TrayIconConfig();
-
             InitializeIcon();
         }
 
@@ -98,7 +171,6 @@ namespace ReTime_Testing.Services
         {
             try
             {
-                // 尝试无窗口模式创建 TaskbarIcon
                 _trayIcon = new TaskbarIcon
                 {
                     Icon = LoadIcon(),
@@ -106,13 +178,8 @@ namespace ReTime_Testing.Services
                     Visibility = Visibility.Visible
                 };
 
-                // 设置右键菜单
                 SetupContextMenu();
-
-                // 绑定双击事件
                 _trayIcon.TrayMouseDoubleClick += OnTrayMouseDoubleClick;
-
-                // 左键单击显示菜单
                 _trayIcon.TrayLeftMouseDown += OnTrayLeftMouseDown;
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（无窗口模式）");
@@ -132,7 +199,6 @@ namespace ReTime_Testing.Services
         {
             try
             {
-                // 创建隐藏窗口承载 TaskbarIcon
                 _trayIconWindow = new Window
                 {
                     WindowStyle = WindowStyle.None,
@@ -147,11 +213,8 @@ namespace ReTime_Testing.Services
                 };
 
                 _trayIconWindow.Show();
-
-                // 应用 ToolWindow 样式
                 WindowHelper.SetToolWindowStyle(_trayIconWindow);
 
-                // 创建 TaskbarIcon
                 _trayIcon = new TaskbarIcon
                 {
                     Icon = LoadIcon(),
@@ -159,16 +222,9 @@ namespace ReTime_Testing.Services
                     Visibility = Visibility.Visible
                 };
 
-                // 设置右键菜单
                 SetupContextMenu();
-
-                // 绑定双击事件
                 _trayIcon.TrayMouseDoubleClick += OnTrayMouseDoubleClick;
-
-                // 左键单击显示菜单
                 _trayIcon.TrayLeftMouseDown += OnTrayLeftMouseDown;
-
-                // 将 TaskbarIcon 添加到窗口
                 _trayIconWindow.Content = _trayIcon;
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（窗口承载模式）");
@@ -185,7 +241,6 @@ namespace ReTime_Testing.Services
         /// </summary>
         private Icon LoadIcon()
         {
-            // 优先使用自定义图标
             if (!string.IsNullOrEmpty(_config.IconPath) && File.Exists(_config.IconPath))
             {
                 try
@@ -197,8 +252,6 @@ namespace ReTime_Testing.Services
                     Logger.Warn("TrayIconService", $"加载自定义图标失败: {ex.Message}");
                 }
             }
-
-            // 使用系统应用图标作为默认图标
             return SystemIcons.Application;
         }
 
@@ -215,37 +268,25 @@ namespace ReTime_Testing.Services
             };
 
             // 1. 应用名称（顶部）
-            var aboutItem = CreateMenuItem("ReTime - Testing", "\uE946", () => AboutRequested?.Invoke());
-            contextMenu.Items.Add(aboutItem);
-
-            // 2. 分隔符
+            contextMenu.Items.Add(CreateMenuItem("ReTime - Testing", "\uE946", () => AboutRequested?.Invoke()));
             contextMenu.Items.Add(new Separator());
 
-            // 3. 编辑时间计划
-            var openEditorItem = CreateMenuItem("编辑时间计划", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke());
-            contextMenu.Items.Add(openEditorItem);
+            // 2. 编辑时间计划
+            contextMenu.Items.Add(CreateMenuItem("编辑时间计划", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke()));
 
-            // 4. 设置
-            var openSettingItem = CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke());
-            contextMenu.Items.Add(openSettingItem);
+            // 3. 设置
+            contextMenu.Items.Add(CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke()));
 
-            // 5. 调试
-            var openDebugItem = CreateMenuItem("调试", "\uE90F", () => OpenDebugRequested?.Invoke());
-            contextMenu.Items.Add(openDebugItem);
+            // 4. 调试
+            contextMenu.Items.Add(CreateMenuItem("调试", "\uE90F", () => OpenDebugRequested?.Invoke()));
 
-            // 6. 分隔符
             contextMenu.Items.Add(new Separator());
 
-            // 7. 重启
-            var restartItem = CreateMenuItem("重启", "\uE72C", () => RestartRequested?.Invoke());
-            contextMenu.Items.Add(restartItem);
+            // 5. 重启
+            contextMenu.Items.Add(CreateMenuItem("重启", "\uE72C", () => RestartRequested?.Invoke()));
 
-            // 8. 退出
-            var exitItem = CreateMenuItem("退出", "\uE711", () => ExitRequested?.Invoke());
-            contextMenu.Items.Add(exitItem);
-
-            // 添加外部点击关闭监听器
-            AddMenuExternalClickListener(contextMenu);
+            // 6. 退出
+            contextMenu.Items.Add(CreateMenuItem("退出", "\uE711", () => ExitRequested?.Invoke()));
 
             _trayIcon!.ContextMenu = contextMenu;
         }
@@ -269,16 +310,9 @@ namespace ReTime_Testing.Services
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            var stackPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal
-            };
+            var stackPanel = new StackPanel { Orientation = Orientation.Horizontal };
             stackPanel.Children.Add(iconTextBlock);
-            stackPanel.Children.Add(new TextBlock
-            {
-                Text = header,
-                VerticalAlignment = VerticalAlignment.Center
-            });
+            stackPanel.Children.Add(new TextBlock { Text = header, VerticalAlignment = VerticalAlignment.Center });
 
             menuItem.Header = stackPanel;
             menuItem.Click += (s, e) => click.Invoke();
@@ -303,47 +337,32 @@ namespace ReTime_Testing.Services
             if (_trayIcon?.ContextMenu != null)
             {
                 _trayIcon.ContextMenu.IsOpen = true;
+                _menuToClose = _trayIcon.ContextMenu;
+                StartMouseHook();
             }
         }
 
         /// <summary>
-        /// 添加菜单外部点击监听器，处理菜单外部点击时自动关闭
+        /// 启动全局鼠标钩子
         /// </summary>
-        private void AddMenuExternalClickListener(ContextMenu menu)
+        private void StartMouseHook()
         {
-            // 使用PreviewMouseLeftButtonDown检测点击是否在菜单外部
-            menu.PreviewMouseLeftButtonDown += (s, e) =>
+            if (_hookId == IntPtr.Zero)
             {
-                // 检查点击位置是否在菜单内部
-                var hitResult = VisualTreeHelper.HitTest(menu, e.GetPosition(menu));
-                if (hitResult?.VisualHit != null)
+                try
                 {
-                    // 尝试获取FrameworkElement（如果HitTest返回的不是FE，向上查找）
-                    DependencyObject? current = hitResult.VisualHit as FrameworkElement;
-                    if (current == null && hitResult.VisualHit is DependencyObject dobj)
+                    using var curProcess = System.Diagnostics.Process.GetCurrentProcess();
+                    using var curModule = curProcess.MainModule;
+                    if (curModule != null)
                     {
-                        current = dobj;
-                    }
-
-                    // 向上查找，看是否在MenuItem内或在菜单内部
-                    while (current != null)
-                    {
-                        if (current is MenuItem)
-                            return; // 在MenuItem内，不处理
-                        if (current is Separator)
-                        {
-                            menu.IsOpen = false;
-                            return;
-                        }
-                        if (current == menu)
-                            return; // 在菜单内部，不处理
-                        current = VisualTreeHelper.GetParent(current);
+                        _hookId = SetWindowsHookEx(WH_MOUSE_LL, _mouseProc, GetModuleHandle(curModule.ModuleName), 0);
                     }
                 }
-
-                // 点击在菜单外部，关闭菜单
-                menu.IsOpen = false;
-            };
+                catch (Exception ex)
+                {
+                    Logger.Error("TrayIconService", "启动鼠标钩子失败", ex);
+                }
+            }
         }
 
         /// <summary>
@@ -364,6 +383,8 @@ namespace ReTime_Testing.Services
 
             try
             {
+                StopMouseHook();
+
                 _trayIcon?.Dispose();
                 _trayIcon = null;
 
