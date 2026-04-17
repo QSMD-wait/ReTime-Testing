@@ -69,8 +69,12 @@
                         <!-- 计划表列表 -->
                         <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding Schedules}"
                                   SelectedItem="{Binding SelectedSchedule, Mode=TwoWay}"
-                                  IsEnabled="True" SelectionMode="Single"
-                                  VirtualizingPanel.VirtualizationMode="Recycling">
+                                  IsEnabled="True" SelectionMode="Single">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch" Margin="4">
@@ -146,8 +150,12 @@
                             <!-- 列表区域（时间段+时间点） -->
                             <ListView Grid.Column="0" Margin="4" ItemsSource="{Binding ScheduleItems}"
                                       SelectedItem="{Binding SelectedScheduleItem, Mode=TwoWay}"
-                                      IsEnabled="True" SelectionMode="Single"
-                                      VirtualizingPanel.VirtualizationMode="Recycling">
+                                      IsEnabled="True" SelectionMode="Single">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="8,4">
@@ -189,7 +197,8 @@
                                         <StackPanel Margin="0,16,0,0">
                                             <TextBlock Text="名称" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     LostFocus="OnItemNameLostFocus"/>
                                         </StackPanel>
 
                                         <!-- 时间段专用：开始时间+结束时间 -->

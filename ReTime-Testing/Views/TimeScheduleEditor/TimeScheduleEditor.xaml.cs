@@ -33,7 +33,20 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
 
         public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
+        private string _name = "";
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasChanges));
+            }
+        }
+
+        public bool HasChanges { get; private set; }
+
         public string _startTime = "";
         public string StartTime
         {
@@ -119,6 +132,18 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
         private readonly TimeScheduleManager _scheduleManager;
 
+        // 是否有未保存的更改
+        private bool _hasUnsavedChanges = false;
+        public bool HasUnsavedChanges
+        {
+            get => _hasUnsavedChanges;
+            private set
+            {
+                _hasUnsavedChanges = value;
+                OnPropertyChanged();
+            }
+        }
+
         // 当前编辑的计划表（内存中）
         private TimeSchedule? _currentSchedule;
 
@@ -203,6 +228,51 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             // 设置数据上下文
             this.DataContext = this;
+
+            // 订阅Closing事件
+            this.Closing += OnWindowClosing;
+        }
+
+        /// <summary>
+        /// 窗口关闭时检查未保存的更改
+        /// </summary>
+        private async void OnWindowClosing(object? sender, CancelEventArgs e)
+        {
+            if (!HasUnsavedChanges)
+                return;
+
+            e.Cancel = true; // 阻止默认关闭
+
+            var dialog = new ContentDialog
+            {
+                Title = "保存更改",
+                Content = "您有未保存的更改，是否保存？",
+                PrimaryButtonText = "保存",
+                SecondaryButtonText = "不保存",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                IsShadowEnabled = false
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                // 验证并保存（使用统一的验证方法）
+                if (ValidateAndSave())
+                {
+                    HasUnsavedChanges = false;
+                    this.Close();
+                }
+                // 验证失败，保持窗口打开
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                // 不保存，直接关闭
+                HasUnsavedChanges = false;
+                this.Close();
+            }
+            // 取消：什么都不做，保持窗口打开
         }
 
         /// <summary>
@@ -463,6 +533,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var schedule = _scheduleManager.CreateNewSchedule(newId, newName);
             if (schedule != null)
             {
+                HasUnsavedChanges = true;
                 RefreshScheduleList();
                 SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
             }
@@ -480,6 +551,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             if (newSchedule != null)
             {
+                HasUnsavedChanges = true;
                 RefreshScheduleList();
                 SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
             }
@@ -495,17 +567,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 计算默认时间
             ComputeDefaultTime(isTimePoint: false, out var startTime, out var endTime);
 
-            var newSegment = new TimeScheduleItem
+            var newSegment = new ScheduleItemListItem
             {
                 Id = $"segment_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间段",
                 StartTime = startTime,
-                EndTime = endTime
+                EndTime = endTime,
+                IsTimePoint = false
             };
 
-            _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
-            _currentSchedule.Schedules.Add(newSegment);
-            LoadScheduleItems();
+            // 添加到 ViewModel
+            ScheduleItems.Add(newSegment);
+            HasUnsavedChanges = true;
+            SelectedScheduleItem = newSegment;
         }
 
         /// <summary>
@@ -518,17 +592,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 计算默认时间
             ComputeDefaultTime(isTimePoint: true, out var startTime, out _);
 
-            var newTimePoint = new CustomTimePoint
+            var newTimePoint = new ScheduleItemListItem
             {
                 Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间点",
-                Time = startTime,
+                StartTime = startTime,
+                IsTimePoint = true,
                 ToState = ProgressStateType.Success
             };
 
-            _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
-            _currentSchedule.TimePoints.Add(newTimePoint);
-            LoadScheduleItems();
+            // 添加到 ViewModel
+            ScheduleItems.Add(newTimePoint);
+            HasUnsavedChanges = true;
+            SelectedScheduleItem = newTimePoint;
         }
 
         /// <summary>
@@ -538,24 +614,12 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             if (_currentSchedule == null || _selectedScheduleItem == null) return;
 
-            if (_selectedScheduleItem.IsTimePoint)
-            {
-                var point = _currentSchedule.TimePoints?.FirstOrDefault(p => p.Id == _selectedScheduleItem.Id);
-                if (point != null)
-                {
-                    _currentSchedule.TimePoints!.Remove(point);
-                }
-            }
-            else
-            {
-                var segment = _currentSchedule.Schedules?.FirstOrDefault(s => s.Id == _selectedScheduleItem.Id);
-                if (segment != null)
-                {
-                    _currentSchedule.Schedules!.Remove(segment);
-                }
-            }
+            // 从 ViewModel 删除
+            ScheduleItems.Remove(_selectedScheduleItem);
 
-            LoadScheduleItems();
+            // 清空选中
+            SelectedScheduleItem = null;
+            HasUnsavedChanges = true;
         }
 
         /// <summary>
@@ -587,6 +651,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 {
                     ScheduleItems.Add(item);
                 }
+                HasUnsavedChanges = true;
             }
 
             // 验证所有项
@@ -599,6 +664,17 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         private void OnTimeTextChanged(object sender, TextChangedEventArgs e)
         {
             ValidateAllItems();
+        }
+
+        /// <summary>
+        /// 项目名称失去焦点时标记为已修改
+        /// </summary>
+        private void OnItemNameLostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_selectedScheduleItem != null)
+            {
+                HasUnsavedChanges = true;
+            }
         }
 
         /// <summary>
@@ -768,51 +844,81 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
 
         /// <summary>
-        /// 保存按钮点击事件
+        /// 验证并保存（返回是否验证通过）
         /// </summary>
-        private void OnSaveButtonClick(object sender, RoutedEventArgs e)
+        private bool ValidateAndSave()
         {
-            if (_currentSchedule == null) return;
+            if (_currentSchedule == null) return false;
 
-            // 先验证
+            // 验证所有项
             ValidateAllItems();
 
             // 检查是否有验证错误
-            var hasError = ScheduleItems.Any(i => i.HasStartTimeError || i.HasEndTimeError);
-            if (hasError)
+            bool hasErrors = ScheduleItems.Any(i => i.HasStartTimeError || i.HasEndTimeError);
+            if (hasErrors)
             {
                 SaveValidationInfoBar.Message = "存在验证错误，请修正后再保存";
                 SaveValidationInfoBar.IsOpen = true;
-                return;
+                return false;
             }
 
-            // 将 UI 修改同步回 _currentSchedule
+            // 将 UI 修改同步回 _currentSchedule（增量更新，保留原有对象的属性）
             _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
             _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
-            _currentSchedule.Schedules.Clear();
-            _currentSchedule.TimePoints.Clear();
 
+            // 收集 ViewModel 中当前的 ID 集合
+            var currentItemIds = ScheduleItems.Select(i => i.Id).ToHashSet();
+
+            // 删除不在 ViewModel 中的项目
+            _currentSchedule.Schedules?.RemoveAll(s => !currentItemIds.Contains(s.Id));
+            _currentSchedule.TimePoints?.RemoveAll(t => !currentItemIds.Contains(t.Id));
+
+            // 更新或添加项目
             foreach (var item in ScheduleItems)
             {
                 if (item.IsTimePoint)
                 {
-                    _currentSchedule.TimePoints.Add(new CustomTimePoint
+                    // 查找现有时间点并更新
+                    var existingPoint = _currentSchedule.TimePoints?.FirstOrDefault(t => t.Id == item.Id);
+                    if (existingPoint != null)
                     {
-                        Id = item.Id,
-                        Name = item.Name,
-                        Time = item.StartTime,
-                        ToState = item.ToState
-                    });
+                        existingPoint.Name = item.Name;
+                        existingPoint.Time = item.StartTime;
+                        existingPoint.ToState = item.ToState;
+                    }
+                    else
+                    {
+                        // 新增时间点（保留 Style 等属性）
+                        _currentSchedule.TimePoints?.Add(new CustomTimePoint
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+                            Time = item.StartTime,
+                            ToState = item.ToState
+                        });
+                    }
                 }
                 else
                 {
-                    _currentSchedule.Schedules.Add(new TimeScheduleItem
+                    // 查找现有时间段并更新
+                    var existingSegment = _currentSchedule.Schedules?.FirstOrDefault(s => s.Id == item.Id);
+                    if (existingSegment != null)
                     {
-                        Id = item.Id,
-                        Name = item.Name,
-                        StartTime = item.StartTime,
-                        EndTime = item.EndTime
-                    });
+                        existingSegment.Name = item.Name;
+                        existingSegment.StartTime = item.StartTime;
+                        existingSegment.EndTime = item.EndTime;
+                    }
+                    else
+                    {
+                        // 新增时间段（保留 Styles 等属性）
+                        _currentSchedule.Schedules?.Add(new TimeScheduleItem
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+                            StartTime = item.StartTime,
+                            EndTime = item.EndTime
+                        });
+                    }
                 }
             }
 
@@ -823,13 +929,22 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             {
                 SaveValidationInfoBar.Message = string.Join("\n", result.Errors);
                 SaveValidationInfoBar.IsOpen = true;
-                return;
+                return false;
             }
 
             _scheduleManager.SaveSchedule(_currentSchedule);
 
             // 保存成功后关闭 InfoBar
             SaveValidationInfoBar.IsOpen = false;
+            return true;
+        }
+
+        /// <summary>
+        /// 保存按钮点击事件
+        /// </summary>
+private void OnSaveButtonClick(object sender, RoutedEventArgs e)
+        {
+            ValidateAndSave();
         }
     }
 }
