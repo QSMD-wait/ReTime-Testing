@@ -239,6 +239,86 @@
                                             <ComboBox ItemsSource="{Binding ToStateOptions}"
                                                       SelectedItem="{Binding SelectedScheduleItem.ToState, Mode=TwoWay}"/>
                                         </StackPanel>
+
+                                        <!-- 样式编辑区域 -->
+                                        <Expander Header="样式" Margin="0,16,0,0" IsExpanded="False">
+                                            <StackPanel>
+                                                <!-- 开关：启用自定义样式 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
+                                                    <ui:ToggleSwitch IsOn="{Binding SelectedScheduleItem.HasCustomStyle, Mode=TwoWay}"
+                                                                     OnContent="启用样式" OffContent="默认样式"/>
+                                                </StackPanel>
+
+                                                <!-- 样式编辑内容 -->
+                                                <Grid IsEnabled="{Binding SelectedScheduleItem.HasCustomStyle}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="55"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+
+                                                <!-- R -->
+                                                <TextBlock Text="R" VerticalAlignment="Center"/>
+                                                <Slider Grid.Column="1" Grid.Row="0" Margin="4,0,8,0"
+                                                        Minimum="0" Maximum="255"
+                                                        Value="{Binding SelectedScheduleItem.ForegroundR, Mode=TwoWay}"
+                                                        ValueChanged="OnStyleValueChanged"/>
+                                                <TextBlock Grid.Column="2" Grid.Row="0"
+                                                           Text="{Binding SelectedScheduleItem.ForegroundR, StringFormat={}{0:0}}"
+                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                                <!-- G -->
+                                                <TextBlock Text="G" Grid.Row="1" VerticalAlignment="Center"/>
+                                                <Slider Grid.Column="1" Grid.Row="1" Margin="4,0,8,0"
+                                                        Minimum="0" Maximum="255"
+                                                        Value="{Binding SelectedScheduleItem.ForegroundG, Mode=TwoWay}"
+                                                        ValueChanged="OnStyleValueChanged"/>
+                                                <TextBlock Grid.Column="2" Grid.Row="1"
+                                                           Text="{Binding SelectedScheduleItem.ForegroundG, StringFormat={}{0:0}}"
+                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                                <!-- B -->
+                                                <TextBlock Text="B" Grid.Row="2" VerticalAlignment="Center"/>
+                                                <Slider Grid.Column="1" Grid.Row="2" Margin="4,0,8,0"
+                                                        Minimum="0" Maximum="255"
+                                                        Value="{Binding SelectedScheduleItem.ForegroundB, Mode=TwoWay}"
+                                                        ValueChanged="OnStyleValueChanged"/>
+                                                <TextBlock Grid.Column="2" Grid.Row="2"
+                                                           Text="{Binding SelectedScheduleItem.ForegroundB, StringFormat={}{0:0}}"
+                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                                <!-- 透明度 -->
+                                                <TextBlock Text="透明度" Grid.Row="3" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <Slider Grid.Column="1" Grid.Row="3" Margin="4,0,8,0"
+                                                        Minimum="0" Maximum="100"
+                                                        Value="{Binding SelectedScheduleItem.Opacity, Mode=TwoWay}"
+                                                        ValueChanged="OnStyleValueChanged"/>
+                                                <TextBlock Grid.Column="2" Grid.Row="3"
+                                                           Text="{Binding SelectedScheduleItem.Opacity, StringFormat={}{0:0}%}"
+                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                                <!-- 颜色预览 + 十六进制输入 -->
+                                                <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,12,0,0">
+                                                    <Border Width="48" Height="28" BorderBrush="Gray" BorderThickness="1" Margin="0,0,12,0">
+                                                        <Border.Background>
+                                                            <SolidColorBrush Color="{Binding SelectedScheduleItem.PreviewColor}"/>
+                                                        </Border.Background>
+                                                    </Border>
+                                                    <TextBox Width="90"
+                                                             Text="{Binding SelectedScheduleItem.HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             VerticalAlignment="Center"
+                                                             LostFocus="OnItemNameLostFocus"/>
+                                                </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Expander>
                                     </StackPanel>
                                 </ScrollViewer>
                             </Grid>

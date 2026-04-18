@@ -52,6 +52,12 @@ namespace ReTime_Testing.Models
     public class StyleOverridesData
     {
         /// <summary>
+        /// 是否启用样式覆盖（null 或 false 表示使用默认样式）
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool? Enabled { get; set; }
+
+        /// <summary>
         /// 前景色
         /// </summary>
         [JsonPropertyName("foregroundColor")]

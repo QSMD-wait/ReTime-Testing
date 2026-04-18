@@ -1,10 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -98,6 +100,127 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
         public bool HasStartTimeError => !string.IsNullOrEmpty(StartTimeError);
         public bool HasEndTimeError => !string.IsNullOrEmpty(EndTimeError);
+
+        // 样式属性（应用级默认值：#0067C0, 透明度 100%）
+        private byte _foregroundR = 0x00;
+        public byte ForegroundR
+        {
+            get => _foregroundR;
+            set
+            {
+                _foregroundR = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PreviewColor));
+                OnPropertyChanged(nameof(HexColor));
+            }
+        }
+
+        private byte _foregroundG = 0x67;
+        public byte ForegroundG
+        {
+            get => _foregroundG;
+            set
+            {
+                _foregroundG = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PreviewColor));
+                OnPropertyChanged(nameof(HexColor));
+            }
+        }
+
+        private byte _foregroundB = 0xC0;
+        public byte ForegroundB
+        {
+            get => _foregroundB;
+            set
+            {
+                _foregroundB = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PreviewColor));
+                OnPropertyChanged(nameof(HexColor));
+            }
+        }
+
+        private byte _backgroundR = 0;
+        public byte BackgroundR
+        {
+            get => _backgroundR;
+            set
+            {
+                _backgroundR = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private byte _backgroundG = 0;
+        public byte BackgroundG
+        {
+            get => _backgroundG;
+            set
+            {
+                _backgroundG = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private byte _backgroundB = 0;
+        public byte BackgroundB
+        {
+            get => _backgroundB;
+            set
+            {
+                _backgroundB = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _opacity = 100;
+        public double Opacity
+        {
+            get => _opacity;
+            set
+            {
+                _opacity = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PreviewColor));
+            }
+        }
+
+        // 预览颜色（计算属性）
+        public Color PreviewColor => Color.FromArgb((byte)(Opacity * 2.55), ForegroundR, ForegroundG, ForegroundB);
+
+        // 十六进制颜色（计算属性，双向）
+        public string HexColor
+        {
+            get => $"#{ForegroundR:X2}{ForegroundG:X2}{ForegroundB:X2}";
+            set
+            {
+                if (string.IsNullOrEmpty(value)) return;
+                try
+                {
+                    if (value.StartsWith("#")) value = value.Substring(1);
+                    if (value.Length == 6)
+                    {
+                        ForegroundR = Convert.ToByte(value.Substring(0, 2), 16);
+                        ForegroundG = Convert.ToByte(value.Substring(2, 2), 16);
+                        ForegroundB = Convert.ToByte(value.Substring(4, 2), 16);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        // 是否设置了自定义样式（需要 INotifyPropertyChanged 支持 UI 绑定）
+        private bool _hasCustomStyle = false;
+        public bool HasCustomStyle
+        {
+            get => _hasCustomStyle;
+            set
+            {
+                _hasCustomStyle = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -678,6 +801,18 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
 
         /// <summary>
+        /// 样式滑块值变化时标记为已修改
+        /// </summary>
+        private void OnStyleValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_selectedScheduleItem != null)
+            {
+                _selectedScheduleItem.HasCustomStyle = true;
+                HasUnsavedChanges = true;
+            }
+        }
+
+        /// <summary>
         /// 编辑计划表信息
         /// </summary>
         private void OnEditScheduleInfoClick(object sender, RoutedEventArgs e)
@@ -862,6 +997,12 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 return false;
             }
 
+            // 同步内部ID为文件名，确保保存到正确位置
+            if (_selectedSchedule != null && !string.IsNullOrEmpty(_selectedSchedule.Id))
+            {
+                _currentSchedule.Id = _selectedSchedule.Id;
+            }
+
             // 将 UI 修改同步回 _currentSchedule（增量更新，保留原有对象的属性）
             _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
             _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
@@ -885,6 +1026,23 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                         existingPoint.Name = item.Name;
                         existingPoint.Time = item.StartTime;
                         existingPoint.ToState = item.ToState;
+                        // 更新样式
+                        if (item.HasCustomStyle)
+                        {
+                            existingPoint.Style ??= new StyleOverridesData();
+                            existingPoint.Style.Enabled = true;
+                            existingPoint.Style.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+                            existingPoint.Style.BackgroundColor = $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}";
+                            existingPoint.Style.Opacity = item.Opacity / 100.0;
+                        }
+                        else
+                        {
+                            // 禁用样式
+                            if (existingPoint.Style != null)
+                            {
+                                existingPoint.Style.Enabled = false;
+                            }
+                        }
                     }
                     else
                     {
@@ -907,6 +1065,23 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                         existingSegment.Name = item.Name;
                         existingSegment.StartTime = item.StartTime;
                         existingSegment.EndTime = item.EndTime;
+                        // 更新样式
+                        if (item.HasCustomStyle)
+                        {
+                            existingSegment.Styles ??= new StyleOverridesData();
+                            existingSegment.Styles.Enabled = true;
+                            existingSegment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+                            existingSegment.Styles.BackgroundColor = $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}";
+                            existingSegment.Styles.Opacity = item.Opacity / 100.0;
+                        }
+                        else
+                        {
+                            // 禁用样式
+                            if (existingSegment.Styles != null)
+                            {
+                                existingSegment.Styles.Enabled = false;
+                            }
+                        }
                     }
                     else
                     {

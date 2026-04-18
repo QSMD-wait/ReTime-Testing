@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
 using ReTime_Testing.Views.TimeScheduleEditor;
@@ -20,7 +21,7 @@ public static class ScheduleItemConverter
     /// </summary>
     public static ScheduleItemListItem ToListItem(TimeScheduleItem item)
     {
-        return new ScheduleItemListItem
+        var result = new ScheduleItemListItem
         {
             Id = item.Id,
             Name = item.Name,
@@ -29,6 +30,36 @@ public static class ScheduleItemConverter
             TypeIcon = TimeSegmentIcon,
             IsTimePoint = false
         };
+
+        // 加载样式（只有 Enabled == true 时才启用自定义样式）
+        if (item.Styles != null && item.Styles.Enabled == true)
+        {
+            result.HasCustomStyle = true;
+            if (!string.IsNullOrEmpty(item.Styles.ForegroundColor))
+            {
+                var color = ParseColor(item.Styles.ForegroundColor);
+                result.ForegroundR = color.R;
+                result.ForegroundG = color.G;
+                result.ForegroundB = color.B;
+            }
+            if (!string.IsNullOrEmpty(item.Styles.BackgroundColor))
+            {
+                var color = ParseColor(item.Styles.BackgroundColor);
+                result.BackgroundR = color.R;
+                result.BackgroundG = color.G;
+                result.BackgroundB = color.B;
+            }
+            if (item.Styles.Opacity.HasValue)
+            {
+                result.Opacity = item.Styles.Opacity.Value * 100;
+            }
+        }
+        else
+        {
+            result.HasCustomStyle = false;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -36,7 +67,7 @@ public static class ScheduleItemConverter
     /// </summary>
     public static ScheduleItemListItem ToListItem(CustomTimePoint point)
     {
-        return new ScheduleItemListItem
+        var result = new ScheduleItemListItem
         {
             Id = point.Id,
             Name = point.Name,
@@ -45,6 +76,69 @@ public static class ScheduleItemConverter
             IsTimePoint = true,
             ToState = point.ToState
         };
+
+        // 加载样式（只有 Enabled == true 时才启用自定义样式）
+        if (point.Style != null && point.Style.Enabled == true)
+        {
+            result.HasCustomStyle = true;
+            if (!string.IsNullOrEmpty(point.Style.ForegroundColor))
+            {
+                var color = ParseColor(point.Style.ForegroundColor);
+                result.ForegroundR = color.R;
+                result.ForegroundG = color.G;
+                result.ForegroundB = color.B;
+            }
+            if (!string.IsNullOrEmpty(point.Style.BackgroundColor))
+            {
+                var color = ParseColor(point.Style.BackgroundColor);
+                result.BackgroundR = color.R;
+                result.BackgroundG = color.G;
+                result.BackgroundB = color.B;
+            }
+            if (point.Style.Opacity.HasValue)
+            {
+                result.Opacity = point.Style.Opacity.Value * 100;
+            }
+        }
+        else
+        {
+            result.HasCustomStyle = false;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 解析颜色字符串为 Color
+    /// </summary>
+    private static Color ParseColor(string colorString)
+    {
+        try
+        {
+            if (colorString.StartsWith("#"))
+            {
+                if (colorString.Length == 7) // #RRGGBB
+                {
+                    return Color.FromRgb(
+                        Convert.ToByte(colorString.Substring(1, 2), 16),
+                        Convert.ToByte(colorString.Substring(3, 2), 16),
+                        Convert.ToByte(colorString.Substring(5, 2), 16));
+                }
+                else if (colorString.Length == 9) // #AARRGGBB
+                {
+                    return Color.FromArgb(
+                        Convert.ToByte(colorString.Substring(1, 2), 16),
+                        Convert.ToByte(colorString.Substring(3, 2), 16),
+                        Convert.ToByte(colorString.Substring(5, 2), 16),
+                        Convert.ToByte(colorString.Substring(7, 2), 16));
+                }
+            }
+            return Colors.White;
+        }
+        catch
+        {
+            return Colors.White;
+        }
     }
 
     /// <summary>

@@ -165,14 +165,14 @@ namespace ReTime_Testing.Services
             try
             {
                 var schedules = new List<TimeSchedule>();
-                
+
                 if (!Directory.Exists(_timeSchedulesDirectory))
                 {
                     return schedules;
                 }
 
                 var files = Directory.GetFiles(_timeSchedulesDirectory, "*.json");
-                
+
                 foreach (var file in files)
                 {
                     try
@@ -180,6 +180,10 @@ namespace ReTime_Testing.Services
                         var schedule = LoadScheduleFromFile(file);
                         if (schedule != null)
                         {
+                            // 使用文件名作为ID，确保文件名与内部ID一致
+                            var fileName = Path.GetFileNameWithoutExtension(file);
+                            schedule.Id = fileName;
+
                             schedules.Add(schedule);
                             _scheduleCache[schedule.Id] = schedule;
                         }
@@ -241,12 +245,18 @@ namespace ReTime_Testing.Services
             {
                 string jsonContent = File.ReadAllText(filePath);
                 var schedule = JsonSerializer.Deserialize<TimeSchedule>(jsonContent, _jsonOptions);
-                
-                if (schedule != null && string.IsNullOrEmpty(schedule.Settings.Metadata.CreatedAt))
+
+                if (schedule != null)
                 {
-                    // 添加创建时间戳作为当前时间
-                    schedule.Settings.Metadata.CreatedAt = DateTime.UtcNow.ToString("o");
-                    SaveScheduleToFile(schedule, filePath);
+                    // 使用文件名作为ID，确保文件名与内部ID一致
+                    schedule.Id = Path.GetFileNameWithoutExtension(filePath);
+
+                    if (string.IsNullOrEmpty(schedule.Settings.Metadata.CreatedAt))
+                    {
+                        // 添加创建时间戳作为当前时间
+                        schedule.Settings.Metadata.CreatedAt = DateTime.UtcNow.ToString("o");
+                        SaveScheduleToFile(schedule, filePath);
+                    }
                 }
 
                 return schedule;
@@ -800,6 +810,14 @@ namespace ReTime_Testing.Services
         {
             _scheduleCache.Clear();
             LoadAllSchedules();
+        }
+
+        /// <summary>
+        /// 清除指定计划的缓存
+        /// </summary>
+        public void ClearCache(string id)
+        {
+            _scheduleCache.Remove(id);
         }
     }
 }
