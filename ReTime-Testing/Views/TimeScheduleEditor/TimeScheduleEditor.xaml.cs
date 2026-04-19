@@ -24,6 +24,22 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     }
 
     /// <summary>
+    /// 计划表列表项类型
+    /// </summary>
+    public enum ScheduleItemType
+    {
+        /// <summary>
+        /// 时间段
+        /// </summary>
+        Segment,
+
+        /// <summary>
+        /// 时间点
+        /// </summary>
+        TimePoint
+    }
+
+    /// <summary>
     /// 统一列表项（时间段+时间点）
     /// </summary>
     public class ScheduleItemListItem : INotifyPropertyChanged
@@ -70,7 +86,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             }
         }
         public string TypeIcon { get; set; } = "\uE787";
-        public bool IsTimePoint { get; set; }
+        public ScheduleItemType ItemType { get; set; }
         public ProgressStateType ToState { get; set; }
 
         // 验证错误信息
@@ -306,34 +322,13 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             {
                 _selectedScheduleItem = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(EditPanelVisibility));
-                OnPropertyChanged(nameof(EmptyStateVisibility));
                 OnPropertyChanged(nameof(IsSegmentSelected));
                 OnPropertyChanged(nameof(IsTimePointSelected));
             }
         }
 
-        /// <summary>
-        /// 编辑面板可见性
-        /// </summary>
-        public Visibility EditPanelVisibility => SelectedScheduleItem != null
-            ? Visibility.Visible : Visibility.Collapsed;
-
-        /// <summary>
-        /// 空状态占位可见性
-        /// </summary>
-        public Visibility EmptyStateVisibility => SelectedScheduleItem == null
-            ? Visibility.Visible : Visibility.Collapsed;
-
-        /// <summary>
-        /// 是否选中时间段（非时间点）
-        /// </summary>
-        public bool IsSegmentSelected => SelectedScheduleItem != null && !SelectedScheduleItem.IsTimePoint;
-
-        /// <summary>
-        /// 是否选中时间点
-        /// </summary>
-        public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.IsTimePoint;
+        public bool IsSegmentSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.Segment;
+        public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.TimePoint;
 
         /// <summary>
         /// 目标状态选项列表
@@ -481,8 +476,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 item.EndTimeError = "";
             }
 
-            var segments = ScheduleItems.Where(i => !i.IsTimePoint).ToList();
-            var timePoints = ScheduleItems.Where(i => i.IsTimePoint).ToList();
+            var segments = ScheduleItems.Where(i => i.ItemType == ScheduleItemType.Segment).ToList();
+            var timePoints = ScheduleItems.Where(i => i.ItemType == ScheduleItemType.TimePoint).ToList();
 
             // 验证时间格式（先检查空值，再检查格式，最后检查逻辑）
             foreach (var seg in segments)
@@ -696,7 +691,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 Name = "新时间段",
                 StartTime = startTime,
                 EndTime = endTime,
-                IsTimePoint = false
+                ItemType = ScheduleItemType.Segment
             };
 
             // 添加到 ViewModel
@@ -720,7 +715,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
                 Name = "新时间点",
                 StartTime = startTime,
-                IsTimePoint = true,
+                ItemType = ScheduleItemType.TimePoint,
                 ToState = ProgressStateType.Success
             };
 
@@ -1017,7 +1012,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 更新或添加项目
             foreach (var item in ScheduleItems)
             {
-                if (item.IsTimePoint)
+                if (item.ItemType == ScheduleItemType.TimePoint)
                 {
                     // 查找现有时间点并更新
                     var existingPoint = _currentSchedule.TimePoints?.FirstOrDefault(t => t.Id == item.Id);

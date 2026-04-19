@@ -28,7 +28,7 @@ public static class ScheduleItemConverter
             StartTime = item.StartTime,
             EndTime = item.EndTime,
             TypeIcon = TimeSegmentIcon,
-            IsTimePoint = false
+            ItemType = ScheduleItemType.Segment
         };
 
         // 加载样式（只有 Enabled == true 时才启用自定义样式）
@@ -73,7 +73,7 @@ public static class ScheduleItemConverter
             Name = point.Name,
             StartTime = point.Time,
             TypeIcon = TimePointIcon,
-            IsTimePoint = true,
+            ItemType = ScheduleItemType.TimePoint,
             ToState = point.ToState
         };
 
