@@ -347,6 +347,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 加载计划表列表
             RefreshScheduleList();
 
+            // 加载完成后重置未保存状态（初始加载不是修改）
+            HasUnsavedChanges = false;
+
             // 设置数据上下文
             this.DataContext = this;
 

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReTime_Testing.Views.TimeScheduleEditor"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
         Title="时间计划表编辑器"
         ui:WindowHelper.UseModernWindowStyle="True"
@@ -14,6 +15,11 @@
         Height="700"
         MinWidth="800"
         MinHeight="500">
+
+    <Window.Resources>
+        <localconv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <localconv:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -178,17 +184,17 @@
 
                             <!-- 属性编辑 -->
                             <Grid Grid.Column="2">
-                                <!-- 空状态占位 -->
+                                <!-- 空状态占位：无选中项时显示 -->
                                 <TextBlock Text="请选择时间段或时间点进行编辑"
-                                           Visibility="{Binding EmptyStateVisibility}"
+                                           Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NullToVisibilityConverter}}"
                                            FontSize="14"
                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"/>
 
-                                <!-- 编辑面板 -->
+                                <!-- 编辑面板：有选中项时显示 -->
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                              Visibility="{Binding EditPanelVisibility}"
+                                              Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NotNullToVisibilityConverter}}"
                                               Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
                                     <StackPanel Margin="16">
                                         <TextBlock Text="编辑" FontSize="16" FontWeight="SemiBold"
