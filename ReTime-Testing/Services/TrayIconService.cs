@@ -278,7 +278,7 @@ namespace ReTime_Testing.Services
             contextMenu.Items.Add(CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke()));
 
             // 4. 调试
-            contextMenu.Items.Add(CreateMenuItem("调试", "\uE90F", () => OpenDebugRequested?.Invoke()));
+            contextMenu.Items.Add(CreateMenuItem("调试与测试", "\uE90F", () => OpenDebugRequested?.Invoke()));
 
             contextMenu.Items.Add(new Separator());
 
