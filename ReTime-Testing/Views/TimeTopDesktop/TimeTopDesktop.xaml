@@ -20,6 +20,8 @@
                        Opacity="{Binding Opacity}"
                        Minimum="{Binding Minimum}"
                        Maximum="{Binding Maximum}" />
+        <TextBlock x:Name="TestText" Text="ReTime - Testing  //  v0.0.1-alpha.6 第一次测试  //  by 青色漫地_wait" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,6,0,0"
+                   Foreground="White" FontSize="12" Opacity="0.8"/>
     </Grid>
 
 </Window>

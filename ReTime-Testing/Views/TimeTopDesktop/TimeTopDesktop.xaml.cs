@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Threading;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
 using ReTime_Testing.ViewModels;
@@ -12,6 +13,7 @@ namespace ReTime_Testing.Views.TimeTopDesktop
     public partial class TimeTopDesktop : Window
     {
         private TimeTopDesktopViewModel? _viewModel;
+        private readonly DispatcherTimer _autoCloseTimer;
 
         /// <summary>
         /// 窗口位置：顶部
@@ -32,6 +34,18 @@ namespace ReTime_Testing.Views.TimeTopDesktop
 
             // 注册窗口关闭事件
             Closing += TimeTopDesktop_Closing;
+
+// 启动10秒后隐藏测试文本的定时器
+            _autoCloseTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(10)
+            };
+            _autoCloseTimer.Tick += (s, e) =>
+            {
+                _autoCloseTimer.Stop();
+                TestText.Visibility = Visibility.Collapsed;
+            };
+            _autoCloseTimer.Start();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
