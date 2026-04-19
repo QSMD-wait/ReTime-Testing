@@ -64,6 +64,46 @@ public class ExecutionPlanGenerator
     }
 
     /// <summary>
+    /// 安全生成执行计划（验证失败不抛异常，返回 null）
+    /// </summary>
+    /// <param name="schedule">时间计划</param>
+    /// <param name="date">计划日期</param>
+    /// <param name="currentTime">当前时间</param>
+    /// <returns>执行计划，验证失败时返回 null</returns>
+    public ExecutionPlan? GenerateSafe(TimeSchedule schedule, DateTime date, DateTime currentTime)
+    {
+        var validationResult = _validator.Validate(schedule);
+        if (!validationResult.IsValid)
+        {
+            Logger.Warn("ExecutionPlanGenerator", $"验证失败: {string.Join(", ", validationResult.Errors)}");
+            return null;
+        }
+
+        // 输出警告
+        foreach (var warning in validationResult.Warnings)
+        {
+            Logger.Warn("ExecutionPlanGenerator", warning);
+        }
+
+        var plan = new ExecutionPlan
+        {
+            ScheduleId = schedule.Id,
+            Date = date
+        };
+
+        // 2. 生成时间段列表（固定为 Progress）
+        plan.TimeSegments = GenerateTimeSegments(schedule, date);
+
+        // 3. 生成时间点列表（过滤无效时间点）
+        plan.TimePoints = GenerateTimePoints(schedule, date, plan.TimeSegments);
+
+        // 4. 计算当前状态
+        plan.UpdateCurrentState(currentTime);
+
+        return plan;
+    }
+
+    /// <summary>
     /// 生成时间段列表
     /// 时间段固定为 Progress 状态
     /// </summary>

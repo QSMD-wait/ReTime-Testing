@@ -16,7 +16,7 @@ namespace ReTime_Testing
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+public partial class App : Application
     {
         private MutexManager? _mutexManager;
         private TrayIconService? _trayIconService;
@@ -26,34 +26,70 @@ namespace ReTime_Testing
         internal ScheduleManager? _scheduleManager;
         internal CloudCalibrationService? _cloudCalibrationService;
 
+        public App()
+        {
+            // 注册全局异常处理
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        }
+
+        /// <summary>
+        /// 全局未处理异常捕获
+        /// </summary>
+        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+var ex = e.ExceptionObject as Exception;
+            var message = ex?.Message ?? "未知错误";
+            if (ex != null)
+            {
+                Logger.Error(GetType().FullName ?? "App", $"全局未处理异常: {message}", ex);
+            }
+            else
+            {
+                Logger.Error(GetType().FullName ?? "App", $"全局未处理异常: {message}");
+            }
+
+            if (e.IsTerminating)
+            {
+                ShowWarningAndExit($"应用程序发生未处理异常：\n{message}\n\n程序将退出。");
+            }
+        }
+
         // 公共属性用于访问服务
         public ITimeService? TimeService => _timeService;
         public ScheduleManager? ScheduleManager => _scheduleManager;
         public CloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
 
-        protected override void OnStartup(StartupEventArgs e)
+protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // 初始化互斥锁管理器
-            _mutexManager = MutexManager.Instance;
-
-            // 订阅互斥锁事件
-            _mutexManager.OnConflictDetected += OnMutexConflictDetected;
-            _mutexManager.OnMutexAcquired += OnMutexAcquired;
-
-            // 尝试获取互斥锁
-            bool mutexAcquired = _mutexManager.TryAcquire();
-
-            // 如果未获取到互斥锁，则启动冲突处理流程
-            if (!mutexAcquired)
+            try
             {
-                HandleMutexConflict();
-                return;
-            }
+                // 初始化互斥锁管理器
+                _mutexManager = MutexManager.Instance;
 
-            // 互斥锁获取成功，正常启动应用
-            StartupApplication();
+                // 订阅互斥锁事件
+                _mutexManager.OnConflictDetected += OnMutexConflictDetected;
+                _mutexManager.OnMutexAcquired += OnMutexAcquired;
+
+                // 尝试获取互斥锁
+                bool mutexAcquired = _mutexManager.TryAcquire();
+
+                // 如果未获取到互斥锁，则启动冲突处理流程
+                if (!mutexAcquired)
+                {
+                    HandleMutexConflict();
+                    return;
+                }
+
+                // 互斥锁获取成功，正常启动应用
+                StartupApplication();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", $"应用启动失败: {ex.Message}", ex);
+                ShowWarningAndExit($"应用启动失败：\n{ex.Message}");
+            }
         }
 
         /// <summary>
@@ -159,16 +195,26 @@ namespace ReTime_Testing
                     selectedSchedule = scheduleManager.LoadSchedule("Default");
                 }
 
-                if (selectedSchedule != null)
+if (selectedSchedule != null)
                 {
                     var currentTime = _timeService.GetCurrentTime();
-                    var executionPlan = planGenerator.Generate(selectedSchedule, DateTime.Today, currentTime);
-                    Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
+                    var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
 
-                    // 6. 初始化调度管理器
-                    _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
-                    _scheduleManager.Initialize(executionPlan);
-                    Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+if (executionPlan == null)
+                    {
+                        // 验证失败，保持空闲状态，记录警告
+                        Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
+                        ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
+                    }
+                    else
+                    {
+                        Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
+
+                        // 6. 初始化调度管理器
+                        _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
+                        _scheduleManager.Initialize(executionPlan);
+                        Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+                    }
 
                     // 7. 启动云端校准服务（长期运行）
                     _cloudCalibrationService.Start();
@@ -268,12 +314,91 @@ namespace ReTime_Testing
             }
         }
 
-        /// <summary>
+/// <summary>
         /// 互斥锁冲突事件处理
         /// </summary>
         private void OnMutexConflictDetected(object? sender, MutexConflictEventArgs e)
         {
             Logger.Warn(GetType().FullName ?? "App", $"互斥锁冲突事件触发，冲突时间: {e.ConflictTime}");
+        }
+
+/// <summary>
+        /// 显示验证错误提示（启动后弹窗）
+        /// </summary>
+        private void ShowValidationErrorDialog(string message)
+        {
+            // 延迟 1 秒后显示，确保主窗口已创建
+            Task.Delay(1000).ContinueWith(_ =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        // 获取当前活动窗口作为 Owner
+                        Window? owner = null;
+                        if (Application.Current?.MainWindow != null && Application.Current.MainWindow.IsVisible)
+                        {
+                            owner = Application.Current.MainWindow;
+                        }
+else
+                        {
+                            var windows = Application.Current?.Windows;
+                            if (windows != null)
+                            {
+                                foreach (Window w in windows)
+                                {
+                                    if (w.IsActive)
+                                    {
+                                        owner = w;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        iNKORE.UI.WPF.Modern.Controls.MessageBox.Show(
+                            owner,
+                            message,
+                            "配置无效",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning,
+                            MessageBoxResult.OK
+                        );
+                    }
+                    catch
+                    {
+                        // 回退到标准 MessageBox
+                        MessageBox.Show(
+                            message,
+                            "配置无效",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning
+                        );
+                    }
+                });
+            });
+        }
+
+        /// <summary>
+        /// 显示警告并退出程序
+        /// </summary>
+        private void ShowWarningAndExit(string message)
+        {
+            try
+            {
+                iNKORE.UI.WPF.Modern.Controls.MessageBox.Show(
+                    message,
+                    "配置无效",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.OK
+                );
+            }
+            catch
+            {
+                MessageBox.Show(message, "配置无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            Environment.Exit(1);
         }
 
         /// <summary>

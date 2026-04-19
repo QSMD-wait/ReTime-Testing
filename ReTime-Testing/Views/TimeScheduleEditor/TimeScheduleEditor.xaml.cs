@@ -222,7 +222,10 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                         ForegroundB = Convert.ToByte(value.Substring(4, 2), 16);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Logger.Warn("TimeScheduleEditor", $"颜色格式解析失败: {value}, 错误: {ex.Message}");
+                }
             }
         }
 
@@ -520,8 +523,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                             seg.EndTimeError = "结束时间不能早于开始时间";
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.Warn("TimeScheduleEditor", $"时间格式解析失败: {seg.StartTime}/{seg.EndTime}, 错误: {ex.Message}");
                         seg.StartTimeError = "时间格式无效";
                     }
                 }
@@ -651,6 +655,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var schedule = _scheduleManager.CreateNewSchedule(newId, newName);
             if (schedule != null)
             {
+                Logger.Info("TimeScheduleEditor", $"创建新计划表: {newId}");
                 HasUnsavedChanges = true;
                 RefreshScheduleList();
                 SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
@@ -1102,7 +1107,18 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 return false;
             }
 
-            _scheduleManager.SaveSchedule(_currentSchedule);
+            try
+            {
+                _scheduleManager.SaveSchedule(_currentSchedule);
+                Logger.Info("TimeScheduleEditor", $"计划表保存成功: {_currentSchedule.Id}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeScheduleEditor", $"计划表保存失败: {_currentSchedule.Id}, 错误: {ex.Message}", ex);
+                SaveValidationInfoBar.Message = $"保存失败: {ex.Message}";
+                SaveValidationInfoBar.IsOpen = true;
+                return false;
+            }
 
             // 保存成功后关闭 InfoBar
             SaveValidationInfoBar.IsOpen = false;
