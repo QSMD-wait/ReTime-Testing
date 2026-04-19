@@ -180,10 +180,6 @@ namespace ReTime_Testing.Services
                         var schedule = LoadScheduleFromFile(file);
                         if (schedule != null)
                         {
-                            // 使用文件名作为ID，确保文件名与内部ID一致
-                            var fileName = Path.GetFileNameWithoutExtension(file);
-                            schedule.Id = fileName;
-
                             schedules.Add(schedule);
                             _scheduleCache[schedule.Id] = schedule;
                         }

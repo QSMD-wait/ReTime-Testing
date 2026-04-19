@@ -1119,7 +1119,10 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
 private void OnSaveButtonClick(object sender, RoutedEventArgs e)
         {
-            ValidateAndSave();
+            if (ValidateAndSave())
+            {
+                HasUnsavedChanges = false;
+            }
         }
     }
 }
