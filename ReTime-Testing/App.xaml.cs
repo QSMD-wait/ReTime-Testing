@@ -228,9 +228,13 @@ if (executionPlan == null)
                 // 初始化全局服务
                 var service = GlobalTimeTopDesktopService.Instance;
 
-                // 初始化系统托盘图标服务
+// 初始化系统托盘图标服务
                 _trayIconService = TrayIconService.Instance;
-                _trayIconService.Initialize();
+                _trayIconService.Initialize(new TrayIconService.TrayIconConfig
+                {
+                    Title = "ReTime",
+                    IconResource = "ReTime-Testing;component/Resources/app.ico"
+                });
 
                 // 订阅托盘图标事件
                 _trayIconService.OpenSettingRequested += OpenSetting;

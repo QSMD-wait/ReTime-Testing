@@ -131,13 +131,14 @@ namespace ReTime_Testing.Services
         /// </summary>
         public event Action? RestartRequested;
 
-        /// <summary>
+/// <summary>
         /// 托盘图标服务配置
         /// </summary>
         public class TrayIconConfig
         {
             public string Title { get; set; } = "ReTime-Testing";
-            public string? IconPath { get; set; }
+            public string? IconPath { get; set; }       // 外部文件路径
+            public string? IconResource { get; set; }   // 内嵌资源名（如 Resources/app.ico）
         }
 
         /// <summary>
@@ -236,11 +237,45 @@ namespace ReTime_Testing.Services
             }
         }
 
-        /// <summary>
+/// <summary>
         /// 加载图标
         /// </summary>
         private Icon LoadIcon()
         {
+            // 1. 尝试加载内嵌资源
+            if (!string.IsNullOrEmpty(_config.IconResource))
+            {
+                try
+                {
+                    // 处理 pack URI 格式: pack://application:,,,/程序集名;component/资源路径
+                    string uriStr;
+                    if (_config.IconResource.Contains(";component/"))
+                    {
+                        uriStr = $"pack://application:,,,/{_config.IconResource}";
+                    }
+                    else
+                    {
+                        uriStr = $"pack://application:,,,/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name};component/{_config.IconResource}";
+                    }
+
+                    var uri = new Uri(uriStr);
+                    var streamInfo = Application.GetResourceStream(uri);
+                    if (streamInfo != null)
+                    {
+                        using var stream = streamInfo.Stream;
+                        Logger.Info("TrayIconService", $"内嵌图标加载成功: {uriStr}");
+                        return new Icon(stream);
+                    }
+
+                    Logger.Warn("TrayIconService", $"内嵌资源未找到: {uriStr}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn("TrayIconService", $"加载内嵌图标失败: {ex.Message}");
+                }
+            }
+
+            // 2. 尝试加载外部文件
             if (!string.IsNullOrEmpty(_config.IconPath) && File.Exists(_config.IconPath))
             {
                 try
@@ -252,6 +287,9 @@ namespace ReTime_Testing.Services
                     Logger.Warn("TrayIconService", $"加载自定义图标失败: {ex.Message}");
                 }
             }
+
+            // 3. 回退到系统默认图标
+            Logger.Warn("TrayIconService", "使用系统默认图标");
             return SystemIcons.Application;
         }
 
