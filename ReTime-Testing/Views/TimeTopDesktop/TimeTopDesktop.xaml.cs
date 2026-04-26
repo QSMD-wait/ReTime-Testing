@@ -38,7 +38,7 @@ namespace ReTime_Testing.Views.TimeTopDesktop
 // 启动10秒后隐藏测试文本的定时器
             _autoCloseTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(10)
+                Interval = TimeSpan.FromSeconds(30)
             };
             _autoCloseTimer.Tick += (s, e) =>
             {
