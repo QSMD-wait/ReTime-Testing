@@ -26,7 +26,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="48"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="80"/>
             </Grid.ColumnDefinitions>
 
             <!-- 第1列：图标 -->
@@ -59,10 +59,11 @@
             </StackPanel>
 
             <!-- 第3列：交互控件 -->
-            <ui:ContentPresenterEx x:Name="ContentPresenter"
+            <ContentPresenter x:Name="ContentPresenter"
                                   Grid.Column="2"
+                                  HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
-                                  Margin="12,0"
+                                  Margin="0"
                                   Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
         </Grid>
     </Border>
