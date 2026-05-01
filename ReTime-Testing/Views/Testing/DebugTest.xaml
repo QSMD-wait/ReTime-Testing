@@ -33,7 +33,7 @@
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Home}"
                                        Title="开机自启"
                                        Description="在系统启动时自动运行本应用"
-                                       Margin="0,0,0,16">
+                                        Margin="0">
                     <controls:SettingsCard.ControlContent>
                          <ui:ToggleSwitch IsOn="True" OffContent="关闭" OnContent="开启" HorizontalAlignment="Stretch" Margin="-6,0,-6,0" Padding="0" HorizontalContentAlignment="Center"/>
                     </controls:SettingsCard.ControlContent>
@@ -42,7 +42,7 @@
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Bug}"
                                        Title="调试模式"
                                        Description="启用详细的调试日志输出"
-                                       Margin="0,0,0,16">
+                                        Margin="0">
                     <controls:SettingsCard.ControlContent>
                          <ui:ToggleSwitch IsOn="False" OffContent="关闭" OnContent="开启" HorizontalAlignment="Stretch" Margin="-6,0,-6,0" Padding="0" HorizontalContentAlignment="Center"/>
                     </controls:SettingsCard.ControlContent>
@@ -51,7 +51,7 @@
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Cloud}"
                                        Title="云端校准"
                                        Description="自动从云端同步时间校准"
-                                       Margin="0,0,0,16">
+                                        Margin="0">
                     <controls:SettingsCard.ControlContent>
                         <Button Content="立即同步" Style="{StaticResource AccentButtonStyle}"/>
                     </controls:SettingsCard.ControlContent>
