@@ -30,19 +30,19 @@
                            FontWeight="SemiBold"
                            Margin="0,0,0,16"/>
 
-                <controls:SettingsCard Icon="&#xE77B;"
+                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Home}"
                                        Title="开机自启"
                                        Description="在系统启动时自动运行本应用"
                                        ControlContent="{x:Null}"
-                                       Margin="0,0,0,0"/>
+                                       Margin="0,0,0,8"/>
 
-                <controls:SettingsCard Icon="&#xE912;"
+                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Bug}"
                                        Title="调试模式"
                                        Description="启用详细的调试日志输出"
                                        ControlContent="{x:Null}"
-                                       Margin="0,0,0,0"/>
+                                       Margin="0,0,0,8"/>
 
-                <controls:SettingsCard Icon="&#xE7B8;"
+                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Cloud}"
                                        Title="云端校准"
                                        Description="自动从云端同步时间校准"
                                        ControlContent="{x:Null}"

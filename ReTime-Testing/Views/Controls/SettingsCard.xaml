@@ -4,50 +4,66 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
              mc:Ignorable="d"
-             d:DesignHeight="80" d:DesignWidth="600">
+             d:DesignHeight="68" d:DesignWidth="800">
+    
+    <UserControl.Resources>
+        <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
+    </UserControl.Resources>
 
     <Border x:Name="CardBorder"
-            Background="#F9F9F9"
-            CornerRadius="6"
-            Padding="16,12"
-            Margin="0,0,0,6"
-            BorderBrush="#E0E0E0"
-            BorderThickness="1">
+            HorizontalAlignment="Stretch"
+            Height="68"
+            Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
+            CornerRadius="4"
+            BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+            BorderThickness="1"
+            Padding="16"
+            Margin="0,0,0,8">
         <Grid VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="48"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- 第1列：图标 -->
-            <TextBlock x:Name="IconTextBlock"
-                       Grid.Column="0"
-                       FontFamily="Segoe MDL2 Assets"
-                       FontSize="18"
-                       Margin="0,0,12,0"
-                       VerticalAlignment="Center"
-                       Foreground="#333333"/>
+            <ui:FontIcon x:Name="IconFontIcon"
+                        Grid.Column="0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="20"
+                        Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
 
             <!-- 第2列：标题和描述 -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <StackPanel Grid.Column="1" 
+                       VerticalAlignment="Center"
+                       Margin="12,0,12,0">
                 <TextBlock x:Name="TitleTextBlock"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Foreground="Black"/>
+                          FontSize="14"
+                          Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                          Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                          TextWrapping="NoWrap"
+                          TextTrimming="CharacterEllipsis"/>
                 <TextBlock x:Name="DescriptionTextBlock"
-                           FontSize="11"
-                           Foreground="Gray"
-                           Margin="0,2,0,0"
-                           TextWrapping="Wrap"/>
+                          FontSize="12"
+                          Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                          Opacity="0.75"
+                          Margin="0,2,0,0"
+                          Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                          TextWrapping="Wrap"
+                          Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
             </StackPanel>
 
             <!-- 第3列：交互控件 -->
-            <ContentPresenter x:Name="ContentPresenter"
-                              Grid.Column="2"
-                              VerticalAlignment="Center"
-                              Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
+            <ui:ContentPresenterEx x:Name="ContentPresenter"
+                                  Grid.Column="2"
+                                  VerticalAlignment="Center"
+                                  Margin="12,0"
+                                  Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
         </Grid>
     </Border>
 </UserControl>

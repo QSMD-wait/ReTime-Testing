@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
 namespace ReTime_Testing.Views.Controls
 {
@@ -14,24 +14,16 @@ namespace ReTime_Testing.Views.Controls
         #region 依赖属性
 
         /// <summary>
-        /// 图标字符
+        /// 图标（使用Fluent System Icons或Segoe Fluent Icons）
         /// </summary>
         public static readonly DependencyProperty IconProperty =
-            DependencyProperty.Register(nameof(Icon), typeof(string), typeof(SettingsCard),
-                new PropertyMetadata(null, OnIconChanged));
+            DependencyProperty.Register(nameof(Icon), typeof(FontIconData), typeof(SettingsCard),
+                new PropertyMetadata(null));
 
-        public string Icon
+        public FontIconData Icon
         {
-            get => (string)GetValue(IconProperty);
+            get => (FontIconData)GetValue(IconProperty);
             set => SetValue(IconProperty, value);
-        }
-
-        private static void OnIconChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card && e.NewValue is string icon)
-            {
-                card.IconTextBlock.Text = icon;
-            }
         }
 
         /// <summary>
@@ -39,7 +31,7 @@ namespace ReTime_Testing.Views.Controls
         /// </summary>
         public static readonly DependencyProperty TitleProperty =
             DependencyProperty.Register(nameof(Title), typeof(string), typeof(SettingsCard),
-                new PropertyMetadata(null, OnTitleChanged));
+                new PropertyMetadata(string.Empty));
 
         public string Title
         {
@@ -47,20 +39,12 @@ namespace ReTime_Testing.Views.Controls
             set => SetValue(TitleProperty, value);
         }
 
-        private static void OnTitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card && e.NewValue is string title)
-            {
-                card.TitleTextBlock.Text = title;
-            }
-        }
-
         /// <summary>
         /// 描述文本
         /// </summary>
         public static readonly DependencyProperty DescriptionProperty =
             DependencyProperty.Register(nameof(Description), typeof(string), typeof(SettingsCard),
-                new PropertyMetadata(null, OnDescriptionChanged));
+                new PropertyMetadata(null));
 
         public string Description
         {
@@ -68,75 +52,17 @@ namespace ReTime_Testing.Views.Controls
             set => SetValue(DescriptionProperty, value);
         }
 
-        private static void OnDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card && e.NewValue is string desc)
-            {
-                card.DescriptionTextBlock.Text = desc;
-            }
-        }
-
         /// <summary>
         /// 右侧控件内容
         /// </summary>
         public static readonly DependencyProperty ControlContentProperty =
             DependencyProperty.Register(nameof(ControlContent), typeof(object), typeof(SettingsCard),
-                new PropertyMetadata(null, OnControlContentChanged));
+                new PropertyMetadata(null));
 
         public object ControlContent
         {
             get => GetValue(ControlContentProperty);
             set => SetValue(ControlContentProperty, value);
-        }
-
-        private static void OnControlContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card)
-            {
-                card.ContentPresenter.Content = e.NewValue;
-            }
-        }
-
-        /// <summary>
-        /// 背景色
-        /// </summary>
-        public static readonly DependencyProperty CardBackgroundProperty =
-            DependencyProperty.Register(nameof(CardBackground), typeof(Brush), typeof(SettingsCard),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(249, 249, 249)), OnCardBackgroundChanged));
-
-        public Brush CardBackground
-        {
-            get => (Brush)GetValue(CardBackgroundProperty);
-            set => SetValue(CardBackgroundProperty, value);
-        }
-
-        private static void OnCardBackgroundChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card && e.NewValue is Brush brush)
-            {
-                card.CardBorder.Background = brush;
-            }
-        }
-
-        /// <summary>
-        /// 图标颜色
-        /// </summary>
-        public static readonly DependencyProperty IconForegroundProperty =
-            DependencyProperty.Register(nameof(IconForeground), typeof(Brush), typeof(SettingsCard),
-                new PropertyMetadata(new SolidColorBrush(Color.FromRgb(51, 51, 51)), OnIconForegroundChanged));
-
-        public Brush IconForeground
-        {
-            get => (Brush)GetValue(IconForegroundProperty);
-            set => SetValue(IconForegroundProperty, value);
-        }
-
-        private static void OnIconForegroundChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsCard card && e.NewValue is Brush brush)
-            {
-                card.IconTextBlock.Foreground = brush;
-            }
         }
 
         #endregion
