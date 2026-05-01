@@ -29,7 +29,7 @@
                 <ColumnDefinition Width="80"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 第1列：图标 -->
+            <!-- 图标 -->
             <ui:FontIcon x:Name="IconFontIcon"
                         Grid.Column="0"
                         HorizontalAlignment="Center"
@@ -38,7 +38,7 @@
                         Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
                         Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
 
-            <!-- 第2列：标题和描述 -->
+            <!-- 标题和描述 -->
             <StackPanel Grid.Column="1" 
                        VerticalAlignment="Center"
                        Margin="12,0,12,0">
@@ -58,7 +58,7 @@
                           Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
             </StackPanel>
 
-            <!-- 第3列：交互控件 -->
+            <!-- 控件 -->
             <ContentPresenter x:Name="ContentPresenter"
                                   Grid.Column="2"
                                   HorizontalAlignment="Stretch"
