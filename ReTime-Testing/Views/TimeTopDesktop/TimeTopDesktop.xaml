@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="TimeTopDesktop"> 
 
-    <Grid IsHitTestVisible="False">
+    <Grid>
         <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5" Margin="0,-1,0,0"
                        Value="{Binding ProgressValue}"
                        IsIndeterminate="{Binding IsIndeterminate}"

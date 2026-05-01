@@ -48,12 +48,15 @@ namespace ReTime_Testing.Views.TimeTopDesktop
             _autoCloseTimer.Start();
         }
 
-        protected override void OnSourceInitialized(EventArgs e)
+protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
 
             // 设置工具窗口样式（必须在 OnSourceInitialized 之后调用）
             DesktopWindowHelper.SetToolWindowStyle(this);
+
+            // 设置点击穿透（所有点击直接穿透到下层窗口）
+            WindowHelper.SetClickThrough(this);
         }
 
         private void TimeTopDesktop_Closing(object? sender, System.ComponentModel.CancelEventArgs e)

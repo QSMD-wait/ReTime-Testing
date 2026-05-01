@@ -69,7 +69,7 @@ namespace ReTime_Testing.Helpers
             SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle | ExtendedStyles.WS_EX_TOOLWINDOW);
         }
 
-        /// <summary>
+/// <summary>
         /// 移除工具窗口样式
         /// </summary>
         /// <param name="window">目标窗口</param>
@@ -84,6 +84,40 @@ namespace ReTime_Testing.Helpers
 
             var exStyle = (uint)GetWindowLong(helper.Handle, GWL_EXSTYLE);
             SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle & ~ExtendedStyles.WS_EX_TOOLWINDOW);
+        }
+
+        /// <summary>
+        /// 设置窗口点击穿透（所有点击事件直接穿透到下层窗口）
+        /// </summary>
+        /// <param name="window">目标窗口</param>
+        public static void SetClickThrough(Window window)
+        {
+            if (window == null)
+                throw new ArgumentNullException(nameof(window));
+
+            var helper = new WindowInteropHelper(window);
+            if (helper.Handle == IntPtr.Zero)
+                throw new InvalidOperationException("窗口句柄未初始化，请在 OnSourceInitialized 后调用");
+
+            var exStyle = (uint)GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle | ExtendedStyles.WS_EX_TRANSPARENT);
+        }
+
+        /// <summary>
+        /// 移除窗口点击穿透
+        /// </summary>
+        /// <param name="window">目标窗口</param>
+        public static void RemoveClickThrough(Window window)
+        {
+            if (window == null)
+                throw new ArgumentNullException(nameof(window));
+
+            var helper = new WindowInteropHelper(window);
+            if (helper.Handle == IntPtr.Zero)
+                throw new InvalidOperationException("窗口句柄未初始化，请在 OnSourceInitialized 后调用");
+
+            var exStyle = (uint)GetWindowLong(helper.Handle, GWL_EXSTYLE);
+            SetWindowLong(helper.Handle, GWL_EXSTYLE, exStyle & ~ExtendedStyles.WS_EX_TRANSPARENT);
         }
 
         /// <summary>
