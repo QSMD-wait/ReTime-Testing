@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
     <Grid>
-        <TextBlock Text="全局设置 - 开发中"
+        <TextBlock Text="基本设置 - 开发中"
                    FontSize="24"
                    FontWeight="Bold"
                    HorizontalAlignment="Center"
