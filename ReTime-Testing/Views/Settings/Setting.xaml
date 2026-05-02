@@ -39,8 +39,10 @@
                            Header="设置"
                            IsTabStop="False"
                            IsBackEnabled="False"
+                           IsBackButtonVisible="Collapsed"
                            IsSettingsVisible="False"
-                           PaneDisplayMode="Left">
+                           PaneDisplayMode="Left"
+                           OpenPaneLength="280">
 
             <!-- 主要导航项 -->
             <ui:NavigationView.MenuItems>
