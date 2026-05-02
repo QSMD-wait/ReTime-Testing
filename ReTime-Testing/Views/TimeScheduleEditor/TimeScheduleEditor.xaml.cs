@@ -16,11 +16,27 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     /// <summary>
     /// 计划表列表项（绑定到ScheduleInfo）
     /// </summary>
-    public class ScheduleListItem
+    public class ScheduleListItem : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
-        public bool IsActivated { get; set; }
+
+        private bool _isActivated;
+        public bool IsActivated
+        {
+            get => _isActivated;
+            set
+            {
+                _isActivated = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -957,10 +973,13 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 setting.SelectedScheduleId = selectedItem.Id;
                 ConfigurationManager.Instance.SaveTimeTopSetting(setting);
 
+                // 热重载执行计划
+                await HotReloadScheduleAsync(selectedItem.Id);
+
                 var confirmDialog = new ContentDialog
                 {
                     Title = "切换成功",
-                    Content = $"已切换到计划表 \"{selectedItem.Name}\"\n\n请重启应用以使更改生效。",
+                    Content = $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n已重启调度并应用新的时间计划表",
                     CloseButtonText = "确定",
                     DefaultButton = ContentDialogButton.Close,
                     IsShadowEnabled = false
@@ -978,6 +997,94 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     IsShadowEnabled = false
                 };
                 await warnDialog.ShowAsync();
+            }
+        }
+
+        /// <summary>
+        /// 热重载时间计划表（不重启应用）
+        /// </summary>
+        private async Task HotReloadScheduleAsync(string scheduleId)
+        {
+            try
+            {
+                // 获取 App 实例
+                var app = Application.Current as App;
+                if (app == null)
+                {
+                    Logger.Warn("TimeScheduleEditor", "无法获取 App 实例");
+                    return;
+                }
+
+                var timeService = app.TimeService;
+                var scheduleManager = app.ScheduleManager;
+
+                if (timeService == null || scheduleManager == null)
+                {
+                    Logger.Warn("TimeScheduleEditor", "时间服务或调度管理器未初始化");
+                    return;
+                }
+
+                // 加载新的时间计划表
+                var newSchedule = _scheduleManager.LoadSchedule(scheduleId);
+                if (newSchedule == null)
+                {
+                    Logger.Warn("TimeScheduleEditor", $"加载计划表失败: {scheduleId}");
+                    ShowValidationErrorDialog("无法加载计划表，请检查文件是否存在");
+                    return;
+                }
+
+                // 生成新的执行计划
+                var planGenerator = new ExecutionPlanGenerator();
+                var currentTime = timeService.GetCurrentTime();
+                var newPlan = planGenerator.GenerateSafe(newSchedule, DateTime.Today, currentTime);
+
+                if (newPlan == null)
+                {
+                    // 验证失败
+                    Logger.Warn("TimeScheduleEditor", "时间计划配置无效");
+                    ShowValidationErrorDialog("时间计划配置无效，无法切换");
+                    return;
+                }
+
+                // 应用新的执行计划
+                scheduleManager.RegenerateExecutionPlan(newPlan);
+
+                // 更新左侧列表的活跃状态标识
+                UpdateScheduleListActivation(scheduleId);
+
+                Logger.Info("TimeScheduleEditor", $"热重载成功: {scheduleId}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeScheduleEditor", $"热重载失败: {ex.Message}", ex);
+                ShowValidationErrorDialog($"热重载失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 显示验证错误对话框
+        /// </summary>
+        private async void ShowValidationErrorDialog(string message)
+        {
+            var errorDialog = new ContentDialog
+            {
+                Title = "切换失败",
+                Content = message,
+                CloseButtonText = "确定",
+                DefaultButton = ContentDialogButton.Close,
+                IsShadowEnabled = false
+            };
+            await errorDialog.ShowAsync();
+        }
+
+        /// <summary>
+        /// 更新左侧计划表列表的活跃状态标识（仅更新标识，不重新加载列表）
+        /// </summary>
+        private void UpdateScheduleListActivation(string activatedScheduleId)
+        {
+            foreach (var schedule in Schedules)
+            {
+                schedule.IsActivated = schedule.Id == activatedScheduleId;
             }
         }
 
