@@ -84,12 +84,20 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid HorizontalAlignment="Stretch" Margin="4">
-                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                        <ui:FontIcon Glyph="&#xE4D2;" HorizontalAlignment="Right"
-                                                       ToolTip="此计划表正在活动"
-                                                       Visibility="Collapsed"
-                                                       FontSize="14"
-                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="20"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Grid.Column="0"/>
+                                        
+                                        <!-- 活跃状态指示器 -->
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Timer_48_Regular}" Grid.Column="1" HorizontalAlignment="Right"
+                                                      ToolTip="此时间计划表处于活跃状态"
+                                                      FontSize="16"
+                                                      Margin="0,0,4,0"
+                                                      Foreground="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
+                                                      Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -122,6 +130,7 @@
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
+                            <ui:AppBarSeparator/>
                             <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Click="OnDeleteScheduleItemClick">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
@@ -132,7 +141,7 @@
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-
+                            <ui:AppBarSeparator/>
                             <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息（暂未开放）" Click="OnEditScheduleInfoClick" IsEnabled="False">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
