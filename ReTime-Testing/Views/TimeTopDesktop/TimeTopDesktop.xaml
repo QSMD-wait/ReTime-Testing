@@ -19,7 +19,11 @@
                        IsEnabled="{Binding IsEnabled}"
                        Opacity="{Binding Opacity}"
                        Minimum="{Binding Minimum}"
-                       Maximum="{Binding Maximum}" />
+                       Maximum="{Binding Maximum}">
+            <ui:ProgressBar.Effect>
+                <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.3"/>
+            </ui:ProgressBar.Effect>
+        </ui:ProgressBar>
         <TextBlock x:Name="TestText" Text="ReTime - Testing  //  v0.0.1-alpha.6 第二次测试  //  Alpha 内部测试 //  by 青色漫地_wait" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,6,0,0"
                    Foreground="White" FontSize="12" Opacity="0.8"/>
     </Grid>
