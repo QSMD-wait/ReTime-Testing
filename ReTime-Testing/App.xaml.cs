@@ -232,7 +232,7 @@ if (executionPlan == null)
                 _trayIconService = TrayIconService.Instance;
                 _trayIconService.Initialize(new TrayIconService.TrayIconConfig
                 {
-                    Title = "ReTime",
+                    Title = "ReTime - Testing",
                     IconResource = "ReTime-Testing;component/Resources/app.ico"
                 });
 
