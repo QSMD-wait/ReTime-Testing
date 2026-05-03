@@ -4,6 +4,7 @@ namespace ReTime_Testing.Models
 {
     /// <summary>
     /// TimeTop 桌面组件主配置
+    /// 六域结构：schedule / progressBar / behavior / calibration / stateStyles / defaultBehavior
     /// </summary>
     public class TimeTopSetting
     {
@@ -14,65 +15,119 @@ namespace ReTime_Testing.Models
         public string Version { get; set; } = "1.0.0";
 
         /// <summary>
-        /// 选中的时间计划ID
+        /// 时间计划表配置
         /// </summary>
-        [JsonPropertyName("selectedScheduleId")]
-        public string SelectedScheduleId { get; set; } = "Default";
+        [JsonPropertyName("schedule")]
+        public ScheduleConfig Schedule { get; set; } = new();
+
+        /// <summary>
+        /// 进度条外观配置
+        /// </summary>
+        [JsonPropertyName("progressBar")]
+        public ProgressBarConfig ProgressBar { get; set; } = new();
+
+        /// <summary>
+        /// 进度条行为配置
+        /// </summary>
+        [JsonPropertyName("behavior")]
+        public ProgressBarBehaviorConfig Behavior { get; set; } = new();
+
+        /// <summary>
+        /// 云端校准配置
+        /// </summary>
+        [JsonPropertyName("calibration")]
+        public CalibrationConfig Calibration { get; set; } = new();
+
+        /// <summary>
+        /// 默认样式配置（各状态样式覆盖）
+        /// </summary>
+        [JsonPropertyName("stateStyles")]
+        public StateStylesConfig StateStyles { get; set; } = new();
+
+        /// <summary>
+        /// 默认行为配置（时间段行为的三级优先级中间层）
+        /// 时间段未指定行为时回退到此配置
+        /// </summary>
+        [JsonPropertyName("defaultBehavior")]
+        public ScheduleBehaviorData DefaultBehavior { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 时间计划表配置
+    /// </summary>
+    public class ScheduleConfig
+    {
+        /// <summary>
+        /// 当前激活的时间计划表ID
+        /// </summary>
+        [JsonPropertyName("selectedId")]
+        public string SelectedId { get; set; } = "Default";
 
         /// <summary>
         /// 是否启用时间计划控制进度条
         /// </summary>
-        [JsonPropertyName("enableTimeSchedule")]
-        public bool EnableTimeSchedule { get; set; } = true;
-
-        /// <summary>
-        /// 时间设置
-        /// </summary>
-        [JsonPropertyName("timeSettings")]
-        public TimeSettingsData TimeSettings { get; set; } = new();
-
-        /// <summary>
-        /// 状态样式配置
-        /// </summary>
-        [JsonPropertyName("stateStyles")]
-        public Dictionary<string, StyleConfigData> StateStyles { get; set; } = new();
-
-        /// <summary>
-        /// 行为配置默认值（配置文件级，可选）
-        /// 时间段未指定行为时回退到此配置
-        /// </summary>
-        [JsonPropertyName("behavior")]
-        public ScheduleBehaviorData? Behavior { get; set; }
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = true;
     }
 
     /// <summary>
-    /// 时间设置数据
+    /// 进度条外观配置
     /// </summary>
-    public class TimeSettingsData
+    public class ProgressBarConfig
     {
         /// <summary>
-        /// 校准设置
+        /// 进度条位置：top / bottom / left / right
         /// </summary>
-        [JsonPropertyName("calibration")]
-        public CalibrationSettings Calibration { get; set; } = new();
+        [JsonPropertyName("position")]
+        public string Position { get; set; } = "top";
 
         /// <summary>
-        /// 失败策略
+        /// 进度条高度（px）
         /// </summary>
-        [JsonPropertyName("fallback")]
-        public FallbackSettings Fallback { get; set; } = new();
+        [JsonPropertyName("height")]
+        public int Height { get; set; } = 5;
 
         /// <summary>
-        /// 阈值设置
+        /// 圆角半径（px）
         /// </summary>
-        [JsonPropertyName("threshold")]
-        public ThresholdSettings Threshold { get; set; } = new();
+        [JsonPropertyName("cornerRadius")]
+        public int CornerRadius { get; set; } = 0;
+
+        /// <summary>
+        /// 是否启用发光效果
+        /// </summary>
+        [JsonPropertyName("glowEnabled")]
+        public bool GlowEnabled { get; set; } = true;
+
+        /// <summary>
+        /// 发光颜色（null 跟随前景色）
+        /// </summary>
+        [JsonPropertyName("glowColor")]
+        public string? GlowColor { get; set; }
     }
 
     /// <summary>
-    /// 校准设置
+    /// 进度条行为配置
     /// </summary>
-    public class CalibrationSettings
+    public class ProgressBarBehaviorConfig
+    {
+        /// <summary>
+        /// 无活跃段时自动隐藏
+        /// </summary>
+        [JsonPropertyName("autoHide")]
+        public bool AutoHide { get; set; } = false;
+
+        /// <summary>
+        /// 空闲时透明度（0.0–1.0）
+        /// </summary>
+        [JsonPropertyName("idleOpacity")]
+        public double IdleOpacity { get; set; } = 0.3;
+    }
+
+    /// <summary>
+    /// 云端校准配置
+    /// </summary>
+    public class CalibrationConfig
     {
         /// <summary>
         /// 是否启用云端校准
@@ -87,7 +142,7 @@ namespace ReTime_Testing.Models
         public int IntervalSeconds { get; set; } = 300;
 
         /// <summary>
-        /// 超时时间（秒）
+        /// 校准请求超时（秒）
         /// </summary>
         [JsonPropertyName("timeoutSeconds")]
         public int TimeoutSeconds { get; set; } = 3;
@@ -99,59 +154,107 @@ namespace ReTime_Testing.Models
         public int MaxRetryCount { get; set; } = 5;
 
         /// <summary>
-        /// 退避乘数
+        /// 重试退避乘数
         /// </summary>
         [JsonPropertyName("backoffMultiplier")]
         public double BackoffMultiplier { get; set; } = 2.0;
+
+        /// <summary>
+        /// 失败策略
+        /// </summary>
+        [JsonPropertyName("fallback")]
+        public CalibrationFallbackConfig Fallback { get; set; } = new();
+
+        /// <summary>
+        /// 阈值配置
+        /// </summary>
+        [JsonPropertyName("threshold")]
+        public CalibrationThresholdConfig Threshold { get; set; } = new();
     }
 
     /// <summary>
-    /// 失败策略
+    /// 校准失败策略配置
     /// </summary>
-    public class FallbackSettings
+    public class CalibrationFallbackConfig
     {
         /// <summary>
-        /// 启动失败策略
+        /// 启动时校准失败策略
         /// </summary>
         [JsonPropertyName("onStartFailure")]
         public string OnStartFailure { get; set; } = "systemTime";
 
         /// <summary>
-        /// 运行时失败策略
+        /// 运行时校准失败策略
         /// </summary>
         [JsonPropertyName("onRuntimeFailure")]
         public string OnRuntimeFailure { get; set; } = "keepCurrent";
     }
 
     /// <summary>
-    /// 阈值设置
+    /// 校准阈值配置
     /// </summary>
-    public class ThresholdSettings
+    public class CalibrationThresholdConfig
     {
         /// <summary>
         /// 触发校准的偏差阈值（秒）
         /// </summary>
-        [JsonPropertyName("calibrationTriggerSeconds")]
-        public int CalibrationTriggerSeconds { get; set; } = 5;
+        [JsonPropertyName("triggerSeconds")]
+        public int TriggerSeconds { get; set; } = 5;
 
         /// <summary>
         /// 警告阈值（秒）
         /// </summary>
-        [JsonPropertyName("warningThresholdSeconds")]
-        public int WarningThresholdSeconds { get; set; } = 60;
+        [JsonPropertyName("warningSeconds")]
+        public int WarningSeconds { get; set; } = 60;
 
         /// <summary>
-        /// 休眠阈值（分钟）
+        /// 休眠后重新校准阈值（分钟）
         /// </summary>
-        [JsonPropertyName("sleepThresholdMinutes")]
-        public int SleepThresholdMinutes { get; set; } = 5;
+        [JsonPropertyName("sleepMinutes")]
+        public int SleepMinutes { get; set; } = 5;
     }
 
     /// <summary>
-    /// 样式配置数据
+    /// 默认样式配置（含总开关和各状态样式）
     /// </summary>
-    public class StyleConfigData
+    public class StateStylesConfig
     {
+        /// <summary>
+        /// 是否启用配置文件样式覆盖（总开关）
+        /// 关闭则全部使用硬编码默认样式
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// 各状态样式覆盖
+        /// Key: 状态名（Loading/Progress/Success/Error/Paused/Hidden/Disabled）
+        /// Value: 该状态的样式配置
+        /// </summary>
+        [JsonPropertyName("styles")]
+        public Dictionary<string, StateStyleEntry> Styles { get; set; } = new()
+        {
+            ["Loading"] = new(),
+            ["Progress"] = new(),
+            ["Success"] = new(),
+            ["Error"] = new(),
+            ["Paused"] = new(),
+            ["Hidden"] = new(),
+            ["Disabled"] = new()
+        };
+    }
+
+    /// <summary>
+    /// 单个状态的样式配置（含开关）
+    /// </summary>
+    public class StateStyleEntry
+    {
+        /// <summary>
+        /// 是否启用此状态的样式覆盖
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = true;
+
         /// <summary>
         /// 前景色
         /// </summary>

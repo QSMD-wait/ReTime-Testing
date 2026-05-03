@@ -287,7 +287,10 @@ namespace ReTime_Testing.Services
                 var timeTopSetting = configManager.LoadTimeTopSetting();
                 var stateName = stateType.ToString();
                 
-                if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.TryGetValue(stateName, out var styleData))
+                if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.Enabled
+                    && timeTopSetting.StateStyles.Styles != null
+                    && timeTopSetting.StateStyles.Styles.TryGetValue(stateName, out var styleData)
+                    && styleData.Enabled)
                 {
                     // 合并配置文件样式到默认样式
                     return MergeStyleConfig(defaultStyle, styleData);
@@ -363,7 +366,7 @@ namespace ReTime_Testing.Services
         /// <param name="defaultStyle">默认样式</param>
         /// <param name="styleData">样式配置数据</param>
         /// <returns>合并后的样式</returns>
-        private StyleConfig MergeStyleConfig(StyleConfig defaultStyle, StyleConfigData styleData)
+        private StyleConfig MergeStyleConfig(StyleConfig defaultStyle, StateStyleEntry styleData)
         {
             var result = new StyleConfig
             {

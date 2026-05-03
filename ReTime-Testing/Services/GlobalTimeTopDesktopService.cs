@@ -515,7 +515,7 @@ namespace ReTime_Testing.Services
                 var timeTopSetting = configManager.LoadTimeTopSetting();
 
                 // 检查是否启用时间计划控制
-                if (!timeTopSetting.EnableTimeSchedule)
+                if (!timeTopSetting.Schedule.Enabled)
                 {
                     Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "时间计划控制已禁用");
                     return false;
@@ -523,12 +523,12 @@ namespace ReTime_Testing.Services
 
                 // 加载选中的时间计划
                 var scheduleManager = TimeScheduleManager.Instance;
-                var selectedSchedule = scheduleManager.LoadSchedule(timeTopSetting.SelectedScheduleId);
+                var selectedSchedule = scheduleManager.LoadSchedule(timeTopSetting.Schedule.SelectedId);
 
                 // 如果选中的时间计划不存在，使用默认配置
                 if (selectedSchedule == null)
                 {
-                    timeTopSetting.SelectedScheduleId = "Default";
+                    timeTopSetting.Schedule.SelectedId = "Default";
                     configManager.SaveTimeTopSetting(timeTopSetting);
                     selectedSchedule = scheduleManager.LoadSchedule("Default");
                 }

@@ -423,7 +423,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             Schedules.Clear();
 
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().SelectedScheduleId;
+            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().Schedule.SelectedId;
 
             foreach (var info in scheduleList)
             {
@@ -879,7 +879,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         private System.Collections.Generic.List<ScheduleListItem> BuildScheduleListItems()
         {
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().SelectedScheduleId;
+            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().Schedule.SelectedId;
 
             var items = new System.Collections.Generic.List<ScheduleListItem>();
             foreach (var info in scheduleList)
@@ -970,7 +970,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
                 var setting = ConfigurationManager.Instance.LoadTimeTopSetting();
-                setting.SelectedScheduleId = selectedItem.Id;
+                setting.Schedule.SelectedId = selectedItem.Id;
                 ConfigurationManager.Instance.SaveTimeTopSetting(setting);
 
                 // 热重载执行计划

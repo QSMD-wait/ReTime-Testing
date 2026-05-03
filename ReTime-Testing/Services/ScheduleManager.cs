@@ -397,7 +397,7 @@ public class ScheduleManager
             var configManager = Services.ConfigurationManager.Instance;
             if (configManager == null) return null;
             var timeTopSetting = configManager.LoadTimeTopSetting();
-            return timeTopSetting?.Behavior;
+            return timeTopSetting?.DefaultBehavior;
         }
         catch (Exception ex)
         {

@@ -321,12 +321,11 @@ namespace ReTime_Testing.Services
                     return new TimeTopSetting();
                 }
 
-                // 版本检查
+                // 版本检查（alpha 阶段：版本不匹配时填充默认值而非丢弃）
                 if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
                 {
                     Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        $"TimeTop设置文件版本不匹配: {setting.Version}，使用默认配置");
-                    return new TimeTopSetting();
+                        $"TimeTop设置文件版本不匹配: {setting.Version}，填充默认值");
                 }
 
                 // 填充缺失字段的默认值
@@ -357,24 +356,36 @@ namespace ReTime_Testing.Services
             if (string.IsNullOrEmpty(target.Version))
                 target.Version = defaults.Version;
 
-            if (string.IsNullOrEmpty(target.SelectedScheduleId))
-                target.SelectedScheduleId = defaults.SelectedScheduleId;
+            // schedule 域
+            target.Schedule ??= new ScheduleConfig();
+            if (string.IsNullOrEmpty(target.Schedule.SelectedId))
+                target.Schedule.SelectedId = defaults.Schedule.SelectedId;
 
-            // 填充时间设置字段
-            if (target.TimeSettings == null)
-                target.TimeSettings = new TimeSettingsData();
+            // progressBar 域
+            target.ProgressBar ??= new ProgressBarConfig();
 
-            if (target.TimeSettings.Calibration == null)
-                target.TimeSettings.Calibration = new CalibrationSettings();
+            // behavior 域
+            target.Behavior ??= new ProgressBarBehaviorConfig();
 
-            if (target.TimeSettings.Fallback == null)
-                target.TimeSettings.Fallback = new FallbackSettings();
+            // calibration 域
+            target.Calibration ??= new CalibrationConfig();
+            target.Calibration.Fallback ??= new CalibrationFallbackConfig();
+            target.Calibration.Threshold ??= new CalibrationThresholdConfig();
 
-            if (target.TimeSettings.Threshold == null)
-                target.TimeSettings.Threshold = new ThresholdSettings();
+            // stateStyles 域
+            target.StateStyles ??= new StateStylesConfig();
+            // 填充缺失的状态条目
+            var allStates = new[] { "Loading", "Progress", "Success", "Error", "Paused", "Hidden", "Disabled" };
+            foreach (var state in allStates)
+            {
+                if (!target.StateStyles.Styles.ContainsKey(state))
+                {
+                    target.StateStyles.Styles[state] = new StateStyleEntry();
+                }
+            }
 
-            // 确保 Calibration.Enabled 使用默认值（默认关闭）
-            // 注意：JSON 反序列化时如果字段不存在会使用类的默认值
+            // defaultBehavior 域
+            target.DefaultBehavior ??= new ScheduleBehaviorData();
 
             return target;
         }
@@ -406,34 +417,7 @@ namespace ReTime_Testing.Services
         {
             if (!File.Exists(TimeTopSettingFilePath))
             {
-                var defaultSetting = new TimeTopSetting
-                {
-                    Version = "1.0.0",
-                    SelectedScheduleId = "Default",
-                    EnableTimeSchedule = true,
-                    TimeSettings = new TimeSettingsData
-                    {
-                        Calibration = new CalibrationSettings
-                        {
-                            Enabled = false,
-                            IntervalSeconds = 300,
-                            TimeoutSeconds = 3,
-                            MaxRetryCount = 5,
-                            BackoffMultiplier = 2.0
-                        },
-                        Fallback = new FallbackSettings
-                        {
-                            OnStartFailure = "systemTime",
-                            OnRuntimeFailure = "keepCurrent"
-                        },
-                        Threshold = new ThresholdSettings
-                        {
-                            CalibrationTriggerSeconds = 5,
-                            WarningThresholdSeconds = 60,
-                            SleepThresholdMinutes = 5
-                        }
-                    }
-                };
+                var defaultSetting = new TimeTopSetting();
                 SaveTimeTopSetting(defaultSetting);
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     "TimeTop设置文件已创建");

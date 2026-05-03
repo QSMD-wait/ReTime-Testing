@@ -155,12 +155,12 @@ protected override void OnStartup(StartupEventArgs e)
                 var timeTopSetting = configManager.LoadTimeTopSetting();
                 _cloudCalibrationService = new CloudCalibrationService(_timeService);
                 _cloudCalibrationService.Configure(
-                    enabled: timeTopSetting.TimeSettings.Calibration.Enabled,
-                    interval: timeTopSetting.TimeSettings.Calibration.IntervalSeconds,
-                    timeout: timeTopSetting.TimeSettings.Calibration.TimeoutSeconds,
-                    maxRetryCount: timeTopSetting.TimeSettings.Calibration.MaxRetryCount,
-                    backoffMultiplier: timeTopSetting.TimeSettings.Calibration.BackoffMultiplier,
-                    triggerThreshold: timeTopSetting.TimeSettings.Threshold.CalibrationTriggerSeconds
+                    enabled: timeTopSetting.Calibration.Enabled,
+                    interval: timeTopSetting.Calibration.IntervalSeconds,
+                    timeout: timeTopSetting.Calibration.TimeoutSeconds,
+                    maxRetryCount: timeTopSetting.Calibration.MaxRetryCount,
+                    backoffMultiplier: timeTopSetting.Calibration.BackoffMultiplier,
+                    triggerThreshold: timeTopSetting.Calibration.Threshold.TriggerSeconds
                 );
                 Logger.Info(GetType().FullName ?? "App", "云端校准服务已配置");
 
@@ -189,37 +189,44 @@ protected override void OnStartup(StartupEventArgs e)
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
                 // 5. 生成执行计划
-                var selectedSchedule = scheduleManager.LoadSchedule(configManager.LoadTimeTopSetting().SelectedScheduleId);
-                if (selectedSchedule == null)
+                if (!timeTopSetting.Schedule.Enabled)
                 {
-                    selectedSchedule = scheduleManager.LoadSchedule("Default");
+                    Logger.Info(GetType().FullName ?? "App", "时间计划控制已禁用，跳过调度初始化");
                 }
-
-if (selectedSchedule != null)
+                else
                 {
-                    var currentTime = _timeService.GetCurrentTime();
-                    var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
-
-if (executionPlan == null)
+                    var selectedSchedule = scheduleManager.LoadSchedule(timeTopSetting.Schedule.SelectedId);
+                    if (selectedSchedule == null)
                     {
-                        // 验证失败，保持空闲状态，记录警告
-                        Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
-                        ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
-                    }
-                    else
-                    {
-                        Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
-
-                        // 6. 初始化调度管理器
-                        _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
-                        _scheduleManager.Initialize(executionPlan);
-                        Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+                        selectedSchedule = scheduleManager.LoadSchedule("Default");
                     }
 
-                    // 7. 启动云端校准服务（长期运行）
-                    _cloudCalibrationService.Start();
-                    Logger.Info(GetType().FullName ?? "App", "云端校准服务已启动");
+                    if (selectedSchedule != null)
+                    {
+                        var currentTime = _timeService.GetCurrentTime();
+                        var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
+
+                        if (executionPlan == null)
+                        {
+                            // 验证失败，保持空闲状态，记录警告
+                            Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
+                            ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
+                        }
+                        else
+                        {
+                            Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
+
+                            // 6. 初始化调度管理器
+                            _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
+                            _scheduleManager.Initialize(executionPlan);
+                            Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+                        }
+                    }
                 }
+
+                // 7. 启动云端校准服务（长期运行）
+                _cloudCalibrationService.Start();
+                Logger.Info(GetType().FullName ?? "App", "云端校准服务已启动");
 
                 // 注意：不再调用 GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule()
                 // 因为现在使用新的 ScheduleManager 进行调度，避免双重调度冲突
