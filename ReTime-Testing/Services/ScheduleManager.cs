@@ -15,6 +15,7 @@ public class ScheduleManager
     private ExecutionPlan? _currentPlan;
     private DispatcherTimer? _timer;
     private DateTime _currentTime;
+    private ScheduleBehavior _currentBehavior = ScheduleBehavior.Default;
 
     /// <summary>
     /// 当前执行计划
@@ -61,6 +62,12 @@ public class ScheduleManager
 
         // 立即应用当前状态
         ApplyCurrentState();
+
+        // 初始化时应用当前时间段的行为配置
+        if (_currentPlan?.CurrentSegment != null)
+        {
+            ApplyBehavior(_currentPlan.CurrentSegment);
+        }
 
         Logger.Info("ScheduleManager", $"调度管理器已初始化: {plan}");
     }
@@ -201,7 +208,9 @@ public class ScheduleManager
 
     /// <summary>
     /// 计算指定时间的进度值
-    /// 进度基于时间段自身计算（0% → 100%）
+    /// 进度基于时间段自身计算
+    /// 正常模式：0% → 100%（已过时间）
+    /// 倒计时模式：100% → 0%（剩余时间）
     /// </summary>
     /// <param name="currentTime">当前时间</param>
     /// <returns>进度值 0-100</returns>
@@ -215,6 +224,12 @@ public class ScheduleManager
         var totalDuration = segment.EndTime - segment.StartTime;
         var elapsed = currentTime - segment.StartTime;
         var progress = (elapsed.TotalSeconds / totalDuration.TotalSeconds) * 100;
+
+        // 倒计时模式：进度翻转
+        if (_currentBehavior.ReverseProgress)
+        {
+            progress = 100 - progress;
+        }
 
         return Math.Clamp(progress, 0, 100);
     }
@@ -333,9 +348,62 @@ public class ScheduleManager
         {
             Logger.Info("ScheduleManager", $"时间段状态变化: {oldSegment?.State} → {newSegment?.State} (时间: {currentTime:HH:mm:ss})");
         }
+
+        // 如果时间段发生变化，重新解析行为配置
+        if (oldSegment != newSegment && newSegment != null)
+        {
+            ApplyBehavior(newSegment);
+        }
         
         // ⚠️ 不要立即应用状态，避免覆盖 ExecuteTransition 设置的状态
         // 状态应该在 ExecuteTransition 中设置，然后在下一个轮询周期中应用
+    }
+
+    /// <summary>
+    /// 解析并应用时间段的行为配置（三级优先级）
+    /// 优先级：时间计划表 > 配置文件 > 全局默认
+    /// </summary>
+    /// <param name="segment">当前时间段</param>
+    private void ApplyBehavior(TimeSegment segment)
+    {
+        // 三级链式合并：硬编码默认 → 配置文件级 → 时间计划级
+        var configBehavior = LoadConfigBehavior();
+        var segmentBehavior = segment.Behavior ?? new ScheduleBehaviorData();
+        var resolved = segmentBehavior
+            .MergeWith(configBehavior)
+            .ToResolved();
+
+        var oldBehavior = _currentBehavior;
+        _currentBehavior = resolved;
+
+        // 更新轮询间隔
+        if (_timer != null && resolved.PollingIntervalMs != oldBehavior.PollingIntervalMs)
+        {
+            _timer.Interval = TimeSpan.FromMilliseconds(resolved.PollingIntervalMs);
+            Logger.Info("ScheduleManager", $"轮询间隔已更新: {oldBehavior.PollingIntervalMs}ms → {resolved.PollingIntervalMs}ms");
+        }
+
+        Logger.Info("ScheduleManager", $"行为配置已应用: {resolved}");
+    }
+
+    /// <summary>
+    /// 从配置文件加载行为配置默认值
+    /// </summary>
+    /// <returns>配置文件级行为配置，加载失败返回 null</returns>
+    private ScheduleBehaviorData? LoadConfigBehavior()
+    {
+        try
+        {
+            var configManager = Services.ConfigurationManager.Instance;
+            if (configManager == null) return null;
+            var timeTopSetting = configManager.LoadTimeTopSetting();
+            return timeTopSetting?.Behavior;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn("ScheduleManager", $"读取行为配置失败: {ex.Message}");
+            return null;
+        }
     }
 
     /// <summary>

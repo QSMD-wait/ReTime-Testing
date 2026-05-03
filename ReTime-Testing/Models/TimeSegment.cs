@@ -42,6 +42,11 @@ public class TimeSegment
     public StyleOverrides? StyleOverrides { get; set; }
 
     /// <summary>
+    /// 行为配置（可选，原始数据，运行时由 ScheduleManager 解析）
+    /// </summary>
+    public ScheduleBehaviorData? Behavior { get; set; }
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     public TimeSegment() { }
@@ -82,6 +87,15 @@ public class TimeSegment
     }
 
     /// <summary>
+    /// 构造函数（带样式覆盖和行为配置）
+    /// </summary>
+    public TimeSegment(string id, string name, DateTime startTime, DateTime endTime, ProgressStateType state, bool isActive, StyleOverrides? styleOverrides, ScheduleBehaviorData? behavior)
+        : this(id, name, startTime, endTime, state, isActive, styleOverrides)
+    {
+        Behavior = behavior;
+    }
+
+    /// <summary>
     /// 获取时间段持续时间
     /// </summary>
     public TimeSpan Duration => EndTime - StartTime;
@@ -101,7 +115,7 @@ public class TimeSegment
     /// </summary>
     public TimeSegment Clone()
     {
-        return new TimeSegment(Id, Name, StartTime, EndTime, State, IsActive, StyleOverrides);
+        return new TimeSegment(Id, Name, StartTime, EndTime, State, IsActive, StyleOverrides, Behavior);
     }
 
     /// <summary>

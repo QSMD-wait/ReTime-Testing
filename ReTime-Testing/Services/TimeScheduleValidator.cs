@@ -95,6 +95,9 @@ public class TimeScheduleValidator
                 continue;
             }
 
+            // 验证行为配置
+            ValidateBehavior(item.Id, item.Behavior, result);
+
             // 处理跨午夜的情况
             if (endTime < startTime)
             {
@@ -193,6 +196,23 @@ public class TimeScheduleValidator
                 {
                     result.Warnings.Add($"时间点 {tp.Id} ({tp.Time}) 与时间段 {schedule.Id} 开始时间相同，将被忽略");
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 验证行为配置
+    /// </summary>
+    private void ValidateBehavior(string itemId, ScheduleBehaviorData? behavior, ValidationResult result)
+    {
+        if (behavior == null) return;
+
+        if (behavior.PollingIntervalMs.HasValue)
+        {
+            var interval = behavior.PollingIntervalMs.Value;
+            if (interval < 100 || interval > 10000)
+            {
+                result.Errors.Add($"时间段 {itemId} 的 pollingIntervalMs 超出合法范围 (100–10000): {interval}");
             }
         }
     }

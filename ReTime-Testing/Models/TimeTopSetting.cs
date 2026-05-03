@@ -36,6 +36,13 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("stateStyles")]
         public Dictionary<string, StyleConfigData> StateStyles { get; set; } = new();
+
+        /// <summary>
+        /// 行为配置默认值（配置文件级，可选）
+        /// 时间段未指定行为时回退到此配置
+        /// </summary>
+        [JsonPropertyName("behavior")]
+        public ScheduleBehaviorData? Behavior { get; set; }
     }
 
     /// <summary>

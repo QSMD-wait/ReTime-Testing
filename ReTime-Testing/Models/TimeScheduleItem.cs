@@ -44,6 +44,13 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("styles")]
         public StyleOverridesData? Styles { get; set; }
+
+        /// <summary>
+        /// 行为配置（可选）
+        /// 控制时间段的调度和显示行为，如轮询间隔、倒计时模式等
+        /// </summary>
+        [JsonPropertyName("behavior")]
+        public ScheduleBehaviorData? Behavior { get; set; }
     }
 
     /// <summary>

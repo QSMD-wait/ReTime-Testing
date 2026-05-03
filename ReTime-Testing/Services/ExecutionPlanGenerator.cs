@@ -183,7 +183,8 @@ public class ExecutionPlanGenerator
                 EndTime = current.EndTime,
                 State = ProgressStateType.Progress,  // 固定为 Progress
                 IsActive = true,
-                StyleOverrides = ParseStyle(current.Item.Styles)
+                StyleOverrides = ParseStyle(current.Item.Styles),
+                Behavior = current.Item.Behavior
             });
 
             lastEnd = current.EndTime;
