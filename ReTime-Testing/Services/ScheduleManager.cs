@@ -52,8 +52,8 @@ public class ScheduleManager
         _currentPlan = plan;
         _currentTime = _timeService.GetCurrentTime();
 
-        // 启动 1秒轮询
-        _timer = new DispatcherTimer
+        // 启动轮询（Render 优先级保证推送节奏稳定，减少视觉抖动）
+        _timer = new DispatcherTimer(DispatcherPriority.Render)
         {
             Interval = TimeSpan.FromSeconds(1)
         };
