@@ -210,9 +210,9 @@ public class TimeScheduleValidator
         if (behavior.PollingIntervalMs.HasValue)
         {
             var interval = behavior.PollingIntervalMs.Value;
-            if (interval < 100 || interval > 10000)
+            if (interval < 10 || interval > 10000)
             {
-                result.Errors.Add($"时间段 {itemId} 的 pollingIntervalMs 超出合法范围 (100–10000): {interval}");
+                result.Errors.Add($"时间段 {itemId} 的 pollingIntervalMs 超出合法范围 (10–10000): {interval}");
             }
         }
     }

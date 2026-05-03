@@ -11,7 +11,7 @@ namespace ReTime_Testing.Models
     {
         /// <summary>
         /// 轮询间隔（毫秒），null 表示使用上级配置或默认值
-        /// 合法范围：100–10000
+        /// 合法范围：10–10000
         /// </summary>
         [JsonPropertyName("pollingIntervalMs")]
         public int? PollingIntervalMs { get; set; }
