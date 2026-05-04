@@ -30,75 +30,15 @@
             </ui:ProgressBar.Effect>
         </ui:ProgressBar>
 
-        <!-- 文字覆盖条 -->
-        <Grid x:Name="TextOverlayPanel"
+        <!-- 文字覆盖条（自定义面板：优先级 Left > Right > Center，重叠项消失） -->
+        <local:PriorityTextOverlayPanel
               VerticalAlignment="Top"
               Margin="0,7,0,0"
               Height="18"
-              Visibility="{Binding TextOverlay.IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
-            
-            <!-- 左侧文字（左对齐） -->
-            <ItemsControl HorizontalAlignment="Left"
-                          VerticalAlignment="Center"
-                          ItemsSource="{Binding TextOverlay.LeftSlots}"
-                          Margin="10,0,0,0">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- 中间文字（绝对居中） -->
-            <ItemsControl HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          ItemsSource="{Binding TextOverlay.CenterSlots}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- 右侧文字（右对齐） -->
-            <ItemsControl HorizontalAlignment="Right"
-                          VerticalAlignment="Center"
-                          ItemsSource="{Binding TextOverlay.RightSlots}"
-                          Margin="0,0,10,0">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
+              Visibility="{Binding TextOverlay.IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}"
+              LeftSlots="{Binding TextOverlay.LeftSlots}"
+              CenterSlots="{Binding TextOverlay.CenterSlots}"
+              RightSlots="{Binding TextOverlay.RightSlots}"/>
     </Grid>
 
 </Window>
