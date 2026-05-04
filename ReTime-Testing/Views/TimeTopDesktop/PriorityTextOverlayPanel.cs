@@ -16,8 +16,8 @@ namespace ReTime_Testing.Views.TimeTopDesktop;
 public class PriorityTextOverlayPanel : FrameworkElement
 {
     private const double FontSize = 12;
-    private const double LeftMargin = 10;
-    private const double RightMargin = 10;
+    private const double LeftMargin = 16;
+    private const double RightMargin = 16;
     private const double ItemSpacing = 8; // 组件之间的间隔
 
     private static readonly SolidColorBrush TextBrush;
@@ -162,7 +162,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
         }
 
         // 6. 绘制所有可见项
-        double y = Math.Max(0, (RenderSize.Height - FontSize) / 2);
+        double y = Math.Max(0, (RenderSize.Height - FontSize) / 2 - 2);
 
         foreach (var item in leftItems.Where(m => m.Visible))
             DrawItem(dc, item, y, typeface, pixelsPerDip);

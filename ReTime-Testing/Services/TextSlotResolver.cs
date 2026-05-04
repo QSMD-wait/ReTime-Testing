@@ -33,6 +33,8 @@ public class TextSlotResolver : ITextSlotResolver
             TextSourceType.ProgressPercent => ResolveProgressPercent(),
             TextSourceType.CurrentTime => ResolveCurrentTime(),
             TextSourceType.NextSegment => ResolveNextSegment(),
+            TextSourceType.CurrentDate => ResolveCurrentDate(),
+            TextSourceType.CurrentDayOfWeek => ResolveCurrentDayOfWeek(),
             _ => string.Empty
         };
     }
@@ -81,6 +83,17 @@ public class TextSlotResolver : ITextSlotResolver
     private string ResolveCurrentTime()
     {
         return _timeService.GetCurrentTime().ToString("HH:mm:ss");
+    }
+
+    private string ResolveCurrentDate()
+    {
+        return _timeService.GetCurrentTime().ToString("yyyy/MM/dd");
+    }
+
+    private string ResolveCurrentDayOfWeek()
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        return culture.DateTimeFormat.GetDayName(_timeService.GetCurrentTime().DayOfWeek);
     }
 
     private string ResolveNextSegment()

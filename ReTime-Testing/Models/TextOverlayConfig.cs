@@ -46,7 +46,17 @@ public enum TextSourceType
     /// <summary>
     /// 下一时间段名称
     /// </summary>
-    NextSegment
+    NextSegment,
+
+    /// <summary>
+    /// 当前日期
+    /// </summary>
+    CurrentDate,
+
+    /// <summary>
+    /// 当前星期几
+    /// </summary>
+    CurrentDayOfWeek
 }
 
 /// <summary>

@@ -141,6 +141,24 @@ public class TextSlotResolverTests
         Assert.Equal(string.Empty, result);
     }
 
+    [Fact]
+    public void Resolve_CurrentDate_ReturnsFormattedDate()
+    {
+        _timeService.CurrentTime = new DateTime(2026, 5, 4, 14, 30, 0);
+        var result = _resolver.Resolve(TextSourceType.CurrentDate);
+        Assert.Equal("2026/05/04", result);
+    }
+
+    [Fact]
+    public void Resolve_CurrentDayOfWeek_ReturnsDayName()
+    {
+        // 2026-05-04 is Monday
+        _timeService.CurrentTime = new DateTime(2026, 5, 4, 14, 30, 0);
+        var result = _resolver.Resolve(TextSourceType.CurrentDayOfWeek);
+        Assert.Equal(DayOfWeek.Monday, _timeService.CurrentTime.DayOfWeek);
+        Assert.False(string.IsNullOrEmpty(result));
+    }
+
     private static ExecutionPlan CreatePlanWithSegment(string name, DateTime? start = null, DateTime? end = null)
     {
         var s = start ?? new DateTime(2026, 1, 1, 9, 0, 0);
