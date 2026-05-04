@@ -15,7 +15,7 @@ namespace ReTime_Testing.Services
     /// 系统托盘图标服务
     /// 管理应用程序的系统托盘图标和右键菜单
     /// </summary>
-    public class TrayIconService : IDisposable
+    public class TrayIconService : ITrayIconService
     {
         private static readonly Lazy<TrayIconService> _instance =
             new Lazy<TrayIconService>(() => new TrayIconService());
@@ -410,6 +410,11 @@ namespace ReTime_Testing.Services
         {
             _trayIcon?.ShowBalloonTip(title, message, icon);
         }
+
+        /// <summary>
+        /// 接口显式实现：显示气泡提示
+        /// </summary>
+        void ITrayIconService.ShowBalloon(string title, string message) => ShowBalloon(title, message);
 
         /// <summary>
         /// 释放资源

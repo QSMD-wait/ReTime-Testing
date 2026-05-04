@@ -8,7 +8,7 @@ namespace ReTime_Testing.Services
     /// <summary>
     /// TimeTop 桌面进度条全局服务（单例）
     /// </summary>
-    public class GlobalTimeTopDesktopService
+    public class GlobalTimeTopDesktopService : IGlobalTimeTopDesktopService
     {
         private static readonly Lazy<GlobalTimeTopDesktopService> _instance = 
             new Lazy<GlobalTimeTopDesktopService>(() => new GlobalTimeTopDesktopService());
@@ -31,6 +31,11 @@ namespace ReTime_Testing.Services
         /// 状态管理器（供外部访问）
         /// </summary>
         public ProgressStateManager StateManager => _stateManager;
+
+        /// <summary>
+        /// 接口显式实现：状态管理器
+        /// </summary>
+        IProgressStateManager IGlobalTimeTopDesktopService.StateManager => _stateManager;
         
         /// <summary>
         /// 定时器进度（用于 UI 显示）
@@ -214,6 +219,22 @@ namespace ReTime_Testing.Services
         /// 批量更新操作
         /// </summary>
         public void BatchUpdate(Action<GlobalTimeTopDesktopService> action)
+        {
+            BeginBatchUpdate();
+            try
+            {
+                action(this);
+            }
+            finally
+            {
+                EndBatchUpdate();
+            }
+        }
+
+        /// <summary>
+        /// 接口显式实现：批量更新操作
+        /// </summary>
+        void IGlobalTimeTopDesktopService.BatchUpdate(Action<IGlobalTimeTopDesktopService> action)
         {
             BeginBatchUpdate();
             try

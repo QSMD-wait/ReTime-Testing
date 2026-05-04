@@ -10,7 +10,7 @@ namespace ReTime_Testing.Services
     /// <summary>
     /// 桌面窗口管理器
     /// </summary>
-    public class DesktopWindowManager
+    public class DesktopWindowManager : IDesktopWindowManager
     {
         private static readonly Lazy<DesktopWindowManager> _instance =
             new Lazy<DesktopWindowManager>(() => new DesktopWindowManager());

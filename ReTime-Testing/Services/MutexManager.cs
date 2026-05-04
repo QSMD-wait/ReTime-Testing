@@ -9,7 +9,7 @@ namespace ReTime_Testing.Services
     /// 互斥锁管理服务
     /// 负责应用程序实例的互斥控制，防止多实例同时运行
     /// </summary>
-    public class MutexManager : IDisposable
+    public class MutexManager : IMutexManager
     {
         private static readonly Lazy<MutexManager> _instance = new Lazy<MutexManager>(() => new MutexManager());
 

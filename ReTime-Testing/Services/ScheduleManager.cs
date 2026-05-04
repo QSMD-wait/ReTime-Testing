@@ -7,7 +7,7 @@ namespace ReTime_Testing.Services;
 /// 调度管理器
 /// 负责执行计划的调度和状态管理
 /// </summary>
-public class ScheduleManager
+public class ScheduleManager : IScheduleManager
 {
     private readonly ITimeService _timeService;
     private readonly ProgressStateManager _stateManager;

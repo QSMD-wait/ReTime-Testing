@@ -13,7 +13,7 @@ namespace ReTime_Testing.Services
     /// 时间计划管理器的主要实现
     /// 职责：管理时间计划文件的创建、读取、保存、删除
     /// </summary>
-    public class TimeScheduleManager
+    public class TimeScheduleManager : ITimeScheduleManager
     {
         private static readonly Lazy<TimeScheduleManager> _instance =
             new Lazy<TimeScheduleManager>(() => new TimeScheduleManager());

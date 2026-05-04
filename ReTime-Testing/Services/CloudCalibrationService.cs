@@ -7,7 +7,7 @@ namespace ReTime_Testing.Services;
 /// 云端校准服务
 /// 定期从云端获取时间进行校准
 /// </summary>
-public class CloudCalibrationService
+public class CloudCalibrationService : ICloudCalibrationService
 {
     private readonly ITimeService _timeService;
     private readonly Timer? _calibrationTimer;

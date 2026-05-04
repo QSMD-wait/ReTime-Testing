@@ -8,7 +8,7 @@ namespace ReTime_Testing.Services
     /// 配置管理器（单例）
     /// 职责：管理应用配置文件的创建、读取、更新、删除
     /// </summary>
-    public class ConfigurationManager
+    public class ConfigurationManager : IConfigurationManager
     {
         private static readonly Lazy<ConfigurationManager> _instance =
             new Lazy<ConfigurationManager>(() => new ConfigurationManager());

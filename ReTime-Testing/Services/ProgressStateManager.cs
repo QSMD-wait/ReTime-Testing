@@ -7,7 +7,7 @@ namespace ReTime_Testing.Services
     /// <summary>
     /// 进度条状态管理器
     /// </summary>
-    public class ProgressStateManager
+    public class ProgressStateManager : IProgressStateManager
     {
         private bool _isBatchUpdating = false;
         private bool _pendingNotify = false;
@@ -175,6 +175,11 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 接口显式实现：开始批量更新
+        /// </summary>
+        IProgressStateManager IProgressStateManager.BeginBatchUpdate() => BeginBatchUpdate();
+
+        /// <summary>
         /// 结束批量更新（触发一次回调）
         /// </summary>
         public ProgressStateManager EndBatchUpdate()
@@ -189,9 +194,30 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 接口显式实现：结束批量更新
+        /// </summary>
+        IProgressStateManager IProgressStateManager.EndBatchUpdate() => EndBatchUpdate();
+
+        /// <summary>
         /// 批量更新操作（期间不会触发回调）
         /// </summary>
         public void BatchUpdate(Action<ProgressStateManager> action)
+        {
+            BeginBatchUpdate();
+            try
+            {
+                action(this);
+            }
+            finally
+            {
+                EndBatchUpdate();
+            }
+        }
+
+        /// <summary>
+        /// 接口显式实现：批量更新操作
+        /// </summary>
+        void IProgressStateManager.BatchUpdate(Action<IProgressStateManager> action)
         {
             BeginBatchUpdate();
             try
