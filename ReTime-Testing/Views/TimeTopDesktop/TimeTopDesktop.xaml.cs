@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
+using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels;
 
 namespace ReTime_Testing.Views.TimeTopDesktop
@@ -13,7 +14,7 @@ namespace ReTime_Testing.Views.TimeTopDesktop
     public partial class TimeTopDesktop : Window
     {
         private TimeTopDesktopViewModel? _viewModel;
-        private readonly DispatcherTimer _autoCloseTimer;
+        private TextOverlayViewModel? _textOverlayViewModel;
 
         /// <summary>
         /// 窗口位置：顶部
@@ -23,8 +24,22 @@ namespace ReTime_Testing.Views.TimeTopDesktop
         public TimeTopDesktop()
         {
             InitializeComponent();
+
+            // 创建主 ViewModel
             _viewModel = new TimeTopDesktopViewModel();
             DataContext = _viewModel;
+
+            // 创建文字覆盖 ViewModel（通过 App 属性获取服务实例）
+            var app = System.Windows.Application.Current as App;
+            var configManager = Services.ConfigurationManager.Instance;
+            var scheduleManager = app?.ScheduleManager
+                ?? throw new InvalidOperationException("ScheduleManager 未初始化");
+            var timeService = app?.TimeService
+                ?? throw new InvalidOperationException("TimeService 未初始化");
+
+            var resolver = new TextSlotResolver(scheduleManager, timeService);
+            _textOverlayViewModel = new TextOverlayViewModel(resolver, configManager);
+            _viewModel.TextOverlay = _textOverlayViewModel;
 
             // 应用标准样式
             DesktopWindowHelper.ApplyStandardStyles(this);
@@ -34,21 +49,9 @@ namespace ReTime_Testing.Views.TimeTopDesktop
 
             // 注册窗口关闭事件
             Closing += TimeTopDesktop_Closing;
-
-// 启动10秒后隐藏测试文本的定时器
-            _autoCloseTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(30)
-            };
-            _autoCloseTimer.Tick += (s, e) =>
-            {
-                _autoCloseTimer.Stop();
-                TestText.Visibility = Visibility.Collapsed;
-            };
-            _autoCloseTimer.Start();
         }
 
-protected override void OnSourceInitialized(EventArgs e)
+        protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
 
@@ -63,6 +66,7 @@ protected override void OnSourceInitialized(EventArgs e)
         {
             // 清理 ViewModel 资源
             _viewModel?.Cleanup();
+            _textOverlayViewModel?.Dispose();
         }
     }
 }

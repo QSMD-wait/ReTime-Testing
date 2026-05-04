@@ -6,8 +6,13 @@
         xmlns:local="clr-namespace:ReTime_Testing.Views.TimeTopDesktop"
         xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
         mc:Ignorable="d"
-        Title="TimeTopDesktop"> 
+        Title="TimeTopDesktop">
+    
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
 
     <Grid>
         <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5" Margin="0,-1,0,0"
@@ -24,8 +29,76 @@
                 <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.3"/>
             </ui:ProgressBar.Effect>
         </ui:ProgressBar>
-        <TextBlock x:Name="TestText" Text="ReTime - Testing  //  v0.0.1-alpha.6 第二次测试  //  Alpha 内部测试 //  by 青色漫地_wait" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,6,0,0"
-                   Foreground="White" FontSize="12" Opacity="0.8"/>
+
+        <!-- 文字覆盖条 -->
+        <Grid x:Name="TextOverlayPanel"
+              VerticalAlignment="Top"
+              Margin="0,7,0,0"
+              Height="18"
+              Visibility="{Binding TextOverlay.IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}">
+            
+            <!-- 左侧文字（左对齐） -->
+            <ItemsControl HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding TextOverlay.LeftSlots}"
+                          Margin="10,0,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 中间文字（绝对居中） -->
+            <ItemsControl HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding TextOverlay.CenterSlots}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 右侧文字（右对齐） -->
+            <ItemsControl HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding TextOverlay.RightSlots}"
+                          Margin="0,0,10,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TextSlotDisplay}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" Opacity="0.8"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Separator}" Foreground="White" FontSize="12" Opacity="0.4"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
     </Grid>
 
 </Window>

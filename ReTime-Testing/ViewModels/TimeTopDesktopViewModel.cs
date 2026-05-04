@@ -14,6 +14,9 @@ namespace ReTime_Testing.ViewModels
         private double _progressValue = 0;
 
         [ObservableProperty]
+        private TextOverlayViewModel? _textOverlay;
+
+        [ObservableProperty]
         private bool _isIndeterminate = true;
 
         [ObservableProperty]

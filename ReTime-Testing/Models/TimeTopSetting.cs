@@ -4,7 +4,7 @@ namespace ReTime_Testing.Models
 {
     /// <summary>
     /// TimeTop 桌面组件主配置
-    /// 六域结构：schedule / progressBar / behavior / calibration / stateStyles / defaultBehavior
+    /// 七域结构：schedule / progressBar / behavior / calibration / stateStyles / defaultBehavior / textOverlay
     /// </summary>
     public class TimeTopSetting
     {
@@ -50,6 +50,12 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("defaultBehavior")]
         public ScheduleBehaviorData DefaultBehavior { get; set; } = new();
+
+        /// <summary>
+        /// 文字覆盖配置
+        /// </summary>
+        [JsonPropertyName("textOverlay")]
+        public TextOverlayConfig TextOverlay { get; set; } = new();
     }
 
     /// <summary>

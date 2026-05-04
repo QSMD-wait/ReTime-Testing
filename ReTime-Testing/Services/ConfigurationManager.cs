@@ -387,6 +387,9 @@ namespace ReTime_Testing.Services
             // defaultBehavior 域
             target.DefaultBehavior ??= new ScheduleBehaviorData();
 
+            // textOverlay 域（第7域）
+            target.TextOverlay ??= new TextOverlayConfig();
+
             return target;
         }
 
