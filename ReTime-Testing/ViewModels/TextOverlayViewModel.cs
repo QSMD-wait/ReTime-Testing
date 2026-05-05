@@ -59,6 +59,11 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     private bool _isVisible;
 
     /// <summary>
+    /// 样式配置
+    /// </summary>
+    public TextOverlayStyleConfig Style => _config.Style;
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     public TextOverlayViewModel(ITextSlotResolver resolver, IConfigurationManager configManager)
@@ -122,9 +127,20 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     {
         if (!_config.Enabled) return;
 
-        UpdateSlotList(LeftSlots, _config.Left);
-        UpdateSlotList(CenterSlots, _config.Center);
-        UpdateSlotList(RightSlots, _config.Right);
+        if (_config.Layout.Left.Visible)
+            UpdateSlotList(LeftSlots, _config.Layout.Left.Slots);
+        else
+            LeftSlots.Clear();
+
+        if (_config.Layout.Center.Visible)
+            UpdateSlotList(CenterSlots, _config.Layout.Center.Slots);
+        else
+            CenterSlots.Clear();
+
+        if (_config.Layout.Right.Visible)
+            UpdateSlotList(RightSlots, _config.Layout.Right.Slots);
+        else
+            RightSlots.Clear();
     }
 
     /// <summary>

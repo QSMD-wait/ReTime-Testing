@@ -38,7 +38,8 @@
               Visibility="{Binding TextOverlay.IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}"
               LeftSlots="{Binding TextOverlay.LeftSlots}"
               CenterSlots="{Binding TextOverlay.CenterSlots}"
-              RightSlots="{Binding TextOverlay.RightSlots}"/>
+              RightSlots="{Binding TextOverlay.RightSlots}"
+              StyleConfig="{Binding TextOverlay.Style}"/>
     </Grid>
 
 </Window>

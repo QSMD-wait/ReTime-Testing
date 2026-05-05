@@ -180,10 +180,8 @@ namespace ReTime_Testing.Services
                 if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
                 {
                     Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        $"全局配置文件版本不匹配: {setting.Version}，使用默认配置");
-                    var defaultSetting = new GlobalSetting();
-                    SaveGlobalSetting(defaultSetting);
-                    return defaultSetting;
+                        $"全局配置文件版本不匹配: {setting.Version}，使用默认配置（不覆盖原文件）");
+                    return new GlobalSetting();
                 }
 
                 // 填充缺失字段的默认值
@@ -200,11 +198,9 @@ namespace ReTime_Testing.Services
             catch (JsonException ex)
             {
                 Logger.Error("ReTime_Testing.Services.ConfigurationManager", 
-                    $"全局配置文件 JSON 解析失败: {ex.Message}", ex);
+                    $"全局配置文件 JSON 解析失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
 
-                var defaultSetting = new GlobalSetting();
-                SaveGlobalSetting(defaultSetting);
-                return defaultSetting;
+                return new GlobalSetting();
             }
             catch (Exception ex)
             {
@@ -337,13 +333,13 @@ namespace ReTime_Testing.Services
             catch (JsonException ex)
             {
                 Logger.Error("ReTime_Testing.Services.ConfigurationManager",
-                    $"TimeTop设置 JSON 解析失败: {ex.Message}", ex);
+                    $"TimeTop设置 JSON 解析失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                 return new TimeTopSetting();
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.Services.ConfigurationManager",
-                    $"加载TimeTop设置失败: {ex.Message}", ex);
+                    $"加载TimeTop设置失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                 return new TimeTopSetting();
             }
         }
@@ -363,25 +359,35 @@ namespace ReTime_Testing.Services
 
             // progressBar 域
             target.ProgressBar ??= new ProgressBarConfig();
+            target.ProgressBar.Height = Math.Max(1, target.ProgressBar.Height);
+            target.ProgressBar.CornerRadius = Math.Max(0, target.ProgressBar.CornerRadius);
 
             // behavior 域
             target.Behavior ??= new ProgressBarBehaviorConfig();
+            target.Behavior.IdleOpacity = Math.Clamp(target.Behavior.IdleOpacity, 0.0, 1.0);
 
             // calibration 域
             target.Calibration ??= new CalibrationConfig();
+            target.Calibration.IntervalSeconds = Math.Max(1, target.Calibration.IntervalSeconds);
+            target.Calibration.TimeoutSeconds = Math.Max(1, target.Calibration.TimeoutSeconds);
+            target.Calibration.MaxRetryCount = Math.Max(0, target.Calibration.MaxRetryCount);
+            target.Calibration.BackoffMultiplier = Math.Max(1.0, target.Calibration.BackoffMultiplier);
             target.Calibration.Fallback ??= new CalibrationFallbackConfig();
             target.Calibration.Threshold ??= new CalibrationThresholdConfig();
+            target.Calibration.Threshold.TriggerSeconds = Math.Max(1, target.Calibration.Threshold.TriggerSeconds);
+            target.Calibration.Threshold.WarningSeconds = Math.Max(1, target.Calibration.Threshold.WarningSeconds);
+            target.Calibration.Threshold.SleepMinutes = Math.Max(0, target.Calibration.Threshold.SleepMinutes);
 
             // stateStyles 域
             target.StateStyles ??= new StateStylesConfig();
-            // 填充缺失的状态条目
             var allStates = new[] { "Loading", "Progress", "Success", "Error", "Paused", "Hidden", "Disabled" };
             foreach (var state in allStates)
             {
                 if (!target.StateStyles.Styles.ContainsKey(state))
-                {
                     target.StateStyles.Styles[state] = new StateStyleEntry();
-                }
+                var entry = target.StateStyles.Styles[state];
+                if (entry.Opacity.HasValue)
+                    entry.Opacity = Math.Clamp(entry.Opacity.Value, 0.0, 1.0);
             }
 
             // defaultBehavior 域
@@ -389,6 +395,16 @@ namespace ReTime_Testing.Services
 
             // textOverlay 域（第7域）
             target.TextOverlay ??= new TextOverlayConfig();
+            target.TextOverlay.Layout ??= new TextOverlayLayoutConfig();
+            target.TextOverlay.Layout.Left ??= new TextOverlayGroupConfig();
+            target.TextOverlay.Layout.Center ??= new TextOverlayGroupConfig();
+            target.TextOverlay.Layout.Right ??= new TextOverlayGroupConfig();
+            target.TextOverlay.Style ??= new TextOverlayStyleConfig();
+            target.TextOverlay.Style.FontSize = Math.Max(1, target.TextOverlay.Style.FontSize);
+            target.TextOverlay.Style.Opacity = Math.Clamp(target.TextOverlay.Style.Opacity, 0.0, 1.0);
+            target.TextOverlay.Style.ItemSpacing = Math.Max(0, target.TextOverlay.Style.ItemSpacing);
+            target.TextOverlay.Style.LeftMargin = Math.Max(0, target.TextOverlay.Style.LeftMargin);
+            target.TextOverlay.Style.RightMargin = Math.Max(0, target.TextOverlay.Style.RightMargin);
 
             return target;
         }
@@ -424,6 +440,24 @@ namespace ReTime_Testing.Services
                 SaveTimeTopSetting(defaultSetting);
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     "TimeTop设置文件已创建");
+            }
+        }
+
+        /// <summary>
+        /// 保存前备份配置文件（.bak）
+        /// </summary>
+        private static void BackupFile(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath)) return;
+                var backupPath = filePath + ".bak";
+                File.Copy(filePath, backupPath, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                    $"备份配置文件失败（不影响保存）: {ex.Message}");
             }
         }
 

@@ -84,9 +84,85 @@ public class TextSlotConfig
 }
 
 /// <summary>
+/// 文字覆盖组配置（Left / Center / Right 各一组）
+/// </summary>
+public class TextOverlayGroupConfig
+{
+    /// <summary>
+    /// 插槽列表
+    /// </summary>
+    [JsonPropertyName("slots")]
+    public List<TextSlotConfig> Slots { get; set; } = [];
+
+    /// <summary>
+    /// 该组是否可见
+    /// </summary>
+    [JsonPropertyName("visible")]
+    public bool Visible { get; set; } = true;
+}
+
+/// <summary>
+/// 文字覆盖布局配置
+/// </summary>
+public class TextOverlayLayoutConfig
+{
+    /// <summary>
+    /// 左侧组（从左向右排列，优先级最高）
+    /// </summary>
+    [JsonPropertyName("left")]
+    public TextOverlayGroupConfig Left { get; set; } = new();
+
+    /// <summary>
+    /// 中间组（居中排列，优先级最低）
+    /// </summary>
+    [JsonPropertyName("center")]
+    public TextOverlayGroupConfig Center { get; set; } = new();
+
+    /// <summary>
+    /// 右侧组（从右向左排列，优先级居中）
+    /// </summary>
+    [JsonPropertyName("right")]
+    public TextOverlayGroupConfig Right { get; set; } = new();
+}
+
+/// <summary>
+/// 文字覆盖样式配置
+/// </summary>
+public class TextOverlayStyleConfig
+{
+    /// <summary>
+    /// 字体大小
+    /// </summary>
+    [JsonPropertyName("fontSize")]
+    public double FontSize { get; set; } = 12;
+
+    /// <summary>
+    /// 文字透明度（0.0 ~ 1.0）
+    /// </summary>
+    [JsonPropertyName("opacity")]
+    public double Opacity { get; set; } = 0.8;
+
+    /// <summary>
+    /// 组件之间的间隔（像素）
+    /// </summary>
+    [JsonPropertyName("itemSpacing")]
+    public double ItemSpacing { get; set; } = 8;
+
+    /// <summary>
+    /// 左边距（像素）
+    /// </summary>
+    [JsonPropertyName("leftMargin")]
+    public double LeftMargin { get; set; } = 16;
+
+    /// <summary>
+    /// 右边距（像素）
+    /// </summary>
+    [JsonPropertyName("rightMargin")]
+    public double RightMargin { get; set; } = 16;
+}
+
+/// <summary>
 /// 文字覆盖配置（TimeTopSetting 第7域）
-/// 三组自由排列：Left / Center / Right
-/// 溢出裁剪优先级：Center > Right > Left
 /// </summary>
 public class TextOverlayConfig
 {
@@ -97,20 +173,14 @@ public class TextOverlayConfig
     public bool Enabled { get; set; } = false;
 
     /// <summary>
-    /// 左侧文字插槽列表（从左向右排列，优先级最高）
+    /// 布局配置
     /// </summary>
-    [JsonPropertyName("left")]
-    public List<TextSlotConfig> Left { get; set; } = [];
+    [JsonPropertyName("layout")]
+    public TextOverlayLayoutConfig Layout { get; set; } = new();
 
     /// <summary>
-    /// 中间文字插槽列表（居中排列，优先级最低）
+    /// 样式配置
     /// </summary>
-    [JsonPropertyName("center")]
-    public List<TextSlotConfig> Center { get; set; } = [];
-
-    /// <summary>
-    /// 右侧文字插槽列表（从右向左排列，优先级居中）
-    /// </summary>
-    [JsonPropertyName("right")]
-    public List<TextSlotConfig> Right { get; set; } = [];
+    [JsonPropertyName("style")]
+    public TextOverlayStyleConfig Style { get; set; } = new();
 }
