@@ -72,10 +72,10 @@
                     <ui:FontIcon x:Name="ExpandChevron"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
-                                FontSize="12"
-                                Icon="{x:Static ui:SegoeFluentIcons.ChevronRight}"
+                                FontSize="16"
+                                Icon="{x:Static ui:SegoeFluentIcons.ChevronDown}"
                                 Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                                Opacity="0.5"
+                                Opacity="0.9"
                                 Visibility="{Binding IsExpandable, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource BoolToVisibilityConverter}}"
                                 RenderTransformOrigin="0.5,0.5">
                         <ui:FontIcon.RenderTransform>

@@ -136,7 +136,7 @@ namespace ReTime_Testing.Views.Controls
         private void UpdateExpandState(bool expanded)
         {
             ExpandContentBorder.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-            ChevronRotate.Angle = expanded ? 90 : 0;
+            ChevronRotate.Angle = expanded ? 180 : 0;
         }
 
         #endregion
