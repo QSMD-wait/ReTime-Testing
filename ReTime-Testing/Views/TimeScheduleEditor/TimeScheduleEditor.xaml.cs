@@ -180,6 +180,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             set
             {
                 _backgroundR = value;
+                HasBackgroundColor = true;
                 OnPropertyChanged();
             }
         }
@@ -191,6 +192,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             set
             {
                 _backgroundG = value;
+                HasBackgroundColor = true;
                 OnPropertyChanged();
             }
         }
@@ -202,6 +204,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             set
             {
                 _backgroundB = value;
+                HasBackgroundColor = true;
                 OnPropertyChanged();
             }
         }
@@ -256,6 +259,11 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 OnPropertyChanged();
             }
         }
+
+        /// <summary>
+        /// 背景色是否为原始数据（非默认值零），用于避免序列化污染
+        /// </summary>
+        public bool HasBackgroundColor { get; set; }
     }
 
     /// <summary>
@@ -1142,16 +1150,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                             existingPoint.Style ??= new StyleOverridesData();
                             existingPoint.Style.Enabled = true;
                             existingPoint.Style.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-                            existingPoint.Style.BackgroundColor = $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}";
+                            existingPoint.Style.BackgroundColor = item.HasBackgroundColor
+                                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
+                                : null;
                             existingPoint.Style.Opacity = item.Opacity / 100.0;
                         }
                         else
                         {
                             // 禁用样式
-                            if (existingPoint.Style != null)
-                            {
-                                existingPoint.Style.Enabled = false;
-                            }
+                            existingPoint.Style = null;
                         }
                     }
                     else
@@ -1181,16 +1188,15 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                             existingSegment.Styles ??= new StyleOverridesData();
                             existingSegment.Styles.Enabled = true;
                             existingSegment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-                            existingSegment.Styles.BackgroundColor = $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}";
+                            existingSegment.Styles.BackgroundColor = item.HasBackgroundColor
+                                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
+                                : null;
                             existingSegment.Styles.Opacity = item.Opacity / 100.0;
                         }
                         else
                         {
                             // 禁用样式
-                            if (existingSegment.Styles != null)
-                            {
-                                existingSegment.Styles.Enabled = false;
-                            }
+                            existingSegment.Styles = null;
                         }
                     }
                     else

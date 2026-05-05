@@ -48,6 +48,7 @@ public static class ScheduleItemConverter
                 result.BackgroundR = color.R;
                 result.BackgroundG = color.G;
                 result.BackgroundB = color.B;
+                result.HasBackgroundColor = true;
             }
             if (item.Styles.Opacity.HasValue)
             {
@@ -94,6 +95,7 @@ public static class ScheduleItemConverter
                 result.BackgroundR = color.R;
                 result.BackgroundG = color.G;
                 result.BackgroundB = color.B;
+                result.HasBackgroundColor = true;
             }
             if (point.Style.Opacity.HasValue)
             {

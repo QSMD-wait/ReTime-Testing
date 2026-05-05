@@ -82,6 +82,11 @@ public class ScheduleManager : IScheduleManager
 
         _currentPlan = newPlan;
         ApplyCurrentState();
+
+        if (_currentPlan?.CurrentSegment != null)
+        {
+            ApplyBehavior(_currentPlan.CurrentSegment);
+        }
     }
 
     /// <summary>

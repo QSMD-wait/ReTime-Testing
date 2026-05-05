@@ -441,22 +441,10 @@ namespace ReTime_Testing.Services
                             UpdatedAt = now.ToString("o")
                         }
                     },
-                    Schedules = source.Schedules?.Select(s => new TimeScheduleItem
-                    {
-                        Id = s.Id,
-                        Name = s.Name,
-                        StartTime = s.StartTime,
-                        EndTime = s.EndTime,
-                        Styles = s.Styles
-                    }).ToList() ?? new List<TimeScheduleItem>(),
-                    TimePoints = source.TimePoints?.Select(t => new CustomTimePoint
-                    {
-                        Id = t.Id,
-                        Name = t.Name,
-                        Time = t.Time,
-                        ToState = t.ToState,
-                        Style = t.Style
-                    }).ToList() ?? new List<CustomTimePoint>()
+                    Schedules = JsonSerializer.Deserialize<List<TimeScheduleItem>>(
+                        JsonSerializer.Serialize(source.Schedules ?? [], _jsonOptions), _jsonOptions) ?? [],
+                    TimePoints = JsonSerializer.Deserialize<List<CustomTimePoint>>(
+                        JsonSerializer.Serialize(source.TimePoints ?? [], _jsonOptions), _jsonOptions) ?? []
                 };
 
                 SaveSchedule(newSchedule);
