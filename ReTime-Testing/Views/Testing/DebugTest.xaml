@@ -57,6 +57,27 @@
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 
+                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Settings}"
+                                       Title="高级设置"
+                                       Description="点击展开查看更多配置选项"
+                                       IsExpandable="True"
+                                       Margin="0">
+                    <controls:SettingsCard.ExpandContent>
+                        <StackPanel Margin="0,4,0,0">
+                            <CheckBox Content="启用实验性功能" Margin="0,0,0,8"/>
+                            <CheckBox Content="显示详细日志" Margin="0,0,0,8"/>
+                            <TextBlock Text="日志级别" FontSize="12" Opacity="0.75" Margin="0,0,0,4"/>
+                            <ComboBox SelectedIndex="0" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Verbose"/>
+                                <ComboBoxItem Content="Debug"/>
+                                <ComboBoxItem Content="Information"/>
+                                <ComboBoxItem Content="Warning"/>
+                                <ComboBoxItem Content="Error"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </controls:SettingsCard.ExpandContent>
+                </controls:SettingsCard>
+
                 <!-- 状态切换 -->
                 <TextBlock Text="状态控制"
                            FontSize="18"
