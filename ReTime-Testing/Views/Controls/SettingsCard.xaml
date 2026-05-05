@@ -11,60 +11,86 @@
     
     <UserControl.Resources>
         <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
 
     <Border x:Name="CardBorder"
             HorizontalAlignment="Stretch"
-            Height="68"
             Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
             CornerRadius="4"
             BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
             BorderThickness="1"
             Padding="16"
             Margin="0,0,0,8">
-        <Grid VerticalAlignment="Center">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="48"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="80"/>
-            </Grid.ColumnDefinitions>
+        <StackPanel>
+            <!-- 主行 -->
+            <Grid x:Name="HeaderRow"
+                  VerticalAlignment="Center"
+                  MouseLeftButtonUp="OnHeaderClick">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="120"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- 图标 -->
-            <ui:FontIcon x:Name="IconFontIcon"
-                        Grid.Column="0"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        FontSize="20"
-                        Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
+                <!-- 图标 -->
+                <ui:FontIcon x:Name="IconFontIcon"
+                            Grid.Column="0"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="20"
+                            Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
 
-            <!-- 标题和描述 -->
-            <StackPanel Grid.Column="1" 
-                       VerticalAlignment="Center"
-                       Margin="12,0,12,0">
-                <TextBlock x:Name="TitleTextBlock"
-                          FontSize="14"
-                          Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                          Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                          TextWrapping="NoWrap"
-                          TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="DescriptionTextBlock"
-                          FontSize="12"
-                          Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                          Opacity="0.75"
-                          Margin="0,2,0,0"
-                          Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                          TextWrapping="Wrap"
-                          Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
-            </StackPanel>
+                <!-- 标题和描述 -->
+                <StackPanel Grid.Column="1"
+                           VerticalAlignment="Center"
+                           Margin="12,0,12,0">
+                    <TextBlock x:Name="TitleTextBlock"
+                              FontSize="14"
+                              Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                              Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                              TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DescriptionTextBlock"
+                              FontSize="12"
+                              Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                              Opacity="0.75"
+                              Margin="0,2,0,0"
+                              Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                              TextWrapping="Wrap"
+                              Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
+                </StackPanel>
 
-            <!-- 控件 -->
-            <ContentPresenter x:Name="ContentPresenter"
-                                  Grid.Column="2"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Center"
-                                  Margin="0"
-                                  Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
-        </Grid>
+                <!-- 右侧：展开箭头 或 自定义控件 -->
+                <Grid Grid.Column="2" VerticalAlignment="Center">
+                    <ContentControl x:Name="ContentPresenter"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    HorizontalContentAlignment="Right"
+                                    VerticalContentAlignment="Center"
+                                    Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
+                    <ui:FontIcon x:Name="ExpandChevron"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Icon="{x:Static ui:SegoeFluentIcons.ChevronRight}"
+                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                                Opacity="0.5"
+                                Visibility="{Binding IsExpandable, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource BoolToVisibilityConverter}}"
+                                RenderTransformOrigin="0.5,0.5">
+                        <ui:FontIcon.RenderTransform>
+                            <RotateTransform x:Name="ChevronRotate" Angle="0"/>
+                        </ui:FontIcon.RenderTransform>
+                    </ui:FontIcon>
+                </Grid>
+            </Grid>
+
+            <!-- 展开内容区域 -->
+            <Border x:Name="ExpandContentBorder"
+                    Visibility="Collapsed"
+                    Margin="48,8,0,0">
+                <ContentPresenter Content="{Binding ExpandContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
+            </Border>
+        </StackPanel>
     </Border>
 </UserControl>

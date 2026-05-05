@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
 namespace ReTime_Testing.Views.Controls
@@ -63,6 +64,79 @@ namespace ReTime_Testing.Views.Controls
         {
             get => GetValue(ControlContentProperty);
             set => SetValue(ControlContentProperty, value);
+        }
+
+        /// <summary>
+        /// 是否可展开（显示右侧箭头）
+        /// </summary>
+        public static readonly DependencyProperty IsExpandableProperty =
+            DependencyProperty.Register(nameof(IsExpandable), typeof(bool), typeof(SettingsCard),
+                new PropertyMetadata(false, OnIsExpandableChanged));
+
+        public bool IsExpandable
+        {
+            get => (bool)GetValue(IsExpandableProperty);
+            set => SetValue(IsExpandableProperty, value);
+        }
+
+        /// <summary>
+        /// 是否已展开
+        /// </summary>
+        public static readonly DependencyProperty IsExpandedProperty =
+            DependencyProperty.Register(nameof(IsExpanded), typeof(bool), typeof(SettingsCard),
+                new PropertyMetadata(false, OnIsExpandedChanged));
+
+        public bool IsExpanded
+        {
+            get => (bool)GetValue(IsExpandedProperty);
+            set => SetValue(IsExpandedProperty, value);
+        }
+
+        /// <summary>
+        /// 展开后的内容
+        /// </summary>
+        public static readonly DependencyProperty ExpandContentProperty =
+            DependencyProperty.Register(nameof(ExpandContent), typeof(object), typeof(SettingsCard),
+                new PropertyMetadata(null));
+
+        public object ExpandContent
+        {
+            get => GetValue(ExpandContentProperty);
+            set => SetValue(ExpandContentProperty, value);
+        }
+
+        #endregion
+
+        #region 回调
+
+        private static void OnIsExpandableChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var card = (SettingsCard)d;
+            card.HeaderRow.Cursor = (bool)e.NewValue ? Cursors.Hand : null;
+        }
+
+        private static void OnIsExpandedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var card = (SettingsCard)d;
+            card.UpdateExpandState((bool)e.NewValue);
+        }
+
+        #endregion
+
+        #region 交互
+
+        private void OnHeaderClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (IsExpandable)
+            {
+                IsExpanded = !IsExpanded;
+            }
+        }
+
+        private void UpdateExpandState(bool expanded)
+        {
+            ExpandContentBorder.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+            ChevronRotate.Angle = expanded ? 90 : 0;
         }
 
         #endregion
