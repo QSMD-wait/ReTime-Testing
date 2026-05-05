@@ -1,6 +1,7 @@
 using ReTime_Testing.Models;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ReTime_Testing.Services
 {
@@ -173,34 +174,46 @@ namespace ReTime_Testing.Services
                     return newSetting;
                 }
 
-                var setting = JsonSerializer.Deserialize<GlobalSetting>(jsonContent, _jsonOptions)
-                    ?? new GlobalSetting();
+                // 解析为 JsonNode DOM（仅做语法检查，不做类型校验）
+                JsonNode? rootNode;
+                try
+                {
+                    rootNode = JsonNode.Parse(jsonContent, null, new JsonDocumentOptions { AllowTrailingCommas = true });
+                }
+                catch (JsonException ex)
+                {
+                    Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                        $"全局配置文件 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                    return new GlobalSetting();
+                }
+
+                if (rootNode == null)
+                {
+                    return new GlobalSetting();
+                }
+
+                // 逐属性反序列化
+                var result = new GlobalSetting();
+                result.Version = TryGetString(rootNode, "version") ?? result.Version;
 
                 // 版本检查
-                if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
+                if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
                 {
                     Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        $"全局配置文件版本不匹配: {setting.Version}，使用默认配置（不覆盖原文件）");
+                        $"全局配置文件版本不匹配: {result.Version}，使用默认配置（不覆盖原文件）");
                     return new GlobalSetting();
                 }
 
                 // 填充缺失字段的默认值
                 var defaults = new GlobalSetting();
-                setting = FillMissingFields(setting, defaults);
+                result = FillMissingFields(result, defaults);
 
-                _cachedGlobalSetting = setting;
+                _cachedGlobalSetting = result;
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     "全局配置加载成功");
 
-                return setting;
-            }
-            catch (JsonException ex)
-            {
-                Logger.Error("ReTime_Testing.Services.ConfigurationManager", 
-                    $"全局配置文件 JSON 解析失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
-
-                return new GlobalSetting();
+                return result;
             }
             catch (Exception ex)
             {
@@ -307,34 +320,53 @@ namespace ReTime_Testing.Services
                     return newSetting;
                 }
 
-                // 反序列化
-                var setting = JsonSerializer.Deserialize<TimeTopSetting>(jsonContent, _jsonOptions);
-
-                if (setting == null)
+                // 解析为 JsonNode DOM（仅做语法检查，不做类型校验）
+                JsonNode? rootNode;
+                try
                 {
-                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        "TimeTop设置文件解析失败，使用默认配置");
+                    rootNode = JsonNode.Parse(jsonContent, null, new JsonDocumentOptions { AllowTrailingCommas = true });
+                }
+                catch (JsonException ex)
+                {
+                    Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                        $"TimeTop设置 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                     return new TimeTopSetting();
                 }
 
-                // 版本检查（alpha 阶段：版本不匹配时填充默认值而非丢弃）
-                if (string.IsNullOrEmpty(setting.Version) || setting.Version != "1.0.0")
+                if (rootNode == null)
                 {
-                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        $"TimeTop设置文件版本不匹配: {setting.Version}，填充默认值");
+                    return new TimeTopSetting();
                 }
 
-                // 填充缺失字段的默认值
-                var defaults = new TimeTopSetting();
-                setting = FillMissingFields(setting, defaults);
+                // 逐域反序列化：某个域解析失败仅回退该域
+                var result = new TimeTopSetting();
 
-                return setting;
-            }
-            catch (JsonException ex)
-            {
-                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
-                    $"TimeTop设置 JSON 解析失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
-                return new TimeTopSetting();
+                // version
+                result.Version = TryGetString(rootNode, "version") ?? result.Version;
+
+                // 简单域：整域反序列化
+                result.Schedule = TryDeserializeDomain<ScheduleConfig>(rootNode, "schedule") ?? result.Schedule;
+                result.ProgressBar = TryDeserializeDomain<ProgressBarConfig>(rootNode, "progressBar") ?? result.ProgressBar;
+                result.Behavior = TryDeserializeDomain<ProgressBarBehaviorConfig>(rootNode, "behavior") ?? result.Behavior;
+                result.StateStyles = TryDeserializeDomain<StateStylesConfig>(rootNode, "stateStyles") ?? result.StateStyles;
+                result.DefaultBehavior = TryDeserializeDomain<ScheduleBehaviorData>(rootNode, "defaultBehavior") ?? result.DefaultBehavior;
+
+                // 复杂域：先尝试整域，失败则逐子域 + 逐属性
+                result.Calibration = DeserializeCalibrationDomain(rootNode) ?? result.Calibration;
+                result.TextOverlay = DeserializeTextOverlayDomain(rootNode) ?? result.TextOverlay;
+
+                // 版本检查
+                if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
+                {
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                        $"TimeTop设置版本不匹配: {result.Version}，填充默认值");
+                }
+
+                // 填充缺失字段 + 值钳位
+                var defaults = new TimeTopSetting();
+                result = FillMissingFields(result, defaults);
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -443,23 +475,135 @@ namespace ReTime_Testing.Services
             }
         }
 
+        #region 逐域容错反序列化
+
         /// <summary>
-        /// 保存前备份配置文件（.bak）
+        /// 尝试反序列化指定域（失败返回 null，不影响其他域）
         /// </summary>
-        private static void BackupFile(string filePath)
+        private T? TryDeserializeDomain<T>(JsonNode? parent, string propertyName) where T : class
         {
             try
             {
-                if (!File.Exists(filePath)) return;
-                var backupPath = filePath + ".bak";
-                File.Copy(filePath, backupPath, overwrite: true);
+                var node = parent?[propertyName];
+                if (node == null) return null;
+                return JsonSerializer.Deserialize<T>(node.ToJsonString(), _jsonOptions);
             }
-            catch (Exception ex)
+            catch (JsonException ex)
             {
                 Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                    $"备份配置文件失败（不影响保存）: {ex.Message}");
+                    $"域 '{propertyName}' 解析失败: {ex.Message}，使用该域默认值");
+                return null;
             }
         }
 
+        /// <summary>
+        /// 尝试获取字符串属性
+        /// </summary>
+        private static string? TryGetString(JsonNode? node, string propertyName)
+        {
+            try
+            {
+                return node?[propertyName]?.GetValue<string>();
+            }
+            catch
+            {
+                return null;
+            }
         }
+
+        /// <summary>
+        /// 尝试获取布尔属性
+        /// </summary>
+        private static bool? TryGetBool(JsonNode? node, string propertyName)
+        {
+            try
+            {
+                return node?[propertyName]?.GetValue<bool>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 尝试获取整数属性
+        /// </summary>
+        private static int? TryGetInt(JsonNode? node, string propertyName)
+        {
+            try
+            {
+                return node?[propertyName]?.GetValue<int>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 尝试获取浮点数属性
+        /// </summary>
+        private static double? TryGetDouble(JsonNode? node, string propertyName)
+        {
+            try
+            {
+                return node?[propertyName]?.GetValue<double>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 反序列化 calibration 域（支持子域容错）
+        /// </summary>
+        private CalibrationConfig? DeserializeCalibrationDomain(JsonNode root)
+        {
+            var calNode = root["calibration"];
+            if (calNode == null) return null;
+
+            // 先尝试整域反序列化
+            var whole = TryDeserializeDomain<CalibrationConfig>(root, "calibration");
+            if (whole != null) return whole;
+
+            // 整域失败：逐子域 + 逐属性
+            Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                "calibration 整域解析失败，尝试逐子域解析");
+            var result = new CalibrationConfig();
+            result.Enabled = TryGetBool(calNode, "enabled") ?? result.Enabled;
+            result.IntervalSeconds = TryGetInt(calNode, "intervalSeconds") ?? result.IntervalSeconds;
+            result.TimeoutSeconds = TryGetInt(calNode, "timeoutSeconds") ?? result.TimeoutSeconds;
+            result.MaxRetryCount = TryGetInt(calNode, "maxRetryCount") ?? result.MaxRetryCount;
+            result.BackoffMultiplier = TryGetDouble(calNode, "backoffMultiplier") ?? result.BackoffMultiplier;
+            result.Fallback = TryDeserializeDomain<CalibrationFallbackConfig>(calNode, "fallback") ?? result.Fallback;
+            result.Threshold = TryDeserializeDomain<CalibrationThresholdConfig>(calNode, "threshold") ?? result.Threshold;
+            return result;
+        }
+
+        /// <summary>
+        /// 反序列化 textOverlay 域（支持子域容错）
+        /// </summary>
+        private TextOverlayConfig? DeserializeTextOverlayDomain(JsonNode root)
+        {
+            var toNode = root["textOverlay"];
+            if (toNode == null) return null;
+
+            // 先尝试整域反序列化
+            var whole = TryDeserializeDomain<TextOverlayConfig>(root, "textOverlay");
+            if (whole != null) return whole;
+
+            // 整域失败：逐子域 + 逐属性
+            Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
+                "textOverlay 整域解析失败，尝试逐子域解析");
+            var result = new TextOverlayConfig();
+            result.Enabled = TryGetBool(toNode, "enabled") ?? result.Enabled;
+            result.Layout = TryDeserializeDomain<TextOverlayLayoutConfig>(toNode, "layout") ?? result.Layout;
+            result.Style = TryDeserializeDomain<TextOverlayStyleConfig>(toNode, "style") ?? result.Style;
+            return result;
+        }
+
+        #endregion
+    }
 }
