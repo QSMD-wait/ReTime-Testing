@@ -437,8 +437,6 @@ namespace ReTime_Testing.Services
             target.TextOverlay.Style.FontSize = Math.Max(1, target.TextOverlay.Style.FontSize);
             target.TextOverlay.Style.Opacity = Math.Clamp(target.TextOverlay.Style.Opacity, 0.0, 1.0);
             target.TextOverlay.Style.ItemSpacing = Math.Max(0, target.TextOverlay.Style.ItemSpacing);
-            target.TextOverlay.Style.LeftMargin = Math.Max(0, target.TextOverlay.Style.LeftMargin);
-            target.TextOverlay.Style.RightMargin = Math.Max(0, target.TextOverlay.Style.RightMargin);
 
             return target;
         }

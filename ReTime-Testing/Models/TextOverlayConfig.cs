@@ -143,22 +143,40 @@ public class TextOverlayStyleConfig
     public double Opacity { get; set; } = 0.8;
 
     /// <summary>
+    /// 文字颜色（ARGB 十六进制，如 "#E0E0E0"），默认偏灰白色
+    /// </summary>
+    [JsonPropertyName("textColor")]
+    public string? TextColor { get; set; } = "#E0E0E0";
+
+    /// <summary>
     /// 组件之间的间隔（像素）
     /// </summary>
     [JsonPropertyName("itemSpacing")]
     public double ItemSpacing { get; set; } = 8;
 
     /// <summary>
-    /// 左边距（像素）
+    /// 左区域水平偏移（正→右移，负→左移），默认 0（基础边距16px内置）
     /// </summary>
-    [JsonPropertyName("leftMargin")]
-    public double LeftMargin { get; set; } = 16;
+    [JsonPropertyName("leftOffset")]
+    public double LeftOffset { get; set; } = 0;
 
     /// <summary>
-    /// 右边距（像素）
+    /// 中区域水平偏移（正→右移，负→左移），默认 0
     /// </summary>
-    [JsonPropertyName("rightMargin")]
-    public double RightMargin { get; set; } = 16;
+    [JsonPropertyName("centerOffset")]
+    public double CenterOffset { get; set; } = 0;
+
+    /// <summary>
+    /// 右区域水平偏移（正→右移，负→左移），默认 0（基础边距16px内置）
+    /// </summary>
+    [JsonPropertyName("rightOffset")]
+    public double RightOffset { get; set; } = 0;
+
+    /// <summary>
+    /// 整体垂直偏移（正→上移，负→下移），不会遮挡进度条
+    /// </summary>
+    [JsonPropertyName("verticalOffset")]
+    public double VerticalOffset { get; set; } = 0;
 }
 
 /// <summary>

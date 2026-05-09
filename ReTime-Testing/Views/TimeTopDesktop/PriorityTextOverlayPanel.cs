@@ -100,18 +100,21 @@ public class PriorityTextOverlayPanel : FrameworkElement
 
         var style = StyleConfig ?? new TextOverlayStyleConfig();
         var fontSize = Math.Max(1, style.FontSize);
-        var leftMargin = Math.Max(0, style.LeftMargin);
-        var rightMargin = Math.Max(0, style.RightMargin);
+        var leftOffset = style.LeftOffset;
+        var rightOffset = style.RightOffset;
+        var centerOffset = style.CenterOffset;
+        var verticalOffset = style.VerticalOffset;
         var itemSpacing = Math.Max(0, style.ItemSpacing);
         var opacity = Math.Clamp(style.Opacity, 0.0, 1.0);
 
         // 构建画刷
-        var textColor = Colors.White;
+        var baseColor = ParseColor(style.TextColor, Colors.LightGray);
+        var textColor = baseColor;
         textColor.A = (byte)(255 * opacity);
         var opaqueTextBrush = new SolidColorBrush(textColor);
         opaqueTextBrush.Freeze();
 
-        var sepColor = Colors.White;
+        var sepColor = baseColor;
         sepColor.A = (byte)(255 * opacity * 0.5);
         var separatorBrush = new SolidColorBrush(sepColor);
         separatorBrush.Freeze();
@@ -128,8 +131,8 @@ public class PriorityTextOverlayPanel : FrameworkElement
         var rightItems = MeasureGroup(RightSlots, typeface, pixelsPerDip, fontSize);
         var centerItems = MeasureGroup(CenterSlots, typeface, pixelsPerDip, fontSize);
 
-        // 1. 放置 Left（从左向右，优先级最高）
-        double x = leftMargin;
+        // 1. 放置 Left（从左向右，优先级最高），正偏移→右移，基础边距16
+        double x = 16 + leftOffset;
         for (int i = 0; i < leftItems.Count; i++)
         {
             leftItems[i].X = x;
@@ -138,15 +141,16 @@ public class PriorityTextOverlayPanel : FrameworkElement
         }
         double leftEnd = x;
 
-        // 2. 放置 Right（从右向左，优先级居中）
-        x = width - rightMargin;
+        // 2. 放置 Right（从右向左，优先级居中），正偏移→右移，基础边距16
+        double rightBound = width - 16 + rightOffset;
+        x = rightBound;
         for (int i = rightItems.Count - 1; i >= 0; i--)
         {
             x -= rightItems[i].TotalWidth;
             rightItems[i].X = x;
             if (i > 0) x -= itemSpacing;
         }
-        double rightStart = rightItems.Count > 0 ? rightItems[0].X : width - rightMargin;
+        double rightStart = rightItems.Count > 0 ? rightItems[0].X : rightBound;
 
         // 3. Right 与 Left 重叠 → 隐藏重叠的 Right 项
         for (int i = 0; i < rightItems.Count; i++)
@@ -156,12 +160,12 @@ public class PriorityTextOverlayPanel : FrameworkElement
             else
                 break;
         }
-        rightStart = rightItems.FirstOrDefault(m => m.Visible)?.X ?? width - rightMargin;
+        rightStart = rightItems.FirstOrDefault(m => m.Visible)?.X ?? rightBound;
 
-        // 4. 放置 Center（绝对居中，优先级最低）
+        // 4. 放置 Center（居中 + 偏移，优先级最低），正偏移→右移
         double centerTotalWidth = centerItems.Sum(m => m.TotalWidth)
             + Math.Max(0, centerItems.Count - 1) * itemSpacing;
-        double centerStart = (width - centerTotalWidth) / 2;
+        double centerStart = (width - centerTotalWidth) / 2 + centerOffset;
         x = centerStart;
         for (int i = 0; i < centerItems.Count; i++)
         {
@@ -178,8 +182,9 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 item.Visible = false;
         }
 
-        // 6. 绘制所有可见项
-        double y = Math.Max(0, (RenderSize.Height - fontSize) / 2 - 2);
+        // 6. 绘制所有可见项（正垂直偏移→上移，y=0 为面板顶部=进度条底边，不可越过）
+        double baseY = (RenderSize.Height - fontSize) / 2 - 2;
+        double y = Math.Max(0, baseY - verticalOffset);
 
         foreach (var item in leftItems.Where(m => m.Visible))
             DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush);
@@ -251,5 +256,19 @@ public class PriorityTextOverlayPanel : FrameworkElement
         public bool Visible { get; set; } = true;
 
         public MeasuredSlot(TextSlotDisplay slot) => Slot = slot;
+    }
+
+    private static Color ParseColor(string? hex, Color fallback)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return fallback;
+        try
+        {
+            var obj = ColorConverter.ConvertFromString(hex);
+            return obj is Color c ? c : fallback;
+        }
+        catch
+        {
+            return fallback;
+        }
     }
 }
