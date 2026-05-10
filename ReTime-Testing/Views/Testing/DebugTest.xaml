@@ -35,7 +35,7 @@
                                        Description="在系统启动时自动运行本应用"
                                         Margin="0">
                     <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="True" OffContent="关闭" OnContent="开启" HorizontalAlignment="Stretch" Margin="-6,0,-6,0" Padding="0" HorizontalContentAlignment="Center"/>
+                         <ui:ToggleSwitch IsOn="True" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 
@@ -44,7 +44,7 @@
                                        Description="启用详细的调试日志输出"
                                         Margin="0">
                     <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="False" OffContent="关闭" OnContent="开启" HorizontalAlignment="Stretch" Margin="-6,0,-6,0" Padding="0" HorizontalContentAlignment="Center"/>
+                         <ui:ToggleSwitch IsOn="False" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 

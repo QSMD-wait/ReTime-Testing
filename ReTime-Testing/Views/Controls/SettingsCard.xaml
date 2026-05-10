@@ -30,7 +30,6 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="48"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="120"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- 图标 -->
@@ -42,47 +41,47 @@
                             Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
                             Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
 
-                <!-- 标题和描述 -->
-                <StackPanel Grid.Column="1"
-                           VerticalAlignment="Center"
-                           Margin="12,0,12,0">
-                    <TextBlock x:Name="TitleTextBlock"
-                              FontSize="14"
-                              Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                              Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                              TextWrapping="Wrap"/>
-                    <TextBlock x:Name="DescriptionTextBlock"
-                              FontSize="12"
-                              Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                              Opacity="0.75"
-                              Margin="0,2,0,0"
-                              Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                              TextWrapping="Wrap"
-                              Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
-                </StackPanel>
-
-                <!-- 右侧：展开箭头 或 自定义控件 -->
-                <Grid Grid.Column="2" VerticalAlignment="Center">
-                    <ContentControl x:Name="ContentPresenter"
-                                    HorizontalAlignment="Stretch"
+                <!-- 标题 + 右侧控件 -->
+                <DockPanel Grid.Column="1" Margin="12,0,0,0">
+                    <!-- 右侧：控件 + 箭头，Dock右贴边 -->
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <ContentControl x:Name="ContentPresenter"
+                                        VerticalAlignment="Center"
+                                        Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
+                        <ui:FontIcon x:Name="ExpandChevron"
                                     VerticalAlignment="Center"
-                                    HorizontalContentAlignment="Right"
-                                    VerticalContentAlignment="Center"
-                                    Content="{Binding ControlContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
-                    <ui:FontIcon x:Name="ExpandChevron"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                FontSize="16"
-                                Icon="{x:Static ui:SegoeFluentIcons.ChevronDown}"
-                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                                Opacity="0.9"
-                                Visibility="{Binding IsExpandable, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource BoolToVisibilityConverter}}"
-                                RenderTransformOrigin="0.5,0.5">
-                        <ui:FontIcon.RenderTransform>
-                            <RotateTransform x:Name="ChevronRotate" Angle="0"/>
-                        </ui:FontIcon.RenderTransform>
-                    </ui:FontIcon>
-                </Grid>
+                                    Margin="8,0,0,0"
+                                    FontSize="16"
+                                    Icon="{x:Static ui:SegoeFluentIcons.ChevronDown}"
+                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                                    Opacity="0.9"
+                                    Visibility="{Binding IsExpandable, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    RenderTransformOrigin="0.5,0.5">
+                            <ui:FontIcon.RenderTransform>
+                                <RotateTransform x:Name="ChevronRotate" Angle="0"/>
+                            </ui:FontIcon.RenderTransform>
+                        </ui:FontIcon>
+                    </StackPanel>
+
+                    <!-- 标题和描述：填充剩余空间 -->
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="TitleTextBlock"
+                                  FontSize="14"
+                                  Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                                  Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                                  TextWrapping="Wrap"/>
+                        <TextBlock x:Name="DescriptionTextBlock"
+                                  FontSize="12"
+                                  Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                                  Opacity="0.75"
+                                  Margin="0,2,0,0"
+                                  Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
+                    </StackPanel>
+                </DockPanel>
             </Grid>
 
             <!-- 展开内容区域 -->
