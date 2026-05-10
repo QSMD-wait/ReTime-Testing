@@ -4,7 +4,7 @@ namespace ReTime_Testing.Models
 {
     /// <summary>
     /// TimeTop 桌面组件主配置
-    /// 七域结构：schedule / progressBar / behavior / calibration / stateStyles / defaultBehavior / textOverlay
+    /// 八域结构：schedule / progressBar / behavior / calibration / stateStyles / defaultBehavior / textOverlay / window
     /// </summary>
     public class TimeTopSetting
     {
@@ -56,6 +56,12 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("textOverlay")]
         public TextOverlayConfig TextOverlay { get; set; } = new();
+
+        /// <summary>
+        /// 窗口配置
+        /// </summary>
+        [JsonPropertyName("window")]
+        public WindowConfig Window { get; set; } = new();
     }
 
     /// <summary>
@@ -278,5 +284,39 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("opacity")]
         public double? Opacity { get; set; }
+    }
+
+    /// <summary>
+    /// 窗口层级维持模式
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum TopmostMode
+    {
+        /// <summary>
+        /// 仅初始化置顶，之后不维护（可能被其他窗口覆盖）
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// 窗口失活时重新置顶
+        /// </summary>
+        OnDeactivated,
+
+        /// <summary>
+        /// 定时轮询置顶（500ms 间隔）
+        /// </summary>
+        Polling
+    }
+
+    /// <summary>
+    /// 窗口配置（第8域）
+    /// </summary>
+    public class WindowConfig
+    {
+        /// <summary>
+        /// 窗口层级维持模式
+        /// </summary>
+        [JsonPropertyName("topmostMode")]
+        public TopmostMode TopmostMode { get; set; } = TopmostMode.OnDeactivated;
     }
 }

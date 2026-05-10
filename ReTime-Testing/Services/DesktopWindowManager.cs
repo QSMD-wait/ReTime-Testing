@@ -45,7 +45,21 @@ namespace ReTime_Testing.Services
             {
                 _currentWindow.Show();
                 _currentPosition = position;
+
+                // 根据配置应用层级维持模式
+                ApplyTopmostMode();
             }
+        }
+
+        /// <summary>
+        /// 根据配置应用层级维持模式
+        /// </summary>
+        private void ApplyTopmostMode()
+        {
+            if (_currentWindow == null) return;
+
+            var config = ConfigurationManager.Instance.LoadTimeTopSetting();
+            TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
         /// <summary>
@@ -63,6 +77,9 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void CloseCurrentWindow()
         {
+            // 清理层级维持服务
+            TopmostService.Instance.Cleanup();
+
             if (_currentWindow != null)
             {
                 _currentWindow.Close();

@@ -357,6 +357,9 @@ namespace ReTime_Testing.Services
                 result.Calibration = DeserializeCalibrationDomain(rootNode) ?? result.Calibration;
                 result.TextOverlay = DeserializeTextOverlayDomain(rootNode) ?? result.TextOverlay;
 
+                // window 域
+                result.Window = TryDeserializeDomain<WindowConfig>(rootNode, "window") ?? result.Window;
+
                 // 版本检查
                 if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
                 {
@@ -437,6 +440,9 @@ namespace ReTime_Testing.Services
             target.TextOverlay.Style.FontSize = Math.Max(1, target.TextOverlay.Style.FontSize);
             target.TextOverlay.Style.Opacity = Math.Clamp(target.TextOverlay.Style.Opacity, 0.0, 1.0);
             target.TextOverlay.Style.ItemSpacing = Math.Max(0, target.TextOverlay.Style.ItemSpacing);
+
+            // window 域（第8域）
+            target.Window ??= new WindowConfig();
 
             return target;
         }

@@ -76,6 +76,7 @@ namespace ReTime_Testing.Helpers
 
         /// <summary>
         /// 应用标准样式
+        /// 注意：Topmost 由 TopmostService 统一管理，此处不设置
         /// </summary>
         public static void ApplyStandardStyles(Window window)
         {
@@ -84,7 +85,6 @@ namespace ReTime_Testing.Helpers
             window.Background = System.Windows.Media.Brushes.Transparent;
             window.ShowInTaskbar = false;
             window.ResizeMode = ResizeMode.NoResize;
-            window.Topmost = true;
         }
 
         /// <summary>
