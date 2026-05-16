@@ -149,6 +149,9 @@ namespace ReTime_Testing.Services
             Title = "ReTime-Testing"
         };
 
+        // 主题服务引用
+        private IThemeService? _themeService;
+
         private TrayIconService()
         {
         }
@@ -162,6 +165,11 @@ namespace ReTime_Testing.Services
                 return;
 
             _config = config ?? new TrayIconConfig();
+            
+            // 获取主题服务实例
+            var app = Application.Current as App;
+            _themeService = app?.ThemeService;
+            
             InitializeIcon();
         }
 
@@ -300,14 +308,17 @@ namespace ReTime_Testing.Services
         {
             var contextMenu = new ContextMenu
             {
-                Background = System.Windows.Media.Brushes.White,
-                BorderBrush = System.Windows.Media.Brushes.Gray,
+                Background = GetThemeBackgroundBrush(),
+                BorderBrush = GetThemeBorderBrush(),
                 BorderThickness = new Thickness(1)
             };
 
             // 1. 应用名称（顶部）
             contextMenu.Items.Add(CreateMenuItem("ReTime - Testing", "\uE946", () => AboutRequested?.Invoke()));
-            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new Separator()
+            {
+                Background = GetThemeSeparatorBrush()
+            });
 
             // 2. 编辑时间计划
             contextMenu.Items.Add(CreateMenuItem("编辑时间计划", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke()));
@@ -318,7 +329,10 @@ namespace ReTime_Testing.Services
             // 4. 调试
             contextMenu.Items.Add(CreateMenuItem("调试与测试", "\uE90F", () => OpenDebugRequested?.Invoke()));
 
-            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new Separator()
+            {
+                Background = GetThemeSeparatorBrush()
+            });
 
             // 5. 重启
             contextMenu.Items.Add(CreateMenuItem("重启", "\uE72C", () => RestartRequested?.Invoke()));
@@ -330,13 +344,54 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 根据当前主题获取菜单背景画刷
+        /// </summary>
+        private System.Windows.Media.Brush GetThemeBackgroundBrush()
+        {
+            if (_themeService?.CurrentTheme == "dark")
+            {
+                // 使用 Fluent Design 风格的深色背景 (#202020)，而不是纯黑
+                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x20, 0x20, 0x20));
+            }
+            return System.Windows.Media.Brushes.White;
+        }
+
+        /// <summary>
+        /// 根据当前主题获取菜单边框画刷
+        /// </summary>
+        private System.Windows.Media.Brush GetThemeBorderBrush()
+        {
+            if (_themeService?.CurrentTheme == "dark")
+            {
+                // 使用 Fluent Design 风格的深色边框 (#3D3D3D)
+                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x3D, 0x3D, 0x3D));
+            }
+            return System.Windows.Media.Brushes.Gray;
+        }
+
+        /// <summary>
+        /// 根据当前主题获取分割线画刷
+        /// </summary>
+        private System.Windows.Media.Brush GetThemeSeparatorBrush()
+        {
+            if (_themeService?.CurrentTheme == "dark")
+            {
+                // 使用 Fluent Design 风格的深色分割线 (#3D3D3D)
+                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x3D, 0x3D, 0x3D));
+            }
+            return System.Windows.Media.Brushes.LightGray;
+        }
+
+        /// <summary>
         /// 创建菜单项
         /// </summary>
         private MenuItem CreateMenuItem(string header, string iconGlyph, Action click)
         {
             var menuItem = new MenuItem
             {
-                Padding = new Thickness(8, 6, 8, 6)
+                Padding = new Thickness(8, 6, 8, 6),
+                Background = GetThemeBackgroundBrush(),
+                Foreground = GetThemeForegroundBrush()
             };
 
             var iconTextBlock = new TextBlock
@@ -360,6 +415,19 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 根据当前主题获取菜单项前景色（文字颜色）
+        /// </summary>
+        private System.Windows.Media.Brush GetThemeForegroundBrush()
+        {
+            if (_themeService?.CurrentTheme == "dark")
+            {
+                // 使用纯白色文字
+                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
+            }
+            return System.Windows.Media.Brushes.Black;
+        }
+
+        /// <summary>
         /// 左键双击事件处理
         /// </summary>
         private void OnTrayMouseDoubleClick(object sender, RoutedEventArgs e)
@@ -374,9 +442,37 @@ namespace ReTime_Testing.Services
         {
             if (_trayIcon?.ContextMenu != null)
             {
+                // 更新菜单主题
+                UpdateMenuTheme();
+
                 _trayIcon.ContextMenu.IsOpen = true;
                 _menuToClose = _trayIcon.ContextMenu;
                 StartMouseHook();
+            }
+        }
+
+        /// <summary>
+        /// 更新菜单主题
+        /// </summary>
+        private void UpdateMenuTheme()
+        {
+            if (_trayIcon?.ContextMenu is ContextMenu menu)
+            {
+                menu.Background = GetThemeBackgroundBrush();
+                menu.BorderBrush = GetThemeBorderBrush();
+
+                foreach (var item in menu.Items)
+                {
+                    if (item is MenuItem menuItem)
+                    {
+                        menuItem.Background = GetThemeBackgroundBrush();
+                        menuItem.Foreground = GetThemeForegroundBrush();
+                    }
+                    else if (item is Separator separator)
+                    {
+                        separator.Background = GetThemeSeparatorBrush();
+                    }
+                }
             }
         }
 
