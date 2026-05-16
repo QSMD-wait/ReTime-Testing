@@ -5,27 +5,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
              xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:converters="clr-namespace:ReTime_Testing.Helpers"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
+    
+    <UserControl.Resources>
+        <converters:StringMappingConverter x:Key="StringMappingConverter"/>
+    </UserControl.Resources>
+    
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
         <StackPanel>
 
-            <!-- 主题选择 -->
-            <controls:SettingsCard Title="应用主题"
-                                    Description="选择应用的深浅主题"
-                                    Icon="{x:Static ui:SegoeFluentIcons.Color}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
-                    <ComboBox ItemsSource="{Binding ThemeOptions}"
-                              SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
-                              MinWidth="120"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
-
             <!-- 自启动开关 -->
-            <controls:SettingsCard Title="开机自启动"
-                                    Description="系统启动时自动运行应用"
+            <controls:SettingsCard Title="开机自启"
+                                    Description="在系统启动时自动运行应用"
                                     Icon="{x:Static ui:SegoeFluentIcons.EaseOfAccess}"
                                     IsExpandable="True"
                                     Margin="0">
@@ -34,14 +28,26 @@
                 </controls:SettingsCard.ControlContent>
                 <controls:SettingsCard.ExpandContent>
                     <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="自启动方式" FontSize="12"
+                        <TextBlock Text="自启动工作方式" FontSize="12"
                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
                                    Margin="0,0,0,4"/>
                         <ComboBox ItemsSource="{Binding AutoStartMethodOptions}"
-                                  SelectedItem="{Binding SelectedAutoStartMethod, Mode=TwoWay}"
+                                  SelectedItem="{Binding SelectedAutoStartMethod, Mode=TwoWay, Converter={StaticResource StringMappingConverter}, ConverterParameter=valueToDisplay}"
                                   MinWidth="160"/>
                     </StackPanel>
                 </controls:SettingsCard.ExpandContent>
+            </controls:SettingsCard>
+
+            <!-- 主题选择 -->
+            <controls:SettingsCard Title="应用主题"
+                                    Description="选择应用的明暗主题"
+                                    Icon="{x:Static ui:SegoeFluentIcons.Color}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ComboBox ItemsSource="{Binding ThemeOptions}"
+                              SelectedItem="{Binding SelectedTheme, Mode=TwoWay, Converter={StaticResource StringMappingConverter}, ConverterParameter=valueToDisplay}"
+                              MinWidth="120"/>
+                </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
         </StackPanel>

@@ -21,23 +21,23 @@ namespace ReTime_Testing.ViewModels
         private GlobalSetting _setting;
 
         /// <summary>
-        /// 可选的主题列表
+        /// 可选的主题列表（显示名称）
         /// </summary>
-        public List<string> ThemeOptions { get; } = new() { "light", "dark" };
+        public List<string> ThemeOptions { get; } = new() { "明亮", "暗黑" };
 
         /// <summary>
-        /// 可选的自启动方式列表
+        /// 可选的自启动方式列表（显示名称）
         /// </summary>
-        public List<string> AutoStartMethodOptions { get; } = new() { "registry", "startupFolder" };
+        public List<string> AutoStartMethodOptions { get; } = new() { "注册表索引", "启动文件夹索引" };
 
         [ObservableProperty]
-        private string _selectedTheme = "light";
+        private string _selectedTheme = "明亮";  // 默认选择"明亮主题"，映射到"light"
 
         [ObservableProperty]
         private bool _isAutoStartEnabled;
 
         [ObservableProperty]
-        private string _selectedAutoStartMethod = "registry";
+        private string _selectedAutoStartMethod = "注册表索引";  // 默认选择"注册表启动"，映射到"registry"
 
         public BasicPageViewModel(IThemeService themeService, IAutoStartService autoStartService)
         {
@@ -46,16 +46,36 @@ namespace ReTime_Testing.ViewModels
             _autoStartService = autoStartService;
             _setting = _configManager.LoadGlobalSetting();
 
-            // 从配置初始化UI状态
-            SelectedTheme = _setting.Basic.Theme;
+            // 从配置初始化UI状态，将实际值转换为显示名称
+            SelectedTheme = themeService.CurrentTheme switch
+            {
+                "light" => "明亮",
+                "dark" => "暗黑",
+                _ => "明亮"
+            };
+            
             IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
-            SelectedAutoStartMethod = _setting.Basic.AutoStart.Method;
+            
+            SelectedAutoStartMethod = _setting.Basic.AutoStart.Method switch
+            {
+                "registry" => "注册表索引",
+                "startupFolder" => "启动文件夹索引",
+                _ => "注册表索引"
+            };
         }
 
         partial void OnSelectedThemeChanged(string value)
         {
-            _setting.Basic.Theme = value;
-            _themeService.ApplyTheme(value);
+            // 将显示名称转换回实际值
+            var actualValue = value switch
+            {
+                "明亮" => "light",
+                "暗黑" => "dark",
+                _ => "light"
+            };
+            
+            _setting.Basic.Theme = actualValue;
+            _themeService.ApplyTheme(actualValue);
             SaveSetting();
         }
 
@@ -63,8 +83,16 @@ namespace ReTime_Testing.ViewModels
         {
             _setting.Basic.AutoStart.Enabled = value;
 
+            // 将显示名称转换回实际值
+            var actualMethod = SelectedAutoStartMethod switch
+            {
+                "注册表索引" => "registry",
+                "启动文件夹索引" => "startupFolder",
+                _ => "registry"
+            };
+
             if (value)
-                _autoStartService.Enable(_setting.Basic.AutoStart.Method);
+                _autoStartService.Enable(actualMethod);
             else
                 _autoStartService.Disable();
 
@@ -73,10 +101,18 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnSelectedAutoStartMethodChanged(string value)
         {
-            _setting.Basic.AutoStart.Method = value;
+            // 将显示名称转换回实际值
+            var actualValue = value switch
+            {
+                "注册表索引" => "registry",
+                "启动文件夹索引" => "startupFolder",
+                _ => "registry"
+            };
+            
+            _setting.Basic.AutoStart.Method = actualValue;
 
             if (IsAutoStartEnabled)
-                _autoStartService.Enable(value);
+                _autoStartService.Enable(actualValue);
 
             SaveSetting();
         }
