@@ -13,10 +13,77 @@ namespace ReTime_Testing.ViewModels
     /// <summary>
     /// 全局设置页面 ViewModel
     /// </summary>
-    public partial class GlobalPageViewModel : ObservableObject
+    public partial class BasicPageViewModel : ObservableObject
     {
-        public GlobalPageViewModel()
+        private readonly ConfigurationManager _configManager;
+        private readonly IThemeService _themeService;
+        private readonly IAutoStartService _autoStartService;
+        private GlobalSetting _setting;
+
+        /// <summary>
+        /// 可选的主题列表
+        /// </summary>
+        public List<string> ThemeOptions { get; } = new() { "light", "dark" };
+
+        /// <summary>
+        /// 可选的自启动方式列表
+        /// </summary>
+        public List<string> AutoStartMethodOptions { get; } = new() { "registry", "startupFolder" };
+
+        [ObservableProperty]
+        private string _selectedTheme = "light";
+
+        [ObservableProperty]
+        private bool _isAutoStartEnabled;
+
+        [ObservableProperty]
+        private string _selectedAutoStartMethod = "registry";
+
+        public BasicPageViewModel(IThemeService themeService, IAutoStartService autoStartService)
         {
+            _configManager = ConfigurationManager.Instance;
+            _themeService = themeService;
+            _autoStartService = autoStartService;
+            _setting = _configManager.LoadGlobalSetting();
+
+            // 从配置初始化UI状态
+            SelectedTheme = _setting.Basic.Theme;
+            IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
+            SelectedAutoStartMethod = _setting.Basic.AutoStart.Method;
+        }
+
+        partial void OnSelectedThemeChanged(string value)
+        {
+            _setting.Basic.Theme = value;
+            _themeService.ApplyTheme(value);
+            SaveSetting();
+        }
+
+        partial void OnIsAutoStartEnabledChanged(bool value)
+        {
+            _setting.Basic.AutoStart.Enabled = value;
+
+            if (value)
+                _autoStartService.Enable(_setting.Basic.AutoStart.Method);
+            else
+                _autoStartService.Disable();
+
+            SaveSetting();
+        }
+
+        partial void OnSelectedAutoStartMethodChanged(string value)
+        {
+            _setting.Basic.AutoStart.Method = value;
+
+            if (IsAutoStartEnabled)
+                _autoStartService.Enable(value);
+
+            SaveSetting();
+        }
+
+        private void SaveSetting()
+        {
+            _configManager.SaveGlobalSetting(_setting);
         }
     }
 
@@ -46,7 +113,7 @@ namespace ReTime_Testing.ViewModels
         private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
 
         // 导航常量
-        private const string TAG_GLOBAL = "Global";
+        private const string TAG_BASIC = "Basic";
         private const string TAG_PROGRESS = "Progress";
         private const string TAG_ABOUT = "About";
 
@@ -292,21 +359,25 @@ namespace ReTime_Testing.ViewModels
         public void InitializeNavigation()
         {
             // 默认选中全局设置
-            NavigateTo(TAG_GLOBAL);
+             NavigateTo(TAG_BASIC);
         }
 
         /// <summary>
         /// 导航到指定页面
         /// </summary>
-        public void NavigateTo(string tag)
-        {
-            CurrentPage = tag switch
-            {
-                TAG_GLOBAL => new GlobalPageViewModel(),
-                TAG_PROGRESS => new ProgressPageViewModel(),
-                TAG_ABOUT => new AboutPageViewModel(),
-                _ => new GlobalPageViewModel()
-            };
+         public void NavigateTo(string tag)
+         {
+             var app = Application.Current as App;
+             var themeService = app?.ThemeService;
+             var autoStartService = app?.AutoStartService;
+
+             CurrentPage = tag switch
+             {
+                 TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
+                 TAG_PROGRESS => new ProgressPageViewModel(),
+                 TAG_ABOUT => new AboutPageViewModel(),
+                 _ => new BasicPageViewModel(themeService!, autoStartService!)
+             };
         }
 
         /// <summary>

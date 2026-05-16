@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace ReTime_Testing.Views.Settings.Pages
 {
-    public partial class GlobalPage : UserControl
+    public partial class BasicPage : UserControl
     {
-        public GlobalPage()
+        public BasicPage()
         {
             InitializeComponent();
         }

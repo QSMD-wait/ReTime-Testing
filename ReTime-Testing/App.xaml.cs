@@ -25,6 +25,8 @@ public partial class App : Application
         internal ITimeService? _timeService;
         internal ScheduleManager? _scheduleManager;
         internal CloudCalibrationService? _cloudCalibrationService;
+        internal IThemeService? _themeService;
+        internal IAutoStartService? _autoStartService;
 
         public App()
         {
@@ -58,6 +60,8 @@ var ex = e.ExceptionObject as Exception;
         public ITimeService? TimeService => _timeService;
         public ScheduleManager? ScheduleManager => _scheduleManager;
         public CloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
+        public IThemeService? ThemeService => _themeService;
+        public IAutoStartService? AutoStartService => _autoStartService;
 
 protected override void OnStartup(StartupEventArgs e)
         {
@@ -141,6 +145,17 @@ protected override void OnStartup(StartupEventArgs e)
                 // 初始化配置管理器（必须在其他服务之前初始化）
                 var configManager = Services.ConfigurationManager.Instance;
                 configManager.InitializeDirectories();
+
+                // 加载全局配置（确保空文件/缺失字段被正确初始化）
+                var globalSetting = configManager.LoadGlobalSetting();
+
+                // 初始化主题服务并应用配置
+                _themeService = new ThemeService();
+                _themeService.ApplyTheme(globalSetting.Basic.Theme);
+
+                // 初始化自启动服务并应用配置
+                _autoStartService = new AutoStartService();
+                _autoStartService.InitializeFromConfig(globalSetting.Basic.AutoStart);
 
                 // 初始化时间计划管理器
                 var scheduleManager = Services.TimeScheduleManager.Instance;

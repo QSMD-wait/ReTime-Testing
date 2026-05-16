@@ -18,9 +18,9 @@
         MinHeight="400">
 
     <Window.Resources>
-        <!-- 数据模板：全局设置 -->
-        <DataTemplate DataType="{x:Type viewModels:GlobalPageViewModel}">
-            <pages:GlobalPage/>
+        <!-- 数据模板：基本设置 -->
+        <DataTemplate DataType="{x:Type viewModels:BasicPageViewModel}">
+            <pages:BasicPage/>
         </DataTemplate>
 
         <!-- 数据模板：进度条设置 -->
@@ -47,7 +47,7 @@
 
             <!-- 主要导航项 -->
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="基本" Tag="Global">
+                <ui:NavigationViewItem Content="基本" Tag="Basic">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Home}"/>
                     </ui:NavigationViewItem.Icon>

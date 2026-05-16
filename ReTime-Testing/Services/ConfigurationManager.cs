@@ -1,5 +1,6 @@
 using ReTime_Testing.Models;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -156,9 +157,10 @@ namespace ReTime_Testing.Services
         {
             try
             {
+                // 文件不存在 → 创建全量默认配置并写入
                 if (!File.Exists(GlobalSettingFilePath))
                 {
-                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager", 
+                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
                         "全局配置文件不存在，创建默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
@@ -167,16 +169,17 @@ namespace ReTime_Testing.Services
 
                 string jsonContent = File.ReadAllText(GlobalSettingFilePath);
 
+                // 文件为空或空JSON → 写入全量默认配置
                 if (string.IsNullOrWhiteSpace(jsonContent) || jsonContent.Trim() == "{}")
                 {
-                    Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
-                        "全局配置文件为空，创建默认配置");
+                    Logger.Info("ReTime_Testing.Services.ConfigurationManager",
+                        "全局配置文件为空，写入默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
                     return newSetting;
                 }
 
-                // 解析为 JsonNode DOM（仅做语法检查，不做类型校验）
+                // 解析 JSON
                 JsonNode? rootNode;
                 try
                 {
@@ -184,6 +187,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (JsonException ex)
                 {
+                    // JSON 损坏 → 使用硬编码默认值继续，不回写文件
                     Logger.Error("ReTime_Testing.Services.ConfigurationManager",
                         $"全局配置文件 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                     return new GlobalSetting();
@@ -194,46 +198,24 @@ namespace ReTime_Testing.Services
                     return new GlobalSetting();
                 }
 
-                // 逐属性反序列化
+                // 逐域反序列化（缺失域由模型构造函数提供默认值）
                 var result = new GlobalSetting();
                 result.Version = TryGetString(rootNode, "version") ?? result.Version;
-
-                // 版本检查
-                if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
-                {
-                    Logger.Warn("ReTime_Testing.Services.ConfigurationManager",
-                        $"全局配置文件版本不匹配: {result.Version}，使用默认配置（不覆盖原文件）");
-                    return new GlobalSetting();
-                }
-
-                // 填充缺失字段的默认值
-                var defaults = new GlobalSetting();
-                result = FillMissingFields(result, defaults);
+                result.Basic = TryDeserializeDomain<BasicSetting>(rootNode, "basic") ?? result.Basic;
 
                 _cachedGlobalSetting = result;
 
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
+                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     "全局配置加载成功");
 
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.ConfigurationManager", 
-                    $"全局配置加载失败: {ex.Message}", ex);
-                throw new ConfigurationException("全局配置加载失败", ex);
+                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
+                    $"全局配置加载失败: {ex.Message}，使用默认配置（不覆盖原文件）");
+                return new GlobalSetting();
             }
-        }
-
-        /// <summary>
-        /// 填充缺失字段的默认值
-        /// </summary>
-        private GlobalSetting FillMissingFields(GlobalSetting target, GlobalSetting defaults)
-        {
-            if (string.IsNullOrEmpty(target.Version))
-                target.Version = defaults.Version;
-
-            return target;
         }
 
         /// <summary>
