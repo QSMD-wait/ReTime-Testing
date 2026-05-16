@@ -52,7 +52,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- 1. 左侧面板：计划表列表 -->
-                    <Grid Grid.Column="0" Background="White">
+                    <Grid Grid.Column="0" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -112,7 +112,7 @@
                                   Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
                     <!-- 2. 右侧：时间段+时间点（无Tab） -->
-                    <Grid Grid.Column="2" Background="White">
+                    <Grid Grid.Column="2" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -155,7 +155,7 @@
                         </ui:CommandBar>
 
                         <!-- 右侧：列表+属性编辑（无Tab） -->
-                        <Grid Grid.Row="1" Background="White">
+                        <Grid Grid.Row="1" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" MinWidth="200"/>
                                 <ColumnDefinition Width="Auto"/>
