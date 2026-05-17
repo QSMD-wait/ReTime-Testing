@@ -11,71 +11,41 @@ using System.Windows.Media;
 namespace ReTime_Testing.ViewModels
 {
     /// <summary>
-    /// 全局设置页面 ViewModel
+    /// 基本设置页面 ViewModel
     /// </summary>
     public partial class BasicPageViewModel : ObservableObject
     {
-        private readonly ConfigurationManager _configManager;
+        private readonly IConfigurationManager _configManager;
         private readonly IThemeService _themeService;
         private readonly IAutoStartService _autoStartService;
         private GlobalSetting _setting;
 
-        /// <summary>
-        /// 可选的主题列表（显示名称）
-        /// </summary>
-        public List<string> ThemeOptions { get; } = new() { "明亮", "暗黑" };
-
-        /// <summary>
-        /// 可选的自启动方式列表（显示名称）
-        /// </summary>
-        public List<string> AutoStartMethodOptions { get; } = new() { "注册表索引", "启动文件夹索引" };
-
         [ObservableProperty]
-        private string _selectedTheme = "明亮";  // 默认选择"明亮主题"，映射到"light"
+        private string _selectedTheme = "light";
 
         [ObservableProperty]
         private bool _isAutoStartEnabled;
 
         [ObservableProperty]
-        private string _selectedAutoStartMethod = "注册表索引";  // 默认选择"注册表启动"，映射到"registry"
+        private string _selectedAutoStartMethod = "registry";
 
-        public BasicPageViewModel(IThemeService themeService, IAutoStartService autoStartService)
+        public BasicPageViewModel(IThemeService themeService, IAutoStartService autoStartService,
+            IConfigurationManager? configManager = null)
         {
-            _configManager = ConfigurationManager.Instance;
+            _configManager = configManager ?? ConfigurationManager.Instance;
             _themeService = themeService;
             _autoStartService = autoStartService;
             _setting = _configManager.LoadGlobalSetting();
 
-            // 从配置初始化UI状态，将实际值转换为显示名称
-            SelectedTheme = themeService.CurrentTheme switch
-            {
-                "light" => "明亮",
-                "dark" => "暗黑",
-                _ => "明亮"
-            };
-            
+            SelectedTheme = _setting.Basic.Theme;
             IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
-            
-            SelectedAutoStartMethod = _setting.Basic.AutoStart.Method switch
-            {
-                "registry" => "注册表索引",
-                "startupFolder" => "启动文件夹索引",
-                _ => "注册表索引"
-            };
+            SelectedAutoStartMethod = _setting.Basic.AutoStart.Method;
         }
 
         partial void OnSelectedThemeChanged(string value)
         {
-            // 将显示名称转换回实际值
-            var actualValue = value switch
-            {
-                "明亮" => "light",
-                "暗黑" => "dark",
-                _ => "light"
-            };
-            
-            _setting.Basic.Theme = actualValue;
-            _themeService.ApplyTheme(actualValue);
+            _setting.Basic.Theme = value;
+            _themeService.ApplyTheme(value);
             SaveSetting();
         }
 
@@ -83,16 +53,8 @@ namespace ReTime_Testing.ViewModels
         {
             _setting.Basic.AutoStart.Enabled = value;
 
-            // 将显示名称转换回实际值
-            var actualMethod = SelectedAutoStartMethod switch
-            {
-                "注册表索引" => "registry",
-                "启动文件夹索引" => "startupFolder",
-                _ => "registry"
-            };
-
             if (value)
-                _autoStartService.Enable(actualMethod);
+                _autoStartService.Enable(SelectedAutoStartMethod);
             else
                 _autoStartService.Disable();
 
@@ -101,18 +63,10 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnSelectedAutoStartMethodChanged(string value)
         {
-            // 将显示名称转换回实际值
-            var actualValue = value switch
-            {
-                "注册表索引" => "registry",
-                "启动文件夹索引" => "startupFolder",
-                _ => "registry"
-            };
-            
-            _setting.Basic.AutoStart.Method = actualValue;
+            _setting.Basic.AutoStart.Method = value;
 
             if (IsAutoStartEnabled)
-                _autoStartService.Enable(actualValue);
+                _autoStartService.Enable(value);
 
             SaveSetting();
         }

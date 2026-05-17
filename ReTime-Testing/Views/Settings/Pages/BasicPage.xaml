@@ -5,15 +5,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
              xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
-             xmlns:converters="clr-namespace:ReTime_Testing.Helpers"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
-    
-    <UserControl.Resources>
-        <converters:StringMappingConverter x:Key="StringMappingConverter"/>
-    </UserControl.Resources>
-    
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
         <StackPanel>
 
@@ -31,9 +26,12 @@
                         <TextBlock Text="自启动工作方式" FontSize="12"
                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
                                    Margin="0,0,0,4"/>
-                        <ComboBox ItemsSource="{Binding AutoStartMethodOptions}"
-                                  SelectedItem="{Binding SelectedAutoStartMethod, Mode=TwoWay, Converter={StaticResource StringMappingConverter}, ConverterParameter=valueToDisplay}"
-                                  MinWidth="160"/>
+                        <ComboBox SelectedValue="{Binding SelectedAutoStartMethod}"
+                                  SelectedValuePath="Tag"
+                                  MinWidth="160">
+                            <ComboBoxItem Content="注册表" Tag="registry"/>
+                            <ComboBoxItem Content="启动文件夹" Tag="startupFolder"/>
+                        </ComboBox>
                     </StackPanel>
                 </controls:SettingsCard.ExpandContent>
             </controls:SettingsCard>
@@ -44,9 +42,12 @@
                                     Icon="{x:Static ui:SegoeFluentIcons.Color}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
-                    <ComboBox ItemsSource="{Binding ThemeOptions}"
-                              SelectedItem="{Binding SelectedTheme, Mode=TwoWay, Converter={StaticResource StringMappingConverter}, ConverterParameter=valueToDisplay}"
-                              MinWidth="120"/>
+                    <ComboBox SelectedValue="{Binding SelectedTheme}"
+                              SelectedValuePath="Tag"
+                              MinWidth="120">
+                        <ComboBoxItem Content="明亮" Tag="light"/>
+                        <ComboBoxItem Content="暗黑" Tag="dark"/>
+                    </ComboBox>
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
