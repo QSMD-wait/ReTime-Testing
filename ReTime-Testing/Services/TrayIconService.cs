@@ -350,8 +350,8 @@ namespace ReTime_Testing.Services
         {
             if (_themeService?.CurrentTheme == "dark")
             {
-                // 使用 Fluent Design 风格的深色背景 (#202020)，而不是纯黑
-                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x20, 0x20, 0x20));
+                // 使用深色背景 (#23292d)
+                return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0xFF, 0x23, 0x29, 0x2D));
             }
             return System.Windows.Media.Brushes.White;
         }
