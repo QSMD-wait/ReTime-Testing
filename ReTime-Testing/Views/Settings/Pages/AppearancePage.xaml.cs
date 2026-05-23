@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace ReTime_Testing.Views.Settings.Pages
 {
-    public partial class ProgressPage : UserControl
+    public partial class AppearancePage : UserControl
     {
-        public ProgressPage()
+        public AppearancePage()
         {
             InitializeComponent();
         }

@@ -78,11 +78,11 @@ namespace ReTime_Testing.ViewModels
     }
 
     /// <summary>
-    /// 进度条设置页面 ViewModel
+    /// 进度条外观页面 ViewModel
     /// </summary>
-    public partial class ProgressPageViewModel : ObservableObject
+    public partial class AppearancePageViewModel : ObservableObject
     {
-        public ProgressPageViewModel()
+        public AppearancePageViewModel()
         {
         }
     }
@@ -136,9 +136,9 @@ namespace ReTime_Testing.ViewModels
         private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
         private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
 
-        // 导航常量
+        // 导航标签常量
         private const string TAG_BASIC = "Basic";
-        private const string TAG_PROGRESS = "Progress";
+        private const string TAG_APPEARANCE = "Appearance";  // 重命名：从 TAG_PROGRESS 改为 TAG_APPEARANCE
         private const string TAG_WINDOW = "Window";
         private const string TAG_ABOUT = "About";
 
@@ -399,7 +399,7 @@ namespace ReTime_Testing.ViewModels
             CurrentPage = tag switch
             {
                 TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
-                TAG_PROGRESS => new ProgressPageViewModel(),
+                TAG_APPEARANCE => new AppearancePageViewModel(),  // 重命名：从 TAG_PROGRESS 改为 TAG_APPEARANCE
                 TAG_WINDOW => new WindowPageViewModel(),
                 TAG_ABOUT => new AboutPageViewModel(),
                 _ => new BasicPageViewModel(themeService!, autoStartService!)

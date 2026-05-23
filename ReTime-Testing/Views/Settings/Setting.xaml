@@ -23,9 +23,9 @@
             <pages:BasicPage/>
         </DataTemplate>
 
-        <!-- 数据模板：进度条设置 -->
-        <DataTemplate DataType="{x:Type viewModels:ProgressPageViewModel}">
-            <pages:ProgressPage/>
+        <!-- 数据模板：外观设置 -->
+        <DataTemplate DataType="{x:Type viewModels:AppearancePageViewModel}">
+            <pages:AppearancePage/>
         </DataTemplate>
 
         <!-- 数据模板：窗口设置 -->
@@ -58,7 +58,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="进度条" Tag="Progress">
+                <ui:NavigationViewItem Content="外观" Tag="Appearance">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
                     </ui:NavigationViewItem.Icon>
