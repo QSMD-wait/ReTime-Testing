@@ -13,17 +13,17 @@
         <StackPanel>
 
             <!-- 窗口置顶模式 -->
-            <controls:SettingsCard Title="窗口置顶模式"
-                                    Description="选择窗口层级维持模式"
+            <controls:SettingsCard Title="窗口置顶维持模式"
+                                    Description="选择窗口层级维持模式，保持置顶状态"
                                     Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Filled}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
                     <ComboBox SelectedValue="{Binding SelectedTopmostMode, Mode=TwoWay}"
                               SelectedValuePath="Tag"
                               MinWidth="160">
-                        <ComboBoxItem Content="不维持" Tag="None"/>
-                        <ComboBoxItem Content="失活时置顶" Tag="OnDeactivated"/>
-                        <ComboBoxItem Content="定时轮询" Tag="Polling"/>
+                        <ComboBoxItem Content="仅启动时（不维持）" Tag="None"/>
+                        <ComboBoxItem Content="窗口层级变化时" Tag="OnDeactivated"/>
+                        <ComboBoxItem Content="定时轮询（500ms）" Tag="Polling"/>
                     </ComboBox>
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
