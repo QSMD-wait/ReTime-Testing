@@ -28,6 +28,11 @@
             <pages:ProgressPage/>
         </DataTemplate>
 
+        <!-- 数据模板：窗口设置 -->
+        <DataTemplate DataType="{x:Type viewModels:WindowPageViewModel}">
+            <pages:WindowPage/>
+        </DataTemplate>
+
         <!-- 数据模板：关于 -->
         <DataTemplate DataType="{x:Type viewModels:AboutPageViewModel}">
             <pages:AboutPage/>
@@ -56,6 +61,12 @@
                 <ui:NavigationViewItem Content="进度条" Tag="Progress">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="窗口" Tag="Window">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Filled}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>

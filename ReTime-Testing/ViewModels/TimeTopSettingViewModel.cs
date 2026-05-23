@@ -97,6 +97,40 @@ namespace ReTime_Testing.ViewModels
         }
     }
 
+    /// <summary>
+    /// 窗口页面 ViewModel
+    /// </summary>
+    public partial class WindowPageViewModel : ObservableObject
+    {
+        private readonly IConfigurationManager _configManager;
+        private TimeTopSetting _setting;
+
+        [ObservableProperty]
+        private string _selectedTopmostMode = "OnDeactivated";
+
+        public WindowPageViewModel(IConfigurationManager? configManager = null)
+        {
+            _configManager = configManager ?? ConfigurationManager.Instance;
+            _setting = _configManager.LoadTimeTopSetting();
+
+            SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
+        }
+
+        partial void OnSelectedTopmostModeChanged(string value)
+        {
+            if (Enum.TryParse<TopmostMode>(value, out var mode))
+            {
+                _setting.Window.TopmostMode = mode;
+                SaveSetting();
+            }
+        }
+
+        private void SaveSetting()
+        {
+            _configManager.SaveTimeTopSetting(_setting);
+        }
+    }
+
     public partial class TimeTopSettingViewModel : ObservableObject
     {
         private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
@@ -105,6 +139,7 @@ namespace ReTime_Testing.ViewModels
         // 导航常量
         private const string TAG_BASIC = "Basic";
         private const string TAG_PROGRESS = "Progress";
+        private const string TAG_WINDOW = "Window";
         private const string TAG_ABOUT = "About";
 
         private readonly GlobalTimeTopDesktopService _service;
@@ -356,18 +391,19 @@ namespace ReTime_Testing.ViewModels
         /// 导航到指定页面
         /// </summary>
          public void NavigateTo(string tag)
-         {
-             var app = Application.Current as App;
-             var themeService = app?.ThemeService;
-             var autoStartService = app?.AutoStartService;
+        {
+            var app = Application.Current as App;
+            var themeService = app?.ThemeService;
+            var autoStartService = app?.AutoStartService;
 
-             CurrentPage = tag switch
-             {
-                 TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
-                 TAG_PROGRESS => new ProgressPageViewModel(),
-                 TAG_ABOUT => new AboutPageViewModel(),
-                 _ => new BasicPageViewModel(themeService!, autoStartService!)
-             };
+            CurrentPage = tag switch
+            {
+                TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
+                TAG_PROGRESS => new ProgressPageViewModel(),
+                TAG_WINDOW => new WindowPageViewModel(),
+                TAG_ABOUT => new AboutPageViewModel(),
+                _ => new BasicPageViewModel(themeService!, autoStartService!)
+            };
         }
 
         /// <summary>
