@@ -9,6 +9,7 @@ namespace ReTime_Testing.ViewModels
     public partial class TimeTopDesktopViewModel : ObservableObject
     {
         private readonly GlobalTimeTopDesktopService _service;
+        private readonly IConfigurationManager? _configManager;
 
         [ObservableProperty]
         private double _progressValue = 0;
@@ -40,12 +41,21 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private double _maximum = 100;
 
-        public TimeTopDesktopViewModel()
+        [ObservableProperty]
+        private bool _enableShadow = true;
+
+        public TimeTopDesktopViewModel(IConfigurationManager? configManager = null)
         {
             try
             {
+                _configManager = configManager ?? ConfigurationManager.Instance;
                 _service = GlobalTimeTopDesktopService.Instance;
                 _service.OnStateChanged = OnStateChanged;
+                
+                // 从配置中加载阴影设置
+                var setting = _configManager.LoadTimeTopSetting();
+                EnableShadow = setting.ProgressBar.EnableShadow;
+                
                 Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");
             }
             catch (Exception ex)

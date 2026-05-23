@@ -7,11 +7,13 @@
         xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
+        xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
         Title="TimeTopDesktop">
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:BooleanToEffectConverter x:Key="BooleanToEffectConverter"/>
     </Window.Resources>
 
     <Grid>
@@ -26,7 +28,11 @@
                        Minimum="{Binding Minimum}"
                        Maximum="{Binding Maximum}">
             <ui:ProgressBar.Effect>
-                <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.3"/>
+                <Binding Path="EnableShadow" Converter="{StaticResource BooleanToEffectConverter}">
+                    <Binding.ConverterParameter>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.3"/>
+                    </Binding.ConverterParameter>
+                </Binding>
             </ui:ProgressBar.Effect>
         </ui:ProgressBar>
 
