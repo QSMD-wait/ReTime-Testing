@@ -1,4 +1,4 @@
-﻿﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace ReTime_Testing.Models
 {
@@ -290,6 +290,12 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("opacity")]
         public double? Opacity { get; set; }
+        
+        /// <summary>
+        /// 是否启用阴影效果
+        /// </summary>
+        [JsonPropertyName("enableShadow")]
+        public bool EnableShadow { get; set; } = true;
     }
 
     /// <summary>

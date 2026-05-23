@@ -53,8 +53,12 @@ namespace ReTime_Testing.ViewModels
                 _service.OnStateChanged = OnStateChanged;
                 
                 // 从配置中加载阴影设置
-                var setting = _configManager.LoadTimeTopSetting();
-                EnableShadow = setting.ProgressBar.EnableShadow;
+                var setting = _configManager?.LoadTimeTopSetting();
+                if (setting != null)
+                {
+                    // 默认使用progressBar域中的设置
+                    EnableShadow = setting.ProgressBar.EnableShadow;
+                }
                 
                 Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");
             }
@@ -89,11 +93,43 @@ namespace ReTime_Testing.ViewModels
                 Opacity = config.Opacity;
                 Minimum = config.Minimum;
                 Maximum = config.Maximum;
+                
+                // 根据当前状态更新阴影设置
+                UpdateShadowBasedOnState(config.StateType);
             }
             catch (Exception ex)
             {
                 Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "OnStateChanged: 更新属性时发生异常", ex);
             }
+        }
+
+        /// <summary>
+        /// 根据当前状态更新阴影设置
+        /// </summary>
+        private void UpdateShadowBasedOnState(ProgressStateType stateType)
+        {
+            if (_configManager != null)
+            {
+                var setting = _configManager.LoadTimeTopSetting();
+                
+                if (setting.StateStyles.Enabled)
+                {
+                    var stateName = stateType.ToString();
+                    if (setting.StateStyles.Styles.ContainsKey(stateName))
+                    {
+                        var stateStyle = setting.StateStyles.Styles[stateName];
+                        if (stateStyle.Enabled)
+                        {
+                            EnableShadow = stateStyle.EnableShadow;
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // 如果状态样式未启用或未找到相应配置，则使用progressBar域的设置
+            var fallbackSetting = _configManager?.LoadTimeTopSetting();
+            EnableShadow = fallbackSetting?.ProgressBar.EnableShadow ?? true;
         }
 
         /// <summary>
