@@ -108,28 +108,28 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         private void UpdateShadowBasedOnState(ProgressStateType stateType)
         {
-            if (_configManager != null)
+            // 首先获取全局配置作为基础值
+            var globalSetting = _configManager?.LoadTimeTopSetting();
+            var baseEnableShadow = globalSetting?.ProgressBar.EnableShadow ?? true;
+            
+            // 检查状态特定配置是否覆盖
+            if (_configManager != null && globalSetting != null && globalSetting.StateStyles.Enabled)
             {
-                var setting = _configManager.LoadTimeTopSetting();
-                
-                if (setting.StateStyles.Enabled)
+                var stateName = stateType.ToString();
+                if (globalSetting.StateStyles.Styles.ContainsKey(stateName))
                 {
-                    var stateName = stateType.ToString();
-                    if (setting.StateStyles.Styles.ContainsKey(stateName))
+                    var stateStyle = globalSetting.StateStyles.Styles[stateName];
+                    if (stateStyle.Enabled && stateStyle.EnableShadow.HasValue)
                     {
-                        var stateStyle = setting.StateStyles.Styles[stateName];
-                        if (stateStyle.Enabled)
-                        {
-                            EnableShadow = stateStyle.EnableShadow;
-                            return;
-                        }
+                        // 使用状态特定配置覆盖全局配置
+                        EnableShadow = stateStyle.EnableShadow.Value;
+                        return;
                     }
                 }
             }
             
-            // 如果状态样式未启用或未找到相应配置，则使用progressBar域的设置
-            var fallbackSetting = _configManager?.LoadTimeTopSetting();
-            EnableShadow = fallbackSetting?.ProgressBar.EnableShadow ?? true;
+            // 使用全局配置作为默认值
+            EnableShadow = baseEnableShadow;
         }
 
         /// <summary>

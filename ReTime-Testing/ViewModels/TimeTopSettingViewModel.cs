@@ -78,12 +78,33 @@ namespace ReTime_Testing.ViewModels
     }
 
     /// <summary>
-    /// 进度条外观页面 ViewModel
+    /// 外观页面 ViewModel
     /// </summary>
     public partial class AppearancePageViewModel : ObservableObject
     {
-        public AppearancePageViewModel()
+        private readonly IConfigurationManager _configManager;
+        private TimeTopSetting _setting;
+
+        [ObservableProperty]
+        private bool _enableShadow = true;
+
+        public AppearancePageViewModel(IConfigurationManager? configManager = null)
         {
+            _configManager = configManager ?? ConfigurationManager.Instance;
+            _setting = _configManager.LoadTimeTopSetting();
+
+            EnableShadow = _setting.ProgressBar.EnableShadow;
+        }
+
+        partial void OnEnableShadowChanged(bool value)
+        {
+            _setting.ProgressBar.EnableShadow = value;
+            SaveSetting();
+        }
+
+        private void SaveSetting()
+        {
+            _configManager.SaveTimeTopSetting(_setting);
         }
     }
 

@@ -295,7 +295,7 @@ namespace ReTime_Testing.Models
         /// 是否启用阴影效果
         /// </summary>
         [JsonPropertyName("enableShadow")]
-        public bool EnableShadow { get; set; } = true;
+        public bool? EnableShadow { get; set; } = null;
     }
 
     /// <summary>

@@ -60,7 +60,7 @@
 
                 <ui:NavigationViewItem Content="外观" Tag="Appearance">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ColorBackground_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
