@@ -73,6 +73,18 @@ public class TextSlotResolverTests
     }
 
     [Fact]
+    public void Resolve_RemainingTime_MinutesAndSeconds()
+    {
+        var now = new DateTime(2026, 1, 1, 10, 0, 0);
+        _timeService.CurrentTime = now;
+        _scheduleManager.CurrentPlan = CreatePlanWithSegment(
+            "Work", now, now.AddMinutes(2).AddSeconds(2));
+
+        var result = _resolver.Resolve(TextSourceType.RemainingTime);
+        Assert.Equal("2m 02s", result);
+    }
+
+    [Fact]
     public void Resolve_RemainingTime_ZeroRemaining()
     {
         var now = new DateTime(2026, 1, 1, 10, 0, 0);

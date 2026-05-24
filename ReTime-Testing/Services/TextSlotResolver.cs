@@ -112,6 +112,7 @@ public class TextSlotResolver : ITextSlotResolver
 
     /// <summary>
     /// 格式化时长为 Xh Xm Xs 格式
+    /// 如果前面有更长的时间单位，则个数时补零
     /// </summary>
     private static string FormatDuration(TimeSpan duration)
     {
@@ -119,14 +120,23 @@ public class TextSlotResolver : ITextSlotResolver
             return "0s";
 
         var parts = new List<string>();
+        bool hasHours = duration.TotalHours >= 1;
 
-        if (duration.TotalHours >= 1)
+        if (hasHours)
             parts.Add($"{(int)duration.TotalHours}h");
 
-        if (duration.Minutes > 0 || duration.TotalHours >= 1)
-            parts.Add($"{duration.Minutes}m");
+        if (duration.Minutes > 0 || hasHours)
+        {
+            if (hasHours)
+                parts.Add($"{duration.Minutes:D2}m");
+            else
+                parts.Add($"{duration.Minutes}m");
+        }
 
-        parts.Add($"{duration.Seconds}s");
+        if (hasHours || duration.Minutes > 0)
+            parts.Add($"{duration.Seconds:D2}s");
+        else
+            parts.Add($"{duration.Seconds}s");
 
         return string.Join(" ", parts);
     }
