@@ -314,7 +314,13 @@ public class ExecutionPlanGenerator
             {
                 timePoints[i].StateChange = new StateChangeData();
             }
-            timePoints[i].StateChange.FromState = fromState;
+            
+            // 确保StateChange不为null后再进行赋值，消除空引用警告
+            var currentStateChange = timePoints[i].StateChange;
+            if (currentStateChange != null)
+            {
+                currentStateChange.FromState = fromState;
+            }
         }
 
         return timePoints;

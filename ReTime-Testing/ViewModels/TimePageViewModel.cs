@@ -206,6 +206,6 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _timer?.Stop();
-        _timer.Tick -= Timer_Tick;
+        _timer?.Tick -= Timer_Tick;
     }
 }
