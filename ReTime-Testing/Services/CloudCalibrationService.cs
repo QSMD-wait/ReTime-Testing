@@ -21,6 +21,8 @@ public class CloudCalibrationService : ICloudCalibrationService
     private List<string> _httpServers = new();
     private int _selectedNtpServerIndex = 0;
     private int _selectedHttpServerIndex = 0;
+    private int _maxRetryCount;
+    private double _backoffMultiplier;
 
     private const int DefaultCalibrationTimeout = 3;
     private const int DefaultMaxRetryCount = 3;
@@ -44,12 +46,12 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// <summary>
     /// 最大重试次数
     /// </summary>
-    public int MaxRetryCount => DefaultMaxRetryCount;
+    public int MaxRetryCount { get { return _maxRetryCount; } }
 
     /// <summary>
     /// 退避乘数
     /// </summary>
-    public double BackoffMultiplier => DefaultBackoffMultiplier;
+    public double BackoffMultiplier { get { return _backoffMultiplier; } }
 
     /// <summary>
     /// 触发校准的偏差阈值（秒）
@@ -96,6 +98,8 @@ public class CloudCalibrationService : ICloudCalibrationService
         _httpClient = new HttpClient();
         _failureCount = 0;
         _currentInterval = 300;
+        _maxRetryCount = DefaultMaxRetryCount;
+        _backoffMultiplier = DefaultBackoffMultiplier;
 
         IsEnabled = true;
         CalibrationInterval = 300;
@@ -177,15 +181,48 @@ public class CloudCalibrationService : ICloudCalibrationService
     }
 
     /// <summary>
-    /// 配置云端校准参数
+    /// 配置校准参数（高级）
+    /// </summary>
+    /// <param name="enabled">是否启用</param>
+    /// <param name="interval">校准间隔（秒）</param>
+    /// <param name="timeout">校准超时（秒）</param>
+    /// <param name="maxRetryCount">最大重试次数</param>
+    /// <param name="backoffMultiplier">退避乘数</param>
+    /// <param name="triggerThreshold">触发校准的偏差阈值（秒）</param>
+    public void Configure(
+        bool enabled,
+        int interval,
+        int timeout,
+        int maxRetryCount,
+        double backoffMultiplier,
+        int triggerThreshold)
+    {
+        IsEnabled = enabled;
+        CalibrationInterval = interval;
+        CalibrationTimeout = timeout;
+        _maxRetryCount = maxRetryCount;
+        _backoffMultiplier = backoffMultiplier;
+        CalibrationTriggerThreshold = triggerThreshold;
+
+        _currentInterval = interval;
+        _failureCount = 0;
+
+        Logger.Info("CloudCalibrationService",
+            $"配置已更新: Enabled={enabled}, Interval={interval}s, Timeout={timeout}s, MaxRetryCount={maxRetryCount}, BackoffMultiplier={backoffMultiplier}, TriggerThreshold={triggerThreshold}s");
+
+        if (IsRunning && enabled)
+        {
+            _calibrationTimer?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
+        }
+    }
+
+    /// <summary>
+    /// 配置校准参数
     /// </summary>
     /// <param name="enabled">是否启用</param>
     /// <param name="interval">校准间隔（秒）</param>
     /// <param name="triggerThreshold">触发校准的偏差阈值（秒）</param>
-    public void Configure(
-        bool enabled,
-        int interval = 300,
-        int triggerThreshold = 5)
+    public void Configure(bool enabled, int interval = 300, int triggerThreshold = 5)
     {
         IsEnabled = enabled;
         CalibrationInterval = interval;

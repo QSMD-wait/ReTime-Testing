@@ -42,6 +42,11 @@ public interface ICloudCalibrationService
     void Configure(bool enabled, int interval = 300, int triggerThreshold = 5);
 
     /// <summary>
+    /// 配置校准参数（高级）
+    /// </summary>
+    void Configure(bool enabled, int interval, int timeout, int maxRetryCount, double backoffMultiplier, int triggerThreshold);
+
+    /// <summary>
     /// 手动触发校准
     /// </summary>
     Task<bool> CalibrateAsync();

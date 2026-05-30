@@ -53,7 +53,7 @@ public class CloudCalibrationServiceTests
     public void Configure_禁用后不应该启动()
     {
         // Arrange
-        _service.Configure(enabled: false, interval: 300);
+        _service.Configure(enabled: false, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
 
         // Act
         _service.Start();
@@ -66,7 +66,7 @@ public class CloudCalibrationServiceTests
     public void Configure_启用后应该可以启动()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
 
         // Act
         _service.Start();
@@ -82,7 +82,7 @@ public class CloudCalibrationServiceTests
     public void Stop_应该停止服务()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
         _service.Start();
 
         // Act
@@ -96,7 +96,7 @@ public class CloudCalibrationServiceTests
     public void Stop_多次调用不应该抛出异常()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
         _service.Start();
 
         // Act & Assert - 不应该抛出异常
@@ -113,7 +113,7 @@ public class CloudCalibrationServiceTests
     public void Reset_应该重置失败计数器()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300, maxRetryCount: 5);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
         
         // Act
         _service.Reset();
@@ -147,7 +147,7 @@ public class CloudCalibrationServiceTests
     public void Configure_更新配置后应该重置失败计数器()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300, maxRetryCount: 5);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
         
         // Act
         _service.Configure(
@@ -166,7 +166,7 @@ public class CloudCalibrationServiceTests
     public void Start_未启用时不应该启动()
     {
         // Arrange
-        _service.Configure(enabled: false, interval: 300);
+        _service.Configure(enabled: false, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
 
         // Act
         _service.Start();
@@ -179,7 +179,7 @@ public class CloudCalibrationServiceTests
     public void FailureCount_应该正确记录失败次数()
     {
         // Arrange
-        _service.Configure(enabled: true, maxRetryCount: 5);
+        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
 
         // Act & Assert - FailureCount 应该是 0
         _service.FailureCount.Should().Be(0);
