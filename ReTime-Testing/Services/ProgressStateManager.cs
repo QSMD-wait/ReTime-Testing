@@ -431,15 +431,23 @@ namespace ReTime_Testing.Services
         {
             try
             {
+                if (string.IsNullOrEmpty(colorString))
+                {
+                    return Brushes.Transparent;
+                }
+
                 if (colorString.StartsWith("#"))
                 {
                     var color = (Color)ColorConverter.ConvertFromString(colorString);
                     return new SolidColorBrush(color);
                 }
+
+                Logger.Warn("ProgressStateManager", $"颜色字符串格式无效: {colorString}");
                 return Brushes.Transparent;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Error("ProgressStateManager", $"解析颜色字符串失败: {colorString}, 错误: {ex.Message}");
                 return Brushes.Transparent;
             }
         }
