@@ -39,8 +39,7 @@ public interface ICloudCalibrationService
     /// <summary>
     /// 配置校准参数
     /// </summary>
-    void Configure(bool enabled, int interval = 300, int timeout = 3,
-        int maxRetryCount = 5, double backoffMultiplier = 2.0, int triggerThreshold = 5);
+    void Configure(bool enabled, int interval = 300, int triggerThreshold = 5);
 
     /// <summary>
     /// 手动触发校准

@@ -10,10 +10,21 @@ namespace ReTime_Testing.Services;
 public class CloudCalibrationService : ICloudCalibrationService
 {
     private readonly ITimeService _timeService;
+    private readonly HttpClient _httpClient;
     private readonly Timer? _calibrationTimer;
     private int _failureCount;
     private int _currentInterval;
     private DateTime _lastCalibrationTime;
+    private ITimeProvider? _currentTimeProvider;
+    private string _timeSourceType = "http";
+    private List<string> _ntpServers = new();
+    private List<string> _httpServers = new();
+    private int _selectedNtpServerIndex = 0;
+    private int _selectedHttpServerIndex = 0;
+
+    private const int DefaultCalibrationTimeout = 3;
+    private const int DefaultMaxRetryCount = 3;
+    private const double DefaultBackoffMultiplier = 2.0;
 
     /// <summary>
     /// 是否启用云端校准
@@ -33,12 +44,12 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// <summary>
     /// 最大重试次数
     /// </summary>
-    public int MaxRetryCount { get; private set; }
+    public int MaxRetryCount => DefaultMaxRetryCount;
 
     /// <summary>
     /// 退避乘数
     /// </summary>
-    public double BackoffMultiplier { get; private set; }
+    public double BackoffMultiplier => DefaultBackoffMultiplier;
 
     /// <summary>
     /// 触发校准的偏差阈值（秒）
@@ -66,30 +77,75 @@ public class CloudCalibrationService : ICloudCalibrationService
     public DateTime LastCalibrationTime => _lastCalibrationTime;
 
     /// <summary>
+    /// 当前时间源类型
+    /// </summary>
+    public string TimeSourceType => _timeSourceType;
+
+    /// <summary>
+    /// 当前使用的时间提供者
+    /// </summary>
+    public string CurrentProviderName => _currentTimeProvider?.Name ?? "未初始化";
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="timeService">时间服务</param>
     public CloudCalibrationService(ITimeService timeService)
     {
         _timeService = timeService;
+        _httpClient = new HttpClient();
         _failureCount = 0;
-        _currentInterval = 300; // 默认 5 分钟
+        _currentInterval = 300;
 
-        // 默认配置
         IsEnabled = true;
-        CalibrationInterval = 300; // 5 分钟
-        CalibrationTimeout = 3; // 3 秒
-        MaxRetryCount = 5;
-        BackoffMultiplier = 2.0;
-        CalibrationTriggerThreshold = 5; // 5 秒
+        CalibrationInterval = 300;
+        CalibrationTimeout = DefaultCalibrationTimeout;
+        CalibrationTriggerThreshold = 5;
 
-        // 初始化校准定时器
         _calibrationTimer = new Timer(
             _ => OnTimerTick(),
             null,
             TimeSpan.Zero,
             TimeSpan.FromSeconds(_currentInterval)
         );
+
+        InitializeTimeProvider();
+    }
+
+    /// <summary>
+    /// 初始化时间提供者
+    /// </summary>
+    private void InitializeTimeProvider()
+    {
+        if (_timeSourceType.Equals("ntp", StringComparison.OrdinalIgnoreCase))
+        {
+            var selectedServers = new List<string>();
+            if (_selectedNtpServerIndex >= 0 && _selectedNtpServerIndex < _ntpServers.Count)
+            {
+                selectedServers.Add(_ntpServers[_selectedNtpServerIndex]);
+            }
+            else
+            {
+                selectedServers.AddRange(_ntpServers);
+            }
+            _currentTimeProvider = new NtpTimeProvider(selectedServers.ToArray());
+        }
+        else
+        {
+            var selectedServers = new List<string>();
+            if (_selectedHttpServerIndex >= 0 && _selectedHttpServerIndex < _httpServers.Count)
+            {
+                selectedServers.Add(_httpServers[_selectedHttpServerIndex]);
+            }
+            else
+            {
+                selectedServers.AddRange(_httpServers);
+            }
+            _currentTimeProvider = new HttpTimeProvider(_httpClient, selectedServers.ToArray());
+        }
+
+        Logger.Info("CloudCalibrationService",
+            $"时间提供者已初始化: 类型={_timeSourceType}, 提供者={_currentTimeProvider.Name}");
     }
 
     /// <summary>
@@ -125,33 +181,81 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// </summary>
     /// <param name="enabled">是否启用</param>
     /// <param name="interval">校准间隔（秒）</param>
-    /// <param name="timeout">校准超时（秒）</param>
-    /// <param name="maxRetryCount">最大重试次数</param>
-    /// <param name="backoffMultiplier">退避乘数</param>
     /// <param name="triggerThreshold">触发校准的偏差阈值（秒）</param>
     public void Configure(
         bool enabled,
         int interval = 300,
-        int timeout = 3,
-        int maxRetryCount = 5,
-        double backoffMultiplier = 2.0,
         int triggerThreshold = 5)
     {
         IsEnabled = enabled;
         CalibrationInterval = interval;
-        CalibrationTimeout = timeout;
-        MaxRetryCount = maxRetryCount;
-        BackoffMultiplier = backoffMultiplier;
         CalibrationTriggerThreshold = triggerThreshold;
 
         _currentInterval = interval;
         _failureCount = 0;
 
         Logger.Info("CloudCalibrationService",
-            $"配置已更新: Enabled={enabled}, Interval={interval}s, Timeout={timeout}s, MaxRetry={maxRetryCount}");
+            $"配置已更新: Enabled={enabled}, Interval={interval}s, TriggerThreshold={triggerThreshold}s");
 
-        // 如果正在运行，重新启动定时器
         if (IsRunning && enabled)
+        {
+            _calibrationTimer?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
+        }
+    }
+
+    /// <summary>
+    /// 配置时间源
+    /// </summary>
+    /// <param name="timeSourceType">时间源类型：http 或 ntp</param>
+    /// <param name="ntpServers">NTP服务器列表</param>
+    /// <param name="httpServers">HTTP服务器列表</param>
+    /// <param name="selectedNtpServerIndex">选中的NTP服务器索引</param>
+    /// <param name="selectedHttpServerIndex">选中的HTTP服务器索引</param>
+    public void ConfigureTimeSource(
+        string timeSourceType,
+        List<string>? ntpServers = null,
+        List<string>? httpServers = null,
+        int selectedNtpServerIndex = 0,
+        int selectedHttpServerIndex = 0)
+    {
+        _timeSourceType = timeSourceType;
+        _ntpServers = ntpServers ?? new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
+        _httpServers = httpServers ?? new List<string>
+        {
+            "https://worldtimeapi.org/api/timezone/Etc/UTC",
+            "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+            "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
+        };
+        _selectedNtpServerIndex = selectedNtpServerIndex;
+        _selectedHttpServerIndex = selectedHttpServerIndex;
+
+        InitializeTimeProvider();
+
+        Logger.Info("CloudCalibrationService",
+            $"时间源已配置: 类型={timeSourceType}, NTP服务器={string.Join(", ", _ntpServers)}, HTTP服务器={string.Join(", ", _httpServers)}");
+    }
+
+    /// <summary>
+    /// 切换时间源
+    /// </summary>
+    /// <param name="timeSourceType">时间源类型：http 或 ntp</param>
+    public void SwitchTimeSource(string timeSourceType)
+    {
+        if (_timeSourceType.Equals(timeSourceType, StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.Info("CloudCalibrationService", $"时间源已经是 {timeSourceType}，无需切换");
+            return;
+        }
+
+        _timeSourceType = timeSourceType;
+        _failureCount = 0;
+        _currentInterval = CalibrationInterval;
+
+        InitializeTimeProvider();
+
+        Logger.Info("CloudCalibrationService", $"已切换时间源为: {timeSourceType}");
+
+        if (IsRunning && IsEnabled)
         {
             _calibrationTimer?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
         }
@@ -186,16 +290,13 @@ public class CloudCalibrationService : ICloudCalibrationService
 
         try
         {
-            // 尝试获取云端时间
             var cloudTime = await GetCloudTimeAsync();
 
             if (cloudTime.HasValue)
             {
-                // 计算偏差
                 var localTime = _timeService.GetCurrentTime();
                 var offset = (cloudTime.Value - localTime).Duration();
 
-                // 如果偏差超过阈值，则校准
                 if (offset.TotalSeconds > CalibrationTriggerThreshold)
                 {
                     Logger.Info("CloudCalibrationService",
@@ -204,11 +305,9 @@ public class CloudCalibrationService : ICloudCalibrationService
                     _timeService.Calibrate(cloudTime.Value);
                     _lastCalibrationTime = DateTime.Now;
 
-                    // 重置失败计数器和间隔
                     _failureCount = 0;
                     _currentInterval = CalibrationInterval;
 
-                    // 更新定时器间隔
                     _calibrationTimer?.Change(TimeSpan.FromSeconds(_currentInterval), TimeSpan.FromSeconds(_currentInterval));
 
                     return true;
@@ -229,18 +328,15 @@ public class CloudCalibrationService : ICloudCalibrationService
             Logger.Warn("CloudCalibrationService",
                 $"云端校准失败: {ex.Message} (失败次数: {_failureCount}/{MaxRetryCount})");
 
-            // 动态调整间隔
             var newInterval = (int)(_currentInterval * BackoffMultiplier);
-            newInterval = Math.Min(newInterval, 1800); // 最大 30 分钟
+            newInterval = Math.Min(newInterval, 1800);
             _currentInterval = newInterval;
 
-            // 更新定时器间隔
             _calibrationTimer?.Change(TimeSpan.FromSeconds(_currentInterval), TimeSpan.FromSeconds(_currentInterval));
 
             Logger.Info("CloudCalibrationService",
                 $"校准间隔已调整为: {_currentInterval}秒");
 
-            // 连续失败超过阈值，停止校准
             if (_failureCount >= MaxRetryCount)
             {
                 Logger.Error("CloudCalibrationService",
@@ -255,98 +351,33 @@ public class CloudCalibrationService : ICloudCalibrationService
 
     /// <summary>
     /// 获取云端时间
-    /// 使用HTTP时间服务API获取标准时间
     /// </summary>
-    /// <returns>云端时间</returns>
+    /// <returns>云端时间（北京时间）</returns>
     private async Task<DateTime?> GetCloudTimeAsync()
     {
+        if (_currentTimeProvider == null)
+        {
+            Logger.Error("CloudCalibrationService", "时间提供者未初始化");
+            return null;
+        }
+
         try
         {
-            // 使用多个时间服务API（按优先级排序）
-            var timeServers = new[]
-            {
-                "https://worldtimeapi.org/api/timezone/Etc/UTC",
-                "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
-                "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
-            };
+            var utcTime = await _currentTimeProvider.GetTimeAsync(TimeSpan.FromSeconds(CalibrationTimeout));
 
-            using var httpClient = new HttpClient
+            if (utcTime.HasValue)
             {
-                Timeout = TimeSpan.FromSeconds(CalibrationTimeout)
-            };
-
-            // 尝试每个时间服务器
-            foreach (var serverUrl in timeServers)
-            {
-                try
-                {
-                    var response = await httpClient.GetAsync(serverUrl);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var json = await response.Content.ReadAsStringAsync();
-                        var cloudTime = ParseTimeResponse(json, serverUrl);
-
-                        if (cloudTime.HasValue)
-                        {
-                            Logger.Info("CloudCalibrationService",
-                                $"成功从 {serverUrl} 获取云端时间: {cloudTime.Value:yyyy-MM-dd HH:mm:ss.fff}");
-                            return cloudTime;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn("CloudCalibrationService",
-                        $"从 {serverUrl} 获取时间失败: {ex.Message}");
-                    // 继续尝试下一个服务器
-                }
+                var beijingTime = utcTime.Value.AddHours(8);
+                Logger.Info("CloudCalibrationService",
+                    $"获取云端时间成功: UTC={utcTime.Value:yyyy-MM-dd HH:mm:ss}, 北京时间={beijingTime:yyyy-MM-dd HH:mm:ss}");
+                return beijingTime;
             }
 
-            Logger.Error("CloudCalibrationService", "所有时间服务器都失败");
             return null;
         }
         catch (Exception ex)
         {
             Logger.Error("CloudCalibrationService", $"获取云端时间失败: {ex.Message}", ex);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 解析时间响应
-    /// </summary>
-    /// <param name="json">JSON响应</param>
-    /// <param name="serverUrl">服务器URL</param>
-    /// <returns>云端时间</returns>
-    private DateTime? ParseTimeResponse(string json, string serverUrl)
-    {
-        try
-        {
-            // 使用简单的字符串解析（避免引入额外的JSON库）
-            // worldtimeapi.org 格式: {"datetime":"2026-03-15T10:30:45.123456+00:00",...}
-            if (json.Contains("\"datetime\""))
-            {
-                var start = json.IndexOf("\"datetime\":\"") + 12;
-                var end = json.IndexOf("\"", start);
-                var datetimeStr = json.Substring(start, end - start);
-                return DateTime.Parse(datetimeStr);
-            }
-
-            // timeapi.io 格式: {"dateTime":"2026-03-15T10:30:45"}
-            if (json.Contains("\"dateTime\""))
-            {
-                var start = json.IndexOf("\"dateTime\":\"") + 12;
-                var end = json.IndexOf("\"", start);
-                var datetimeStr = json.Substring(start, end - start);
-                return DateTime.Parse(datetimeStr);
-            }
-
-            Logger.Warn("CloudCalibrationService", $"无法解析时间响应: {json.Substring(0, Math.Min(100, json.Length))}");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn("CloudCalibrationService", $"解析时间响应失败: {ex.Message}");
             return null;
         }
     }
@@ -361,7 +392,6 @@ public class CloudCalibrationService : ICloudCalibrationService
 
         Logger.Info("CloudCalibrationService", "已重置失败计数器和间隔");
 
-        // 如果正在运行，重新启动定时器
         if (IsRunning && IsEnabled)
         {
             _calibrationTimer?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
@@ -374,5 +404,6 @@ public class CloudCalibrationService : ICloudCalibrationService
     ~CloudCalibrationService()
     {
         _calibrationTimer?.Dispose();
+        _httpClient?.Dispose();
     }
 }

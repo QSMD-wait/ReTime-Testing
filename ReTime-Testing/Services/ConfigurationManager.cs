@@ -388,14 +388,7 @@ namespace ReTime_Testing.Services
             // calibration 域
             target.Calibration ??= new CalibrationConfig();
             target.Calibration.IntervalSeconds = Math.Max(1, target.Calibration.IntervalSeconds);
-            target.Calibration.TimeoutSeconds = Math.Max(1, target.Calibration.TimeoutSeconds);
-            target.Calibration.MaxRetryCount = Math.Max(0, target.Calibration.MaxRetryCount);
-            target.Calibration.BackoffMultiplier = Math.Max(1.0, target.Calibration.BackoffMultiplier);
-            target.Calibration.Fallback ??= new CalibrationFallbackConfig();
-            target.Calibration.Threshold ??= new CalibrationThresholdConfig();
-            target.Calibration.Threshold.TriggerSeconds = Math.Max(1, target.Calibration.Threshold.TriggerSeconds);
-            target.Calibration.Threshold.WarningSeconds = Math.Max(1, target.Calibration.Threshold.WarningSeconds);
-            target.Calibration.Threshold.SleepMinutes = Math.Max(0, target.Calibration.Threshold.SleepMinutes);
+            target.Calibration.TriggerSeconds = Math.Max(1, target.Calibration.TriggerSeconds);
 
             // stateStyles 域
             target.StateStyles ??= new StateStylesConfig();
@@ -561,12 +554,9 @@ namespace ReTime_Testing.Services
                 "calibration 整域解析失败，尝试逐子域解析");
             var result = new CalibrationConfig();
             result.Enabled = TryGetBool(calNode, "enabled") ?? result.Enabled;
+            result.TimeSourceType = TryGetString(calNode, "timeSourceType") ?? result.TimeSourceType;
             result.IntervalSeconds = TryGetInt(calNode, "intervalSeconds") ?? result.IntervalSeconds;
-            result.TimeoutSeconds = TryGetInt(calNode, "timeoutSeconds") ?? result.TimeoutSeconds;
-            result.MaxRetryCount = TryGetInt(calNode, "maxRetryCount") ?? result.MaxRetryCount;
-            result.BackoffMultiplier = TryGetDouble(calNode, "backoffMultiplier") ?? result.BackoffMultiplier;
-            result.Fallback = TryDeserializeDomain<CalibrationFallbackConfig>(calNode, "fallback") ?? result.Fallback;
-            result.Threshold = TryDeserializeDomain<CalibrationThresholdConfig>(calNode, "threshold") ?? result.Threshold;
+            result.TriggerSeconds = TryGetInt(calNode, "triggerSeconds") ?? result.TriggerSeconds;
             return result;
         }
 

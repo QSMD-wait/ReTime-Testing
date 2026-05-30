@@ -159,7 +159,8 @@ namespace ReTime_Testing.ViewModels
 
         // 导航标签常量
         private const string TAG_BASIC = "Basic";
-        private const string TAG_APPEARANCE = "Appearance";  // 重命名：从 TAG_PROGRESS 改为 TAG_APPEARANCE
+        private const string TAG_APPEARANCE = "Appearance";
+        private const string TAG_TIME = "Time";
         private const string TAG_WINDOW = "Window";
         private const string TAG_ABOUT = "About";
 
@@ -264,6 +265,37 @@ namespace ReTime_Testing.ViewModels
 
         [ObservableProperty]
         private string _lastCalibrationTime = "未校准";
+
+        [ObservableProperty]
+        private string _selectedTimeSourceType = "http";
+
+        [ObservableProperty]
+        private List<string> _ntpServers = new()
+        {
+            "ntp.aliyun.com",
+            "ntp.ntsc.ac.cn",
+            "time.windows.com"
+        };
+
+        [ObservableProperty]
+        private int _selectedNtpServerIndex = 0;
+
+        [ObservableProperty]
+        private List<string> _httpServers = new()
+        {
+            "https://worldtimeapi.org/api/timezone/Etc/UTC",
+            "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+            "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
+        };
+
+        [ObservableProperty]
+        private int _selectedHttpServerIndex = 0;
+
+        [ObservableProperty]
+        private string _currentTimeSourceType = "未初始化";
+
+        [ObservableProperty]
+        private string _currentProviderName = "未初始化";
 
         public TimeTopSettingViewModel()
         {
@@ -384,6 +416,8 @@ namespace ReTime_Testing.ViewModels
                     LastCalibrationTime = _cloudCalibrationService.LastCalibrationTime > DateTime.MinValue 
                         ? _cloudCalibrationService.LastCalibrationTime.ToString("HH:mm:ss") 
                         : "未校准";
+                    CurrentTimeSourceType = _cloudCalibrationService.TimeSourceType;
+                    CurrentProviderName = _cloudCalibrationService.CurrentProviderName;
                 }
                 else
                 {
@@ -391,6 +425,8 @@ namespace ReTime_Testing.ViewModels
                     CalibrationFailureCount = 0;
                     CurrentCalibrationInterval = "未知";
                     LastCalibrationTime = "未初始化";
+                    CurrentTimeSourceType = "未初始化";
+                    CurrentProviderName = "未初始化";
                 }
             }
             catch (Exception ex)
@@ -420,7 +456,8 @@ namespace ReTime_Testing.ViewModels
             CurrentPage = tag switch
             {
                 TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
-                TAG_APPEARANCE => new AppearancePageViewModel(),  // 重命名：从 TAG_PROGRESS 改为 TAG_APPEARANCE
+                TAG_APPEARANCE => new AppearancePageViewModel(),
+                TAG_TIME => new TimePageViewModel(cloudCalibrationService: _cloudCalibrationService),
                 TAG_WINDOW => new WindowPageViewModel(),
                 TAG_ABOUT => new AboutPageViewModel(),
                 _ => new BasicPageViewModel(themeService!, autoStartService!)
@@ -1059,6 +1096,57 @@ namespace ReTime_Testing.ViewModels
                 CalibrationFailureCount = 0;
                 Logger.Info("TimeTopSettingViewModel", "校准失败计数已重置");
                 RefreshDebugInfo();
+            }
+        }
+
+        /// <summary>
+        /// 应用时间源配置
+        /// </summary>
+        [RelayCommand]
+        private void ApplyTimeSourceConfig()
+        {
+            try
+            {
+                if (_cloudCalibrationService != null)
+                {
+                    var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
+                    var httpServers = new List<string>
+                    {
+                        "https://worldtimeapi.org/api/timezone/Etc/UTC",
+                        "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+                        "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
+                    };
+
+                    _cloudCalibrationService.ConfigureTimeSource(
+                        timeSourceType: SelectedTimeSourceType,
+                        ntpServers: ntpServers,
+                        httpServers: httpServers,
+                        selectedNtpServerIndex: SelectedNtpServerIndex,
+                        selectedHttpServerIndex: SelectedHttpServerIndex
+                    );
+
+                    var configManager = ConfigurationManager.Instance;
+                    var timeTopSetting = configManager.LoadTimeTopSetting();
+                    timeTopSetting.Calibration.TimeSourceType = SelectedTimeSourceType;
+
+                    var selectedServer = SelectedTimeSourceType == "ntp"
+                        ? ntpServers[SelectedNtpServerIndex]
+                        : httpServers[SelectedHttpServerIndex];
+
+                    timeTopSetting.Calibration.SelectedServerAddress = selectedServer;
+                    configManager.SaveTimeTopSetting(timeTopSetting);
+
+                    Logger.Info("TimeTopSettingViewModel", $"时间源配置已应用: 类型={SelectedTimeSourceType}, 服务器={selectedServer}");
+                    RefreshDebugInfo();
+                }
+                else
+                {
+                    Logger.Warn("TimeTopSettingViewModel", "云端校准服务未初始化");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("TimeTopSettingViewModel", "应用时间源配置时发生异常", ex);
             }
         }
 

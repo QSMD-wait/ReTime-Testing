@@ -31,48 +31,48 @@
                            Margin="0,0,0,16"/>
 
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Home}"
-                                       Title="开机自启"
-                                       Description="在系统启动时自动运行本应用"
+                                       Title="不明所以的设置"
+                                       Description="看我干什么？我又不是什么丑八怪！"
                                         Margin="0">
                     <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="True" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                         <ui:ToggleSwitch IsOn="True" OffContent="听到没有" OnContent="不许看！" MinWidth="0"/>
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Bug}"
-                                       Title="调试模式"
-                                       Description="启用详细的调试日志输出"
+                                       Title="不明所以的设置2"
+                                       Description="阿巴阿巴阿巴阿巴阿巴阿巴"
                                         Margin="0">
                     <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="False" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                         <ui:ToggleSwitch IsOn="False" OffContent="你说开就开？" OnContent="你给我关上！" MinWidth="0"/>
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Cloud}"
-                                       Title="云端校准"
-                                       Description="自动从云端同步时间校准"
+                                       Title="云端不会校准"
+                                       Description="不会自动从云端同步时间校准，点了也没用"
                                         Margin="0">
                     <controls:SettingsCard.ControlContent>
-                        <Button Content="立即同步" Style="{StaticResource AccentButtonStyle}"/>
+                        <Button Content="不立即同步" Style="{StaticResource AccentButtonStyle}"/>
                     </controls:SettingsCard.ControlContent>
                 </controls:SettingsCard>
 
                 <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Settings}"
-                                       Title="高级设置"
-                                       Description="点击展开查看更多配置选项"
+                                       Title="低级设置"
+                                       Description="点击展开查看更少配置选项"
                                        IsExpandable="True"
                                        Margin="0">
                     <controls:SettingsCard.ExpandContent>
                         <StackPanel Margin="0,4,0,0">
-                            <CheckBox Content="启用实验性功能" Margin="0,0,0,8"/>
-                            <CheckBox Content="显示详细日志" Margin="0,0,0,8"/>
-                            <TextBlock Text="日志级别" FontSize="12" Opacity="0.75" Margin="0,0,0,4"/>
+                            <CheckBox Content="启用实验性功能（没有）" Margin="0,0,0,8"/>
+                            <CheckBox Content="显示详细日志（也没有）" Margin="0,0,0,8"/>
+                            <TextBlock Text="日志级别（更没有，再说，我还没写日志的文件打印，你也看不到！！）" FontSize="12" Opacity="0.75" Margin="0,0,0,4"/>
                             <ComboBox SelectedIndex="0" Width="200" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Verbose"/>
-                                <ComboBoxItem Content="Debug"/>
-                                <ComboBoxItem Content="Information"/>
-                                <ComboBoxItem Content="Warning"/>
-                                <ComboBoxItem Content="Error"/>
+                                <ComboBoxItem Content="BUG满天飞"/>
+                                <ComboBoxItem Content="修不好"/>
+                                <ComboBoxItem Content="诈骗信息"/>
+                                <ComboBoxItem Content="有点问题"/>
+                                <ComboBoxItem Content="额~ 我走以后~ 活下去  ——"/>
                             </ComboBox>
                         </StackPanel>
                     </controls:SettingsCard.ExpandContent>
@@ -953,10 +953,76 @@
                            FontWeight="SemiBold"
                            Margin="0,0,0,16"/>
 
-                <TextBlock Text="测试云端时间校准功能"
+                <TextBlock Text="测试云端时间校准功能，支持HTTP API和NTP协议"
                            FontSize="12"
                            Foreground="Gray"
                            Margin="0,0,0,8"/>
+
+                <!-- 时间源选择 -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="时间源配置"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="时间源类型:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1"
+                                      SelectedValue="{Binding SelectedTimeSourceType}"
+                                      SelectedValuePath="Tag"
+                                      Width="200"
+                                      HorizontalAlignment="Left">
+                                <ComboBoxItem Content="HTTP API" Tag="http"/>
+                                <ComboBoxItem Content="NTP协议" Tag="ntp"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="NTP服务器:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding NtpServers}"
+                                      SelectedIndex="{Binding SelectedNtpServerIndex}"
+                                      Width="300"
+                                      HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="HTTP服务器:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding HttpServers}"
+                                      SelectedIndex="{Binding SelectedHttpServerIndex}"
+                                      Width="300"
+                                      HorizontalAlignment="Left"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
                 <!-- 云端校准服务状态信息 -->
                 <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
@@ -997,6 +1063,36 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前时间源:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentTimeSourceType}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="当前提供者:"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentProviderName}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
                         </Grid>
 
                         <Grid Margin="0,0,0,4">
@@ -1082,10 +1178,17 @@
                             Command="{Binding ResetCalibrationFailuresCommand}"
                             Width="140"
                             Height="32"
+                            Margin="0,0,8,0"
                             ToolTip="重置校准失败计数器"/>
+
+                    <Button Content="应用配置"
+                            Command="{Binding ApplyTimeSourceConfigCommand}"
+                            Width="140"
+                            Height="32"
+                            ToolTip="应用当前选择的时间源配置"/>
                 </StackPanel>
 
-                <TextBlock Text="提示：云端时间获取目前是模拟的，实际需要连接真实的时间服务"
+                <TextBlock Text="提示：NTP服务器返回UTC时间，系统会自动转换为北京时间（UTC+8）"
                            FontSize="12"
                            Foreground="Orange"
                            TextWrapping="Wrap"

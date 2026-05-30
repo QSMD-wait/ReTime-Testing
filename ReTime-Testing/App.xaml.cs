@@ -172,11 +172,46 @@ protected override void OnStartup(StartupEventArgs e)
                 _cloudCalibrationService.Configure(
                     enabled: timeTopSetting.Calibration.Enabled,
                     interval: timeTopSetting.Calibration.IntervalSeconds,
-                    timeout: timeTopSetting.Calibration.TimeoutSeconds,
-                    maxRetryCount: timeTopSetting.Calibration.MaxRetryCount,
-                    backoffMultiplier: timeTopSetting.Calibration.BackoffMultiplier,
-                    triggerThreshold: timeTopSetting.Calibration.Threshold.TriggerSeconds
+                    triggerThreshold: timeTopSetting.Calibration.TriggerSeconds
                 );
+
+                var selectedServer = timeTopSetting.Calibration.SelectedServerAddress;
+                var timeSourceType = timeTopSetting.Calibration.TimeSourceType.ToLower();
+
+                if (timeSourceType == "ntp")
+                {
+                    var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
+                    var selectedIndex = ntpServers.IndexOf(selectedServer);
+                    if (selectedIndex < 0) selectedIndex = 0;
+
+                    _cloudCalibrationService.ConfigureTimeSource(
+                        timeSourceType: "ntp",
+                        ntpServers: ntpServers,
+                        httpServers: null,
+                        selectedNtpServerIndex: selectedIndex,
+                        selectedHttpServerIndex: 0
+                    );
+                }
+                else
+                {
+                    var httpServers = new List<string>
+                    {
+                        "https://worldtimeapi.org/api/timezone/Etc/UTC",
+                        "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
+                        "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
+                    };
+                    var selectedIndex = httpServers.IndexOf(selectedServer);
+                    if (selectedIndex < 0) selectedIndex = 0;
+
+                    _cloudCalibrationService.ConfigureTimeSource(
+                        timeSourceType: "http",
+                        ntpServers: null,
+                        httpServers: httpServers,
+                        selectedNtpServerIndex: 0,
+                        selectedHttpServerIndex: selectedIndex
+                    );
+                }
+
                 Logger.Info(GetType().FullName ?? "App", "云端校准服务已配置");
 
                 // 3. 尝试从云端获取时间（3秒超时）

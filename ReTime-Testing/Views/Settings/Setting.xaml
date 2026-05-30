@@ -28,6 +28,11 @@
             <pages:AppearancePage/>
         </DataTemplate>
 
+        <!-- 数据模板：时间设置 -->
+        <DataTemplate DataType="{x:Type viewModels:TimePageViewModel}">
+            <pages:TimePage/>
+        </DataTemplate>
+
         <!-- 数据模板：窗口设置 -->
         <DataTemplate DataType="{x:Type viewModels:WindowPageViewModel}">
             <pages:WindowPage/>
@@ -61,6 +66,12 @@
                 <ui:NavigationViewItem Content="外观" Tag="Appearance">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ColorBackground_24_Regular}"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="时间" Tag="Time">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Clock_24_Filled}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 

@@ -154,82 +154,28 @@ namespace ReTime_Testing.Models
         public bool Enabled { get; set; } = false;
 
         /// <summary>
+        /// 时间源类型：http 或 ntp
+        /// </summary>
+        [JsonPropertyName("timeSourceType")]
+        public string TimeSourceType { get; set; } = "ntp";
+
+        /// <summary>
+        /// 选中的服务器地址
+        /// </summary>
+        [JsonPropertyName("selectedServerAddress")]
+        public string SelectedServerAddress { get; set; } = "ntp.aliyun.com";
+
+        /// <summary>
         /// 校准间隔（秒）
         /// </summary>
         [JsonPropertyName("intervalSeconds")]
         public int IntervalSeconds { get; set; } = 300;
 
         /// <summary>
-        /// 校准请求超时（秒）
-        /// </summary>
-        [JsonPropertyName("timeoutSeconds")]
-        public int TimeoutSeconds { get; set; } = 3;
-
-        /// <summary>
-        /// 最大重试次数
-        /// </summary>
-        [JsonPropertyName("maxRetryCount")]
-        public int MaxRetryCount { get; set; } = 5;
-
-        /// <summary>
-        /// 重试退避乘数
-        /// </summary>
-        [JsonPropertyName("backoffMultiplier")]
-        public double BackoffMultiplier { get; set; } = 2.0;
-
-        /// <summary>
-        /// 失败策略
-        /// </summary>
-        [JsonPropertyName("fallback")]
-        public CalibrationFallbackConfig Fallback { get; set; } = new();
-
-        /// <summary>
-        /// 阈值配置
-        /// </summary>
-        [JsonPropertyName("threshold")]
-        public CalibrationThresholdConfig Threshold { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 校准失败策略配置
-    /// </summary>
-    public class CalibrationFallbackConfig
-    {
-        /// <summary>
-        /// 启动时校准失败策略
-        /// </summary>
-        [JsonPropertyName("onStartFailure")]
-        public string OnStartFailure { get; set; } = "systemTime";
-
-        /// <summary>
-        /// 运行时校准失败策略
-        /// </summary>
-        [JsonPropertyName("onRuntimeFailure")]
-        public string OnRuntimeFailure { get; set; } = "keepCurrent";
-    }
-
-    /// <summary>
-    /// 校准阈值配置
-    /// </summary>
-    public class CalibrationThresholdConfig
-    {
-        /// <summary>
         /// 触发校准的偏差阈值（秒）
         /// </summary>
         [JsonPropertyName("triggerSeconds")]
-        public int TriggerSeconds { get; set; } = 5;
-
-        /// <summary>
-        /// 警告阈值（秒）
-        /// </summary>
-        [JsonPropertyName("warningSeconds")]
-        public int WarningSeconds { get; set; } = 60;
-
-        /// <summary>
-        /// 休眠后重新校准阈值（分钟）
-        /// </summary>
-        [JsonPropertyName("sleepMinutes")]
-        public int SleepMinutes { get; set; } = 5;
+        public int TriggerSeconds { get; set; } = 1;
     }
 
     /// <summary>
