@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -1143,34 +1144,52 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     {
                         existingPoint.Name = item.Name;
                         existingPoint.Time = item.StartTime;
-                        existingPoint.ToState = item.ToState;
+                        existingPoint.Type = TimePointType.StateChange;
+                        existingPoint.StateChange ??= new StateChangeData();
+                        existingPoint.StateChange.ToState = item.ToState;
+
                         // 更新样式
                         if (item.HasCustomStyle)
                         {
-                            existingPoint.Style ??= new StyleOverridesData();
-                            existingPoint.Style.Enabled = true;
-                            existingPoint.Style.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-                            existingPoint.Style.BackgroundColor = item.HasBackgroundColor
-                                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
-                                : null;
-                            existingPoint.Style.Opacity = item.Opacity / 100.0;
+                            existingPoint.Type = TimePointType.StyleChange;
+                            existingPoint.StyleChange ??= new StyleChangeData();
+                            existingPoint.StyleChange.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+                            existingPoint.StyleChange.BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null;
+                            existingPoint.StyleChange.Opacity = item.Opacity / 100.0;
                         }
                         else
                         {
-                            // 禁用样式
-                            existingPoint.Style = null;
+                            existingPoint.Type = TimePointType.StateChange;
+                            existingPoint.StyleChange = null;
                         }
                     }
                     else
                     {
-                        // 新增时间点（保留 Style 等属性）
-                        _currentSchedule.TimePoints?.Add(new CustomTimePoint
+                        // 新增时间点
+                        var newPoint = new CustomTimePoint
                         {
                             Id = item.Id,
                             Name = item.Name,
                             Time = item.StartTime,
-                            ToState = item.ToState
-                        });
+                            Type = TimePointType.StateChange,
+                            StateChange = new StateChangeData
+                            {
+                                ToState = item.ToState
+                            }
+                        };
+
+                        if (item.HasCustomStyle)
+                        {
+                            newPoint.Type = TimePointType.StyleChange;
+                            newPoint.StyleChange = new StyleChangeData
+                            {
+                                ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
+                                BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
+                                Opacity = item.Opacity / 100.0
+                            };
+                        }
+
+                        _currentSchedule.TimePoints?.Add(newPoint);
                     }
                 }
                 else

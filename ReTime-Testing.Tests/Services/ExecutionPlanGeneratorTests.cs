@@ -370,13 +370,13 @@ public class ExecutionPlanGeneratorTests
                 {
                     Id = "tp_end",
                     Time = "10:00:00",
-                    ToState = ProgressStateType.Success
+                    StateChange = new StateChangeData { ToState = ProgressStateType.Success }
                 },
                 new CustomTimePoint
                 {
                     Id = "tp_delay",
                     Time = "10:00:10",
-                    ToState = ProgressStateType.Loading
+                    StateChange = new StateChangeData { ToState = ProgressStateType.Loading }
                 }
             }
         };
@@ -387,9 +387,12 @@ public class ExecutionPlanGeneratorTests
 
         // Assert: 3个时间点（开始自动 + 结束覆盖 + 延迟）
         plan.TimePoints.Should().HaveCount(3);
-        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Progress); // 自动生成的开始
-        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Success);  // 覆盖的结束
-        plan.TimePoints[2].ToState.Should().Be(ProgressStateType.Loading);  // 延迟
+        plan.TimePoints[0].TryGetToState(out var toState0).Should().BeTrue();
+        toState0.Should().Be(ProgressStateType.Progress); // 自动生成的开始
+        plan.TimePoints[1].TryGetToState(out var toState1).Should().BeTrue();
+        toState1.Should().Be(ProgressStateType.Success);  // 覆盖的结束
+        plan.TimePoints[2].TryGetToState(out var toState2).Should().BeTrue();
+        toState2.Should().Be(ProgressStateType.Loading);  // 延迟
     }
 
     [Fact]
@@ -415,7 +418,7 @@ public class ExecutionPlanGeneratorTests
                 {
                     Id = "tp_start",
                     Time = "09:00:00",
-                    ToState = ProgressStateType.Paused // 覆盖自动生成的开始时间点
+                    StateChange = new StateChangeData { ToState = ProgressStateType.Paused } // 覆盖自动生成的开始时间点
                 }
             }
         };
@@ -426,8 +429,10 @@ public class ExecutionPlanGeneratorTests
 
         // Assert: 2个时间点（开始覆盖 + 结束自动）
         plan.TimePoints.Should().HaveCount(2);
-        plan.TimePoints[0].ToState.Should().Be(ProgressStateType.Paused);   // 覆盖的开始
-        plan.TimePoints[1].ToState.Should().Be(ProgressStateType.Loading);  // 自动生成的结束
+        plan.TimePoints[0].TryGetToState(out var toState0).Should().BeTrue();
+        toState0.Should().Be(ProgressStateType.Paused);   // 覆盖的开始
+        plan.TimePoints[1].TryGetToState(out var toState1).Should().BeTrue();
+        toState1.Should().Be(ProgressStateType.Loading);  // 自动生成的结束
     }
 
     [Fact]
@@ -453,7 +458,7 @@ public class ExecutionPlanGeneratorTests
                 {
                     Id = "tp_invalid",
                     Time = "08:00:00",
-                    ToState = ProgressStateType.Progress // 不允许
+                    StateChange = new StateChangeData { ToState = ProgressStateType.Progress } // 不允许
                 }
             }
         };
@@ -488,7 +493,7 @@ public class ExecutionPlanGeneratorTests
                 {
                     Id = "tp_inside",
                     Time = "09:30:00", // 在时间段内部
-                    ToState = ProgressStateType.Paused
+                    StateChange = new StateChangeData { ToState = ProgressStateType.Paused }
                 }
             }
         };
@@ -543,8 +548,8 @@ public class ExecutionPlanGeneratorTests
             Schedules = new List<TimeScheduleItem>(),
             TimePoints = new List<CustomTimePoint>
             {
-                new CustomTimePoint { Id = "tp1", Time = "09:00:00", ToState = ProgressStateType.Success },
-                new CustomTimePoint { Id = "tp1", Time = "10:00:00", ToState = ProgressStateType.Loading }
+                new CustomTimePoint { Id = "tp1", Time = "09:00:00", StateChange = new StateChangeData { ToState = ProgressStateType.Success } },
+                new CustomTimePoint { Id = "tp1", Time = "10:00:00", StateChange = new StateChangeData { ToState = ProgressStateType.Loading } }
             }
         };
         var date = new DateTime(2026, 3, 15);

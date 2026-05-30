@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Media;
+using System.Globalization;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
 using ReTime_Testing.Views.TimeScheduleEditor;
@@ -75,37 +76,42 @@ public static class ScheduleItemConverter
             StartTime = point.Time,
             TypeIcon = TimePointIcon,
             ItemType = ScheduleItemType.TimePoint,
-            ToState = point.ToState
         };
 
-        // 加载样式（只有 Enabled == true 时才启用自定义样式）
-        if (point.Style != null && point.Style.Enabled == true)
+        // 尝试从 StateChange 中读取 ToState
+        if (point.StateChange != null && point.StateChange.ToState != default)
         {
-            result.HasCustomStyle = true;
-            if (!string.IsNullOrEmpty(point.Style.ForegroundColor))
+            result.ToState = point.StateChange.ToState;
+        }
+
+        // 加载样式（从 StyleChange 中读取）
+        bool hasStyle = false;
+        if (point.StyleChange != null)
+        {
+            if (!string.IsNullOrEmpty(point.StyleChange.ForegroundColor))
             {
-                var color = ParseColor(point.Style.ForegroundColor);
+                var color = ParseColor(point.StyleChange.ForegroundColor);
                 result.ForegroundR = color.R;
                 result.ForegroundG = color.G;
                 result.ForegroundB = color.B;
+                hasStyle = true;
             }
-            if (!string.IsNullOrEmpty(point.Style.BackgroundColor))
+            if (!string.IsNullOrEmpty(point.StyleChange.BackgroundColor))
             {
-                var color = ParseColor(point.Style.BackgroundColor);
+                var color = ParseColor(point.StyleChange.BackgroundColor);
                 result.BackgroundR = color.R;
                 result.BackgroundG = color.G;
                 result.BackgroundB = color.B;
                 result.HasBackgroundColor = true;
+                hasStyle = true;
             }
-            if (point.Style.Opacity.HasValue)
+            if (point.StyleChange.Opacity.HasValue)
             {
-                result.Opacity = point.Style.Opacity.Value * 100;
+                result.Opacity = point.StyleChange.Opacity.Value * 100;
+                hasStyle = true;
             }
         }
-        else
-        {
-            result.HasCustomStyle = false;
-        }
+        result.HasCustomStyle = hasStyle;
 
         return result;
     }
@@ -190,12 +196,30 @@ public static class ScheduleItemConverter
     /// </summary>
     public static CustomTimePoint ToTimePoint(ScheduleItemListItem item)
     {
-        return new CustomTimePoint
+        var tp = new CustomTimePoint
         {
             Id = item.Id,
             Name = item.Name,
             Time = item.StartTime,
-            ToState = item.ToState
+            Type = TimePointType.StateChange,
+            StateChange = new StateChangeData
+            {
+                ToState = item.ToState
+            }
         };
+
+        // 写入样式到 StyleChange（如果设置了自定义样式）
+        if (item.HasCustomStyle)
+        {
+            tp.Type = TimePointType.StyleChange;
+            tp.StyleChange = new StyleChangeData
+            {
+                ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
+                BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
+                Opacity = item.Opacity / 100.0
+            };
+        }
+
+        return tp;
     }
 }

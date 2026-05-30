@@ -15,28 +15,69 @@ public class TimePointTests
         // Assert
         timePoint.Time.Should().Be(default);
         timePoint.Name.Should().BeEmpty();
-        timePoint.FromState.Should().Be(default);
-        timePoint.ToState.Should().Be(default);
-        timePoint.StyleOverrides.Should().BeNull();
+        timePoint.Type.Should().Be(TimePointType.StateChange);
+        timePoint.StateChange.Should().BeNull();
+        timePoint.StyleChange.Should().BeNull();
+        timePoint.TryGetFromState(out _).Should().BeFalse();
+        timePoint.TryGetToState(out _).Should().BeFalse();
+        timePoint.GetStyleOverrides().Should().BeNull();
     }
 
     [Fact]
-    public void Constructor_带参数_应该正确设置属性()
+    public void Constructor_带StateChangeData_应该正确读取状态()
     {
         // Arrange
         var time = DateTime.Today.AddHours(9);
         var name = "工作开始";
         var fromState = ProgressStateType.Loading;
         var toState = ProgressStateType.Progress;
+        var stateChange = new StateChangeData
+        {
+            FromState = fromState,
+            ToState = toState
+        };
 
         // Act
-        var timePoint = new TimePoint(time, name, fromState, toState);
+        var timePoint = new TimePoint(time, name, TimePointType.StateChange, stateChange);
 
         // Assert
         timePoint.Time.Should().Be(time);
         timePoint.Name.Should().Be(name);
-        timePoint.FromState.Should().Be(fromState);
-        timePoint.ToState.Should().Be(toState);
+        timePoint.Type.Should().Be(TimePointType.StateChange);
+        timePoint.StateChange.Should().NotBeNull();
+        timePoint.StyleChange.Should().BeNull();
+        timePoint.TryGetFromState(out var actualFrom).Should().BeTrue();
+        actualFrom.Should().Be(fromState);
+        timePoint.TryGetToState(out var actualTo).Should().BeTrue();
+        actualTo.Should().Be(toState);
+    }
+
+    [Fact]
+    public void Constructor_带StyleChangeData_应该正确读取样式()
+    {
+        // Arrange
+        var time = DateTime.Today.AddHours(12);
+        var name = "样式调整";
+        var styleChange = new StyleChangeData
+        {
+            ForegroundColor = "#00FF00",
+            BackgroundColor = "#FF0000",
+            Opacity = 0.8
+        };
+
+        // Act
+        var timePoint = new TimePoint(time, name, TimePointType.StyleChange, null, styleChange);
+
+        // Assert
+        timePoint.Time.Should().Be(time);
+        timePoint.Name.Should().Be(name);
+        timePoint.Type.Should().Be(TimePointType.StyleChange);
+        timePoint.StateChange.Should().BeNull();
+        timePoint.StyleChange.Should().NotBeNull();
+        var styleOverrides = timePoint.GetStyleOverrides();
+        styleOverrides.Should().NotBeNull();
+        styleOverrides!.HasAnyOverride.Should().BeTrue();
+        styleOverrides.Opacity.Should().Be(0.8);
     }
 
     [Fact]
@@ -52,8 +93,12 @@ public class TimePointTests
         cloned.Should().NotBeSameAs(original);
         cloned.Time.Should().Be(original.Time);
         cloned.Name.Should().Be(original.Name);
-        cloned.FromState.Should().Be(original.FromState);
-        cloned.ToState.Should().Be(original.ToState);
+        cloned.TryGetFromState(out var originalFrom).Should().BeTrue();
+        cloned.TryGetFromState(out var clonedFrom).Should().BeTrue();
+        clonedFrom.Should().Be(originalFrom);
+        cloned.TryGetToState(out var originalTo).Should().BeTrue();
+        cloned.TryGetToState(out var clonedTo).Should().BeTrue();
+        clonedTo.Should().Be(originalTo);
     }
 
     [Fact]

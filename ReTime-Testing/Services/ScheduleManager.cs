@@ -152,32 +152,70 @@ public class ScheduleManager : IScheduleManager
 
             foreach (var timePoint in pendingTimePoints)
             {
-                Logger.Info("ScheduleManager", $"执行时间点: {timePoint.Id} ({timePoint.Time:HH:mm:ss}) - {timePoint.FromState} → {timePoint.ToState}");
-
-                // 执行状态切换
-                ExecuteTransition(timePoint);
+                // 根据时间点类型执行不同的操作
+                if (timePoint.Type == TimePointType.StyleChange)
+                {
+                    // StyleChange: 只更新样式，不改变状态
+                    Logger.Info("ScheduleManager", $"执行样式变更: {timePoint.Id} ({timePoint.Time:HH:mm:ss}) - {timePoint.Name}");
+                    ExecuteStyleChange(timePoint);
+                }
+                else
+                {
+                    // StateChange: 执行状态切换
+                    timePoint.TryGetFromState(out var logFromState);
+                    timePoint.TryGetToState(out var logToState);
+                    Logger.Info("ScheduleManager", $"执行时间点: {timePoint.Id} ({timePoint.Time:HH:mm:ss}) - {logFromState} → {logToState}");
+                    ExecuteTransition(timePoint, logFromState, logToState);
+                }
                 _currentPlan.LastExecutedTimePoint = timePoint;
             }
         }
     }
 
     /// <summary>
+    /// 执行样式变更（不改变状态）
+    /// </summary>
+    /// <param name="timePoint">时间点</param>
+    private void ExecuteStyleChange(TimePoint timePoint)
+    {
+        Logger.Info("ScheduleManager", $"样式变更: {timePoint.Name}");
+
+        // 1. 先更新当前时间段
+        UpdateCurrentSegment(timePoint.Time);
+
+        // 2. 获取要应用的样式
+        StyleOverrides? styleToApply = timePoint.GetStyleOverrides();
+
+        // 3. 只更新样式，不改变状态
+        _stateManager.BatchUpdate(manager =>
+        {
+            if (styleToApply != null && styleToApply.HasAnyOverride)
+            {
+                // 使用当前状态，只应用样式覆盖
+                var currentState = _stateManager.CurrentConfig.StateType;
+                manager.SetState(currentState, styleToApply);
+                Logger.Info("ScheduleManager", $"应用样式覆盖 (状态保持: {currentState})");
+            }
+        });
+    }
+
+    /// <summary>
     /// 执行状态切换
     /// </summary>
     /// <param name="timePoint">时间点</param>
-    private void ExecuteTransition(TimePoint timePoint)
+    private void ExecuteTransition(TimePoint timePoint, ProgressStateType fromState, ProgressStateType toState)
     {
-        Logger.Info("ScheduleManager", $"状态切换: {timePoint.FromState} → {timePoint.ToState} ({timePoint.Name})");
+        Logger.Info("ScheduleManager", $"状态切换: {fromState} → {toState} ({timePoint.Name})");
 
         // 1. 先更新当前时间段（使用时间点的时间，而不是当前轮询时间）
         // 这样 CurrentSegment 会在状态设置前正确更新
         UpdateCurrentSegment(timePoint.Time);
 
         // 2. 确定要应用的样式
-        StyleOverrides? styleToApply = timePoint.StyleOverrides;
+        StyleOverrides? styleToApply = timePoint.GetStyleOverrides();
 
         // 如果切换到 Progress 状态且时间点没有自定义样式，使用时间段的样式
-        if (timePoint.ToState == ProgressStateType.Progress && 
+        if (toState == ProgressStateType.Progress && 
             (styleToApply == null || !styleToApply.HasAnyOverride) &&
             _currentPlan?.CurrentSegment?.StyleOverrides != null)
         {
@@ -189,20 +227,20 @@ public class ScheduleManager : IScheduleManager
         _stateManager.BatchUpdate(manager =>
         {
             // 设置状态
-            manager.SetState(timePoint.ToState, styleToApply);
+            manager.SetState(toState, styleToApply);
 
             // 设置进度
-            if (timePoint.ToState == ProgressStateType.Progress)
+            if (toState == ProgressStateType.Progress)
             {
                 // 蓝图设计：恢复时进度跳变到当前时间对应的进度
                 var progress = CalculateProgressForTime(_currentTime);
                 manager.UpdateProgress(progress);
             }
-            else if (timePoint.ToState == ProgressStateType.Success)
+            else if (toState == ProgressStateType.Success)
             {
                 manager.UpdateProgress(100);
             }
-            else if (timePoint.ToState == ProgressStateType.Loading)
+            else if (toState == ProgressStateType.Loading)
             {
                 // Loading 状态不需要进度值（不确定动画）
                 manager.UpdateProgress(0);
@@ -311,7 +349,9 @@ public class ScheduleManager : IScheduleManager
                     // 按顺序执行
                     foreach (var point in missedPoints)
                     {
-                        ExecuteTransition(point);
+                        point.TryGetFromState(out var fromState);
+                        point.TryGetToState(out var toState);
+                        ExecuteTransition(point, fromState, toState);
                         _currentPlan.LastExecutedTimePoint = point;
                     }
                 }

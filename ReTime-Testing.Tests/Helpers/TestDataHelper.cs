@@ -22,8 +22,12 @@ public static class TestDataHelper
         {
             Time = DateTime.Today.AddHours(hour).AddMinutes(minute),
             Name = name,
-            FromState = fromState,
-            ToState = toState
+            Type = TimePointType.StateChange,
+            StateChange = new StateChangeData
+            {
+                FromState = fromState,
+                ToState = toState
+            }
         };
     }
 

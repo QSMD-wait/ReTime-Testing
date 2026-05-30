@@ -167,10 +167,33 @@ public class TimeScheduleValidator
                 timePointIds.Add(tp.Id);
             }
 
-            // 验证 toState 不为 Progress
-            if (tp.ToState == ProgressStateType.Progress)
+            // 根据类型验证对应的属性
+            if (tp.Type == TimePointType.StateChange)
             {
-                result.Errors.Add($"时间点 {tp.Id} 不能设置 Progress 状态，时间段固定为 Progress");
+                if (tp.StateChange == null)
+                {
+                    result.Errors.Add($"时间点 {tp.Id} StateChange 为 null");
+                }
+                else if (tp.StateChange.ToState == ProgressStateType.Progress)
+                {
+                    result.Errors.Add($"时间点 {tp.Id} 不能设置 Progress 状态，时间段固定为 Progress");
+                }
+            }
+            else if (tp.Type == TimePointType.StyleChange)
+            {
+                if (tp.StyleChange == null)
+                {
+                    result.Errors.Add($"时间点 {tp.Id} StyleChange 为 null");
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(tp.StyleChange.ForegroundColor) && 
+                        string.IsNullOrEmpty(tp.StyleChange.BackgroundColor) &&
+                        tp.StyleChange.Opacity == null)
+                    {
+                        result.Errors.Add($"时间点 {tp.Id} StyleChange 必须至少包含一个属性");
+                    }
+                }
             }
 
             // 验证时间格式
@@ -180,12 +203,15 @@ public class TimeScheduleValidator
                 continue;
             }
 
-            // 验证时间点不在时间段内部
-            foreach (var schedule in scheduleTimes)
+            // 验证时间点不在时间段内部（仅 StateChange 类型）
+            if (tp.Type == TimePointType.StateChange)
             {
-                if (tpTime > schedule.StartTime && tpTime < schedule.EndTime)
+                foreach (var schedule in scheduleTimes)
                 {
-                    result.Errors.Add($"时间点 {tp.Id} ({tp.Time}) 位于时间段 {schedule.Id} 内部，不允许");
+                    if (tpTime > schedule.StartTime && tpTime < schedule.EndTime)
+                    {
+                        result.Errors.Add($"时间点 {tp.Id} ({tp.Time}) 位于时间段 {schedule.Id} 内部，不允许");
+                    }
                 }
             }
 

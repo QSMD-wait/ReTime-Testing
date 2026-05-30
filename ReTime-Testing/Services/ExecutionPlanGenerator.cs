@@ -246,50 +246,33 @@ public class ExecutionPlanGenerator
             if (customTimePoints.TryGetValue(segment.StartTime, out var customStart))
             {
                 // 自定义时间点覆盖
-                timePoints.Add(new TimePoint
-                {
-                    Id = customStart.Id,
-                    Name = string.IsNullOrEmpty(customStart.Name) ? segment.Name + " 开始" : customStart.Name,
-                    Time = segment.StartTime,
-                    ToState = customStart.ToState,
-                    StyleOverrides = ParseStyle(customStart.Style)
-                });
+                timePoints.Add(new TimePoint(segment.StartTime,
+                    string.IsNullOrEmpty(customStart.Name) ? segment.Name + " 开始" : customStart.Name,
+                    customStart.Type,
+                    customStart.StateChange == null ? null : new StateChangeData { FromState = customStart.StateChange.FromState, ToState = customStart.StateChange.ToState },
+                    customStart.StyleChange == null ? null : new StyleChangeData { ForegroundColor = customStart.StyleChange.ForegroundColor, BackgroundColor = customStart.StyleChange.BackgroundColor, Opacity = customStart.StyleChange.Opacity }));
             }
             else
             {
-                // 自动生成
-                timePoints.Add(new TimePoint
-                {
-                    Id = $"auto_start_{segment.Id}",
-                    Name = $"{segment.Name} 开始",
-                    Time = segment.StartTime,
-                    ToState = ProgressStateType.Progress
-                });
+                // 自动生成（状态变更到 Progress）
+                timePoints.Add(new TimePoint(segment.StartTime, $"{segment.Name} 开始", TimePointType.StateChange,
+                    new StateChangeData { ToState = ProgressStateType.Progress }));
             }
 
-            // 时间段结束时间点：Progress → Loading
             if (customTimePoints.TryGetValue(segment.EndTime, out var customEnd))
             {
                 // 自定义时间点覆盖
-                timePoints.Add(new TimePoint
-                {
-                    Id = customEnd.Id,
-                    Name = string.IsNullOrEmpty(customEnd.Name) ? segment.Name + " 结束" : customEnd.Name,
-                    Time = segment.EndTime,
-                    ToState = customEnd.ToState,
-                    StyleOverrides = ParseStyle(customEnd.Style)
-                });
+                timePoints.Add(new TimePoint(segment.EndTime,
+                    string.IsNullOrEmpty(customEnd.Name) ? segment.Name + " 结束" : customEnd.Name,
+                    customEnd.Type,
+                    customEnd.StateChange == null ? null : new StateChangeData { FromState = customEnd.StateChange.FromState, ToState = customEnd.StateChange.ToState },
+                    customEnd.StyleChange == null ? null : new StyleChangeData { ForegroundColor = customEnd.StyleChange.ForegroundColor, BackgroundColor = customEnd.StyleChange.BackgroundColor, Opacity = customEnd.StyleChange.Opacity }));
             }
             else
             {
-                // 自动生成
-                timePoints.Add(new TimePoint
-                {
-                    Id = $"auto_end_{segment.Id}",
-                    Name = $"{segment.Name} 结束",
-                    Time = segment.EndTime,
-                    ToState = ProgressStateType.Loading
-                });
+                // 自动生成（状态变更到 Loading）
+                timePoints.Add(new TimePoint(segment.EndTime, $"{segment.Name} 结束", TimePointType.StateChange,
+                    new StateChangeData { ToState = ProgressStateType.Loading }));
             }
         }
 
@@ -306,14 +289,12 @@ public class ExecutionPlanGenerator
                 // 如果不在时间段开始/结束时间，则添加（中间插入的时间点）
                 if (!segmentTimes.Contains(customTime))
                 {
-                    timePoints.Add(new TimePoint
-                    {
-                        Id = custom.Id,
-                        Name = string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
-                        Time = customTime,
-                        ToState = custom.ToState,
-                        StyleOverrides = ParseStyle(custom.Style)
-                    });
+                    timePoints.Add(new TimePoint(customTime,
+                        string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
+                        custom.Type,
+                        custom.StateChange == null ? null : new StateChangeData { FromState = custom.StateChange.FromState, ToState = custom.StateChange.ToState },
+                        custom.StyleChange == null ? null : new StyleChangeData { ForegroundColor = custom.StyleChange.ForegroundColor, BackgroundColor = custom.StyleChange.BackgroundColor, Opacity = custom.StyleChange.Opacity }));
+
                 }
             }
             catch (Exception ex)
@@ -325,17 +306,15 @@ public class ExecutionPlanGenerator
         // 5. 按时间排序
         timePoints = timePoints.OrderBy(tp => tp.Time).ToList();
 
-        // 6. 自动计算 fromState
+        // 6. 自动计算 fromState（写入 StateChange.FromState）
         for (int i = 0; i < timePoints.Count; i++)
         {
-            if (i == 0)
+            var fromState = (i == 0) ? ProgressStateType.Loading : (timePoints[i - 1].TryGetToState(out var prevTo) ? prevTo : default);
+            if (timePoints[i].StateChange == null)
             {
-                timePoints[i].FromState = ProgressStateType.Loading;
+                timePoints[i].StateChange = new StateChangeData();
             }
-            else
-            {
-                timePoints[i].FromState = timePoints[i - 1].ToState;
-            }
+            timePoints[i].StateChange.FromState = fromState;
         }
 
         return timePoints;

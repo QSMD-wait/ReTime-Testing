@@ -34,18 +34,19 @@ namespace ReTime_Testing.Models
         public string Time { get; set; } = "00:00:00";
 
         /// <summary>
-        /// 目标状态（必填）
-        /// 时间点触发后切换到的状态
-        /// fromState 由系统自动计算
-        /// </summary>
-        [JsonPropertyName("toState")]
-        public ProgressStateType ToState { get; set; }
+    /// 时间点类型（必填）："StateChange" 或 "StyleChange"
+    /// </summary>
+    [JsonPropertyName("type")]
+    public TimePointType Type { get; set; } = TimePointType.StateChange;
 
-        /// <summary>
-        /// 样式覆盖配置（可选）
-        /// 用于覆盖默认的状态样式
-        /// </summary>
-        [JsonPropertyName("style")]
-        public StyleOverridesData? Style { get; set; }
-    }
+    /// <summary>
+    /// 状态变更数据（当 Type = StateChange 时生效）
+    /// </summary>
+    public StateChangeData? StateChange { get; set; }
+
+    /// <summary>
+    /// 样式变更数据（当 Type = StyleChange 时生效）
+    /// </summary>
+    public StyleChangeData? StyleChange { get; set; }
+}
 }

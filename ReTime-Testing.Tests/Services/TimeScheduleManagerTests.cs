@@ -102,7 +102,10 @@ public class TimeScheduleManagerTests : IDisposable
         {
             Id = "tp_1",
             Time = "10:00:00",
-            ToState = ProgressStateType.Success
+            StateChange = new StateChangeData
+            {
+                ToState = ProgressStateType.Success
+            }
         });
         _manager.SaveSchedule(original);
 
@@ -333,7 +336,10 @@ public class TimeScheduleManagerTests : IDisposable
             Id = "tp_1",
             Name = "结束提示",
             Time = "18:00:00",
-            ToState = ProgressStateType.Success
+            StateChange = new StateChangeData
+            {
+                ToState = ProgressStateType.Success
+            }
         };
 
         // Act
@@ -368,7 +374,10 @@ public class TimeScheduleManagerTests : IDisposable
             Id = "tp_1",
             Name = "旧名称",
             Time = "18:00:00",
-            ToState = ProgressStateType.Success
+            StateChange = new StateChangeData
+            {
+                ToState = ProgressStateType.Success
+            }
         });
 
         // Act
@@ -377,7 +386,10 @@ public class TimeScheduleManagerTests : IDisposable
             Id = "tp_1",
             Name = "新名称",
             Time = "17:00:00",
-            ToState = ProgressStateType.Loading
+            StateChange = new StateChangeData
+            {
+                ToState = ProgressStateType.Loading
+            }
         });
 
         // Assert
@@ -386,7 +398,8 @@ public class TimeScheduleManagerTests : IDisposable
         var updated = schedule!.TimePoints.First(t => t.Id == "tp_1");
         updated.Name.Should().Be("新名称");
         updated.Time.Should().Be("17:00:00");
-        updated.ToState.Should().Be(ProgressStateType.Loading);
+        updated.StateChange.Should().NotBeNull();
+        updated.StateChange!.ToState.Should().Be(ProgressStateType.Loading);
     }
 
     [Fact]
@@ -415,7 +428,10 @@ public class TimeScheduleManagerTests : IDisposable
             Id = "tp_to_remove",
             Name = "待删除",
             Time = "18:00:00",
-            ToState = ProgressStateType.Success
+            StateChange = new StateChangeData
+            {
+                ToState = ProgressStateType.Success
+            }
         });
 
         // Act
