@@ -29,8 +29,7 @@
                                FontSize="14"
                                Margin="0,6,0,0"
                                HorizontalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                               Opacity="0.6"/>
+                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                 </StackPanel>
             </Border>
 
@@ -64,53 +63,58 @@
                                     IsExpandable="True"
                                     Margin="0">
                 <controls:SettingsCard.ExpandContent>
-                    <StackPanel Margin="0,8,0,0">
-                        <!-- 状态行 -->
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="运行状态"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding CalibrationStatus}"
-                                       Grid.Column="1"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                        <!-- 上次校准 -->
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="上次校准"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding LastCalibrationTime}"
-                                       Grid.Column="1"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
-                        <!-- 校准详情 -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="详细信息"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding CalibrationInfo}"
-                                       Grid.Column="1"
-                                       TextWrapping="Wrap"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                    <StackPanel>
+                        <!-- 状态信息子卡片 -->
+                        <Border Style="{DynamicResource SubCardStyle}">
+                            <StackPanel>
+                                <!-- 运行状态 -->
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="运行状态"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CalibrationStatus}"
+                                               Grid.Column="1"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                                <!-- 上次校准 -->
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="上次校准"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LastCalibrationTime}"
+                                               Grid.Column="1"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                                <!-- 详细信息 -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="详细信息"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CalibrationInfo}"
+                                               Grid.Column="1"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </controls:SettingsCard.ExpandContent>
             </controls:SettingsCard>
@@ -135,29 +139,38 @@
                                     IsExpandable="True"
                                     Margin="0">
                 <controls:SettingsCard.ExpandContent>
-                    <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="NTP协议"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="NTP（网络时间协议）通过UDP 123端口与时间服务器通信，精度可达毫秒级。系统会自动补偿网络延迟（RTT/2），并将UTC时间转换为北京时间（UTC+8）。"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                   Margin="0,0,0,12"/>
-                        <TextBlock Text="校准策略"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="微调校准：偏差 ≤ 30 秒时，仅调整时钟偏移量，不触发调度状态重算，进度条平滑过渡。"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                   Margin="0,0,0,4"/>
-                        <TextBlock Text="跳跃校准：偏差 > 30 秒时，重置时钟基准并触发调度状态重新计算，确保进度条状态正确。"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                    <StackPanel>
+                        <!-- NTP协议子卡片 -->
+                        <Border Style="{DynamicResource SubCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="NTP协议"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="NTP（网络时间协议）通过UDP 123端口与时间服务器通信，精度可达毫秒级。系统会自动补偿网络延迟（RTT/2），并将UTC时间转换为北京时间（UTC+8）。"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                            </StackPanel>
+                        </Border>
+                        <!-- 校准策略子卡片 -->
+                        <Border Style="{DynamicResource SubCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="校准策略"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="微调校准：偏差 ≤ 30 秒时，仅调整时钟偏移量，不触发调度状态重算，进度条平滑过渡。"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                           Margin="0,0,0,4"/>
+                                <TextBlock Text="跳跃校准：偏差 > 30 秒时，重置时钟基准并触发调度状态重新计算，确保进度条状态正确。"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </controls:SettingsCard.ExpandContent>
             </controls:SettingsCard>

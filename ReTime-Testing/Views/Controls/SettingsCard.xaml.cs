@@ -1,12 +1,30 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 
 namespace ReTime_Testing.Views.Controls
 {
     public partial class SettingsCard : UserControl
     {
+        #region 路由事件
+
+        /// <summary>
+        /// 展开/折叠状态变化事件
+        /// </summary>
+        public static readonly RoutedEvent IsExpandedChangedEvent =
+            EventManager.RegisterRoutedEvent(nameof(IsExpandedChanged), RoutingStrategy.Bubble,
+                typeof(RoutedPropertyChangedEventHandler<bool>), typeof(SettingsCard));
+
+        public event RoutedPropertyChangedEventHandler<bool> IsExpandedChanged
+        {
+            add => AddHandler(IsExpandedChangedEvent, value);
+            remove => RemoveHandler(IsExpandedChangedEvent, value);
+        }
+
+        #endregion
+
         public SettingsCard()
         {
             InitializeComponent();
@@ -118,14 +136,18 @@ namespace ReTime_Testing.Views.Controls
         private static void OnIsExpandedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var card = (SettingsCard)d;
-            card.UpdateExpandState((bool)e.NewValue);
+            var oldValue = (bool)e.OldValue;
+            var newValue = (bool)e.NewValue;
+
+            card.UpdateExpandState(newValue);
+            card.RaiseEvent(new RoutedPropertyChangedEventArgs<bool>(oldValue, newValue, IsExpandedChangedEvent));
         }
 
         #endregion
 
         #region 交互
 
-        private void OnHeaderClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void OnHeaderClick(object sender, MouseButtonEventArgs e)
         {
             if (IsExpandable)
             {
@@ -135,8 +157,9 @@ namespace ReTime_Testing.Views.Controls
 
         private void UpdateExpandState(bool expanded)
         {
-            ExpandContentBorder.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-            ChevronRotate.Angle = expanded ? 180 : 0;
+            var storyboardKey = expanded ? "ExpandStoryboard" : "CollapseStoryboard";
+            var storyboard = (Storyboard)Resources[storyboardKey];
+            storyboard.Begin();
         }
 
         #endregion

@@ -12,6 +12,63 @@
     <UserControl.Resources>
         <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- 展开动画 -->
+        <Storyboard x:Key="ExpandStoryboard">
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExpandSeparator"
+                                           Storyboard.TargetProperty="Visibility">
+                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+            </ObjectAnimationUsingKeyFrames>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExpandContentBorder"
+                                           Storyboard.TargetProperty="Visibility">
+                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+            </ObjectAnimationUsingKeyFrames>
+            <DoubleAnimation Storyboard.TargetName="ExpandContentScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="0" To="1"
+                             Duration="0:0:0.25">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ChevronRotate"
+                             Storyboard.TargetProperty="Angle"
+                             To="180"
+                             Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <!-- 折叠动画 -->
+        <Storyboard x:Key="CollapseStoryboard">
+            <DoubleAnimation Storyboard.TargetName="ExpandContentScale"
+                             Storyboard.TargetProperty="ScaleY"
+                             From="1" To="0"
+                             Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExpandContentBorder"
+                                           Storyboard.TargetProperty="Visibility">
+                <DiscreteObjectKeyFrame KeyTime="0:0:0.2" Value="{x:Static Visibility.Collapsed}"/>
+            </ObjectAnimationUsingKeyFrames>
+            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ExpandSeparator"
+                                           Storyboard.TargetProperty="Visibility">
+                <DiscreteObjectKeyFrame KeyTime="0:0:0.2" Value="{x:Static Visibility.Collapsed}"/>
+            </ObjectAnimationUsingKeyFrames>
+            <DoubleAnimation Storyboard.TargetName="ChevronRotate"
+                             Storyboard.TargetProperty="Angle"
+                             To="0"
+                             Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
     </UserControl.Resources>
 
     <Border x:Name="CardBorder"
@@ -22,13 +79,28 @@
             BorderThickness="1"
             Padding="16"
             Margin="0,0,0,8">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <!-- 悬停效果 -->
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background"
+                                Value="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorSecondaryBrushKey}}"/>
+                    </Trigger>
+                    <!-- 禁用效果 -->
+                    <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
         <StackPanel>
             <!-- 主行 -->
             <Grid x:Name="HeaderRow"
                   VerticalAlignment="Center"
                   MouseLeftButtonUp="OnHeaderClick">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -38,8 +110,10 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             FontSize="20"
+                            Width="48"
                             Icon="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
-                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
+                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                            Visibility="{Binding Icon, RelativeSource={RelativeSource AncestorType=local:SettingsCard}, Converter={StaticResource NotNullToVisibilityConverter}}"/>
 
                 <!-- 标题 + 右侧控件 -->
                 <DockPanel Grid.Column="1" Margin="12,0,0,0">
@@ -74,8 +148,7 @@
                                   TextWrapping="Wrap"/>
                         <TextBlock x:Name="DescriptionTextBlock"
                                   FontSize="12"
-                                  Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
-                                  Opacity="0.75"
+                                  Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
                                   Margin="0,2,0,0"
                                   Text="{Binding Description, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"
                                   TextWrapping="Wrap"
@@ -84,11 +157,24 @@
                 </DockPanel>
             </Grid>
 
+            <!-- 全宽分隔线（左右到底） -->
+            <Border x:Name="ExpandSeparator"
+                    Height="1"
+                    Visibility="Collapsed"
+                    Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"
+                    Opacity="0.5"
+                    Margin="-16,8,-16,0"/>
+
             <!-- 展开内容区域 -->
             <Border x:Name="ExpandContentBorder"
                     Visibility="Collapsed"
-                    Margin="48,8,0,0">
-                <ContentPresenter Content="{Binding ExpandContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
+                    Margin="0,8,0,0">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="ExpandContentScale" ScaleY="0" CenterY="0"/>
+                </Border.RenderTransform>
+                <!-- 展开内容：左侧与图标对齐 -->
+                <ContentPresenter Margin="48,0,0,0"
+                                  Content="{Binding ExpandContent, RelativeSource={RelativeSource AncestorType=local:SettingsCard}}"/>
             </Border>
         </StackPanel>
     </Border>
