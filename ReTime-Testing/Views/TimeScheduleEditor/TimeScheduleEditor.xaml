@@ -256,7 +256,7 @@
                                         </StackPanel>
 
                                         <!-- 样式编辑区域 -->
-                                        <Expander Header="样式" Margin="0,16,0,0" IsExpanded="False">
+                                        <Expander Header="样式" Margin="0,16,0,0" IsExpanded="False" IsEnabled="False">
                                             <StackPanel>
                                                 <!-- 开关：启用自定义样式 -->
                                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
