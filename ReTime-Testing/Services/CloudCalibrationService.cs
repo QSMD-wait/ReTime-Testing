@@ -1,28 +1,30 @@
-using System.Net.Http;
+using System.Diagnostics;
 using System.Threading;
+using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services;
 
 /// <summary>
 /// 云端校准服务
-/// 定期从云端获取时间进行校准
+/// 定期从NTP服务器获取时间进行校准，支持RTT补偿和微调/跳跃区分
 /// </summary>
-public class CloudCalibrationService : ICloudCalibrationService
+public class CloudCalibrationService : ICloudCalibrationService, IDisposable
 {
     private readonly ITimeService _timeService;
-    private readonly HttpClient _httpClient;
     private readonly Timer? _calibrationTimer;
     private int _failureCount;
     private int _currentInterval;
     private DateTime _lastCalibrationTime;
     private ITimeProvider? _currentTimeProvider;
-    private string _timeSourceType = "http";
     private List<string> _ntpServers = new();
-    private List<string> _httpServers = new();
     private int _selectedNtpServerIndex = 0;
-    private int _selectedHttpServerIndex = 0;
     private int _maxRetryCount;
     private double _backoffMultiplier;
+
+    /// <summary>
+    /// 微调阈值（秒）：偏差小于此值时使用微调校准，不触发 TimeJumped 事件
+    /// </summary>
+    private const int MinorCalibrationThresholdSeconds = 30;
 
     private const int DefaultCalibrationTimeout = 3;
     private const int DefaultMaxRetryCount = 3;
@@ -46,12 +48,12 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// <summary>
     /// 最大重试次数
     /// </summary>
-    public int MaxRetryCount { get { return _maxRetryCount; } }
+    public int MaxRetryCount => _maxRetryCount;
 
     /// <summary>
     /// 退避乘数
     /// </summary>
-    public double BackoffMultiplier { get { return _backoffMultiplier; } }
+    public double BackoffMultiplier => _backoffMultiplier;
 
     /// <summary>
     /// 触发校准的偏差阈值（秒）
@@ -79,14 +81,14 @@ public class CloudCalibrationService : ICloudCalibrationService
     public DateTime LastCalibrationTime => _lastCalibrationTime;
 
     /// <summary>
-    /// 当前时间源类型
-    /// </summary>
-    public string TimeSourceType => _timeSourceType;
-
-    /// <summary>
     /// 当前使用的时间提供者
     /// </summary>
     public string CurrentProviderName => _currentTimeProvider?.Name ?? "未初始化";
+
+    /// <summary>
+    /// 上次校准的RTT（毫秒）
+    /// </summary>
+    public double LastRttMs { get; private set; }
 
     /// <summary>
     /// 构造函数
@@ -95,7 +97,6 @@ public class CloudCalibrationService : ICloudCalibrationService
     public CloudCalibrationService(ITimeService timeService)
     {
         _timeService = timeService;
-        _httpClient = new HttpClient();
         _failureCount = 0;
         _currentInterval = 300;
         _maxRetryCount = DefaultMaxRetryCount;
@@ -109,47 +110,29 @@ public class CloudCalibrationService : ICloudCalibrationService
         _calibrationTimer = new Timer(
             _ => OnTimerTick(),
             null,
-            TimeSpan.Zero,
-            TimeSpan.FromSeconds(_currentInterval)
+            Timeout.Infinite,  // 不立即启动，等待 Start() 调用
+            Timeout.Infinite
         );
-
-        InitializeTimeProvider();
     }
 
     /// <summary>
-    /// 初始化时间提供者
+    /// 初始化NTP时间提供者
     /// </summary>
     private void InitializeTimeProvider()
     {
-        if (_timeSourceType.Equals("ntp", StringComparison.OrdinalIgnoreCase))
+        var selectedServers = new List<string>();
+        if (_selectedNtpServerIndex >= 0 && _selectedNtpServerIndex < _ntpServers.Count)
         {
-            var selectedServers = new List<string>();
-            if (_selectedNtpServerIndex >= 0 && _selectedNtpServerIndex < _ntpServers.Count)
-            {
-                selectedServers.Add(_ntpServers[_selectedNtpServerIndex]);
-            }
-            else
-            {
-                selectedServers.AddRange(_ntpServers);
-            }
-            _currentTimeProvider = new NtpTimeProvider(selectedServers.ToArray());
+            selectedServers.Add(_ntpServers[_selectedNtpServerIndex]);
         }
         else
         {
-            var selectedServers = new List<string>();
-            if (_selectedHttpServerIndex >= 0 && _selectedHttpServerIndex < _httpServers.Count)
-            {
-                selectedServers.Add(_httpServers[_selectedHttpServerIndex]);
-            }
-            else
-            {
-                selectedServers.AddRange(_httpServers);
-            }
-            _currentTimeProvider = new HttpTimeProvider(_httpClient, selectedServers.ToArray());
+            selectedServers.AddRange(_ntpServers);
         }
+        _currentTimeProvider = new NtpTimeProvider(selectedServers.ToArray());
 
         Logger.Info("CloudCalibrationService",
-            $"时间提供者已初始化: 类型={_timeSourceType}, 提供者={_currentTimeProvider.Name}");
+            $"NTP时间提供者已初始化: 提供者={_currentTimeProvider.Name}, 服务器={string.Join(", ", selectedServers)}");
     }
 
     /// <summary>
@@ -217,7 +200,7 @@ public class CloudCalibrationService : ICloudCalibrationService
     }
 
     /// <summary>
-    /// 配置校准参数
+    /// 配置校准参数（简化版）
     /// </summary>
     /// <param name="enabled">是否启用</param>
     /// <param name="interval">校准间隔（秒）</param>
@@ -241,61 +224,19 @@ public class CloudCalibrationService : ICloudCalibrationService
     }
 
     /// <summary>
-    /// 配置时间源
+    /// 配置NTP服务器
     /// </summary>
-    /// <param name="timeSourceType">时间源类型：http 或 ntp</param>
     /// <param name="ntpServers">NTP服务器列表</param>
-    /// <param name="httpServers">HTTP服务器列表</param>
     /// <param name="selectedNtpServerIndex">选中的NTP服务器索引</param>
-    /// <param name="selectedHttpServerIndex">选中的HTTP服务器索引</param>
-    public void ConfigureTimeSource(
-        string timeSourceType,
-        List<string>? ntpServers = null,
-        List<string>? httpServers = null,
-        int selectedNtpServerIndex = 0,
-        int selectedHttpServerIndex = 0)
+    public void ConfigureNtpServers(List<string>? ntpServers = null, int selectedNtpServerIndex = 0)
     {
-        _timeSourceType = timeSourceType;
         _ntpServers = ntpServers ?? new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
-        _httpServers = httpServers ?? new List<string>
-        {
-            "https://worldtimeapi.org/api/timezone/Etc/UTC",
-            "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
-            "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
-        };
         _selectedNtpServerIndex = selectedNtpServerIndex;
-        _selectedHttpServerIndex = selectedHttpServerIndex;
 
         InitializeTimeProvider();
 
         Logger.Info("CloudCalibrationService",
-            $"时间源已配置: 类型={timeSourceType}, NTP服务器={string.Join(", ", _ntpServers)}, HTTP服务器={string.Join(", ", _httpServers)}");
-    }
-
-    /// <summary>
-    /// 切换时间源
-    /// </summary>
-    /// <param name="timeSourceType">时间源类型：http 或 ntp</param>
-    public void SwitchTimeSource(string timeSourceType)
-    {
-        if (_timeSourceType.Equals(timeSourceType, StringComparison.OrdinalIgnoreCase))
-        {
-            Logger.Info("CloudCalibrationService", $"时间源已经是 {timeSourceType}，无需切换");
-            return;
-        }
-
-        _timeSourceType = timeSourceType;
-        _failureCount = 0;
-        _currentInterval = CalibrationInterval;
-
-        InitializeTimeProvider();
-
-        Logger.Info("CloudCalibrationService", $"已切换时间源为: {timeSourceType}");
-
-        if (IsRunning && IsEnabled)
-        {
-            _calibrationTimer?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
-        }
+            $"NTP服务器已配置: 服务器={string.Join(", ", _ntpServers)}, 选中索引={selectedNtpServerIndex}");
     }
 
     /// <summary>
@@ -303,7 +244,7 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// </summary>
     public async Task<bool> CalibrateAsync()
     {
-        return await PerformCalibration();
+        return await PerformCalibration(TimeJumpReason.ManualCalibration);
     }
 
     /// <summary>
@@ -311,14 +252,15 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// </summary>
     private async void OnTimerTick()
     {
-        await PerformCalibration();
+        await PerformCalibration(TimeJumpReason.CloudCalibration);
     }
 
     /// <summary>
     /// 执行校准
     /// </summary>
+    /// <param name="reason">校准原因</param>
     /// <returns>是否校准成功</returns>
-    private async Task<bool> PerformCalibration()
+    private async Task<bool> PerformCalibration(TimeJumpReason reason)
     {
         if (!IsEnabled || !IsRunning)
         {
@@ -327,21 +269,42 @@ public class CloudCalibrationService : ICloudCalibrationService
 
         try
         {
-            var cloudTime = await GetCloudTimeAsync();
+            var result = await GetCloudTimeAsync();
 
-            if (cloudTime.HasValue)
+            if (result != null)
             {
+                // 使用RTT补偿后的校准时间
+                var calibratedTime = result.CalibratedTime;
+                // 转换为北京时间
+                var beijingTime = calibratedTime.AddHours(8);
+
                 var localTime = _timeService.GetCurrentTime();
-                var offset = (cloudTime.Value - localTime).Duration();
+                var offset = (beijingTime - localTime).Duration();
+
+                LastRttMs = result.RoundTripTime.TotalMilliseconds;
 
                 if (offset.TotalSeconds > CalibrationTriggerThreshold)
                 {
                     Logger.Info("CloudCalibrationService",
-                        $"校准时间: 本地={localTime:HH:mm:ss}, 云端={cloudTime.Value:HH:mm:ss}, 偏差={offset.TotalSeconds:F2}秒");
+                        $"校准时间: 本地={localTime:HH:mm:ss.fff}, 云端(已补偿RTT)={beijingTime:HH:mm:ss.fff}, 偏差={offset.TotalSeconds:F2}秒, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
 
-                    _timeService.Calibrate(cloudTime.Value);
+                    // 区分微调校准和跳跃校准
+                    if (offset.TotalSeconds <= MinorCalibrationThresholdSeconds)
+                    {
+                        // 微调校准：偏差较小，不触发 TimeJumped 事件
+                        _timeService.CalibrateMinor(beijingTime);
+                        Logger.Info("CloudCalibrationService",
+                            $"微调校准: 偏差={offset.TotalSeconds:F2}秒 (阈值<={MinorCalibrationThresholdSeconds}秒)");
+                    }
+                    else
+                    {
+                        // 跳跃校准：偏差较大，触发 TimeJumped 事件
+                        _timeService.Calibrate(beijingTime, reason, TimeJumpSeverity.Major);
+                        Logger.Info("CloudCalibrationService",
+                            $"跳跃校准: 偏差={offset.TotalSeconds:F2}秒 (阈值>{MinorCalibrationThresholdSeconds}秒)");
+                    }
+
                     _lastCalibrationTime = DateTime.Now;
-
                     _failureCount = 0;
                     _currentInterval = CalibrationInterval;
 
@@ -352,7 +315,7 @@ public class CloudCalibrationService : ICloudCalibrationService
                 else
                 {
                     Logger.Info("CloudCalibrationService",
-                        $"偏差在阈值内: {offset.TotalSeconds:F2}秒，无需校准");
+                        $"偏差在阈值内: {offset.TotalSeconds:F2}秒 (阈值<={CalibrationTriggerThreshold}秒)，无需校准, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
                 }
             }
 
@@ -387,10 +350,10 @@ public class CloudCalibrationService : ICloudCalibrationService
     }
 
     /// <summary>
-    /// 获取云端时间
+    /// 获取云端时间（含RTT信息）
     /// </summary>
-    /// <returns>云端时间（北京时间）</returns>
-    private async Task<DateTime?> GetCloudTimeAsync()
+    /// <returns>时间提供结果（含RTT），失败返回null</returns>
+    private async Task<TimeProviderResult?> GetCloudTimeAsync()
     {
         if (_currentTimeProvider == null)
         {
@@ -400,17 +363,15 @@ public class CloudCalibrationService : ICloudCalibrationService
 
         try
         {
-            var utcTime = await _currentTimeProvider.GetTimeAsync(TimeSpan.FromSeconds(CalibrationTimeout));
+            var result = await _currentTimeProvider.GetTimeAsync(TimeSpan.FromSeconds(CalibrationTimeout));
 
-            if (utcTime.HasValue)
+            if (result != null)
             {
-                var beijingTime = utcTime.Value.AddHours(8);
                 Logger.Info("CloudCalibrationService",
-                    $"获取云端时间成功: UTC={utcTime.Value:yyyy-MM-dd HH:mm:ss}, 北京时间={beijingTime:yyyy-MM-dd HH:mm:ss}");
-                return beijingTime;
+                    $"获取云端时间成功: UTC={result.UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
             }
 
-            return null;
+            return result;
         }
         catch (Exception ex)
         {
@@ -436,11 +397,11 @@ public class CloudCalibrationService : ICloudCalibrationService
     }
 
     /// <summary>
-    /// 析构函数，释放资源
+    /// 释放资源
     /// </summary>
-    ~CloudCalibrationService()
+    public void Dispose()
     {
         _calibrationTimer?.Dispose();
-        _httpClient?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

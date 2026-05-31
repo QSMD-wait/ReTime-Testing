@@ -56,10 +56,14 @@ public class AbsoluteTimeService : ITimeService
     }
 
     /// <summary>
-    /// 从云端校准时间
+    /// 从云端校准时间（硬跳，触发 TimeJumped 事件）
     /// </summary>
     /// <param name="cloudTime">云端时间</param>
-    public void Calibrate(DateTime cloudTime)
+    /// <param name="reason">跳跃原因</param>
+    /// <param name="severity">跳跃严重程度</param>
+    public void Calibrate(DateTime cloudTime,
+        TimeJumpReason reason = TimeJumpReason.CloudCalibration,
+        TimeJumpSeverity severity = TimeJumpSeverity.Major)
     {
         DateTime oldTime;
         DateTime newTime;
@@ -78,7 +82,27 @@ public class AbsoluteTimeService : ITimeService
         }
 
         // 锁外触发事件
-        OnTimeJumped(new TimeJumpedEventArgs(oldTime, newTime));
+        OnTimeJumped(new TimeJumpedEventArgs(oldTime, newTime, reason, severity));
+    }
+
+    /// <summary>
+    /// 微调校准（仅调整偏移量，不触发 TimeJumped 事件）
+    /// 适用于偏差较小的校准，避免不必要的状态重算
+    /// </summary>
+    /// <param name="cloudTime">云端时间</param>
+    public void CalibrateMinor(DateTime cloudTime)
+    {
+        lock (_lock)
+        {
+            // 仅调整基准时间，不重置 Stopwatch 起点以保持单调性
+            _baseTime = cloudTime;
+            _baseTick = Stopwatch.GetTimestamp();
+            _lastCalibrationTime = cloudTime;
+            _isCloudSynchronized = true;
+        }
+
+        // 微调不触发 TimeJumped 事件
+        Logger.Info("AbsoluteTimeService", $"微调校准: 新基准={cloudTime:HH:mm:ss.fff}");
     }
 
     /// <summary>
@@ -100,7 +124,7 @@ public class AbsoluteTimeService : ITimeService
             // 如果休眠时间超过阈值（5分钟），则重新校准
             if (sleepDuration > TimeSpan.FromMinutes(5))
             {
-                Calibrate(now);
+                Calibrate(now, TimeJumpReason.SystemResume, TimeJumpSeverity.Major);
             }
         }
     }

@@ -1,6 +1,43 @@
 namespace ReTime_Testing.Models;
 
 /// <summary>
+/// 时间跳跃原因
+/// </summary>
+public enum TimeJumpReason
+{
+    /// <summary>
+    /// 云端校准导致的跳跃
+    /// </summary>
+    CloudCalibration,
+
+    /// <summary>
+    /// 系统休眠唤醒后的时间跳跃
+    /// </summary>
+    SystemResume,
+
+    /// <summary>
+    /// 手动触发校准
+    /// </summary>
+    ManualCalibration
+}
+
+/// <summary>
+/// 时间跳跃严重程度
+/// </summary>
+public enum TimeJumpSeverity
+{
+    /// <summary>
+    /// 微调（偏差较小，不需要重新计算调度状态）
+    /// </summary>
+    Minor,
+
+    /// <summary>
+    /// 重大跳跃（偏差较大，需要重新计算调度状态）
+    /// </summary>
+    Major
+}
+
+/// <summary>
 /// 时间跳跃事件参数
 /// </summary>
 public class TimeJumpedEventArgs : EventArgs
@@ -22,13 +59,29 @@ public class TimeJumpedEventArgs : EventArgs
     public TimeSpan Offset => NewTime - OldTime;
 
     /// <summary>
+    /// 跳跃原因
+    /// </summary>
+    public TimeJumpReason Reason { get; }
+
+    /// <summary>
+    /// 跳跃严重程度
+    /// </summary>
+    public TimeJumpSeverity Severity { get; }
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="oldTime">旧时间</param>
     /// <param name="newTime">新时间</param>
-    public TimeJumpedEventArgs(DateTime oldTime, DateTime newTime)
+    /// <param name="reason">跳跃原因</param>
+    /// <param name="severity">跳跃严重程度</param>
+    public TimeJumpedEventArgs(DateTime oldTime, DateTime newTime,
+        TimeJumpReason reason = TimeJumpReason.CloudCalibration,
+        TimeJumpSeverity severity = TimeJumpSeverity.Major)
     {
         OldTime = oldTime;
         NewTime = newTime;
+        Reason = reason;
+        Severity = severity;
     }
 }

@@ -154,13 +154,7 @@ namespace ReTime_Testing.Models
         public bool Enabled { get; set; } = false;
 
         /// <summary>
-        /// 时间源类型：http 或 ntp
-        /// </summary>
-        [JsonPropertyName("timeSourceType")]
-        public string TimeSourceType { get; set; } = "ntp";
-
-        /// <summary>
-        /// 选中的服务器地址
+        /// 选中的NTP服务器地址
         /// </summary>
         [JsonPropertyName("selectedServerAddress")]
         public string SelectedServerAddress { get; set; } = "ntp.aliyun.com";
@@ -172,10 +166,28 @@ namespace ReTime_Testing.Models
         public int IntervalSeconds { get; set; } = 300;
 
         /// <summary>
+        /// 校准超时（秒）
+        /// </summary>
+        [JsonPropertyName("timeoutSeconds")]
+        public int TimeoutSeconds { get; set; } = 3;
+
+        /// <summary>
+        /// 最大重试次数
+        /// </summary>
+        [JsonPropertyName("maxRetryCount")]
+        public int MaxRetryCount { get; set; } = 3;
+
+        /// <summary>
+        /// 退避乘数
+        /// </summary>
+        [JsonPropertyName("backoffMultiplier")]
+        public double BackoffMultiplier { get; set; } = 2.0;
+
+        /// <summary>
         /// 触发校准的偏差阈值（秒）
         /// </summary>
         [JsonPropertyName("triggerSeconds")]
-        public int TriggerSeconds { get; set; } = 1;
+        public int TriggerSeconds { get; set; } = 5;
     }
 
     /// <summary>

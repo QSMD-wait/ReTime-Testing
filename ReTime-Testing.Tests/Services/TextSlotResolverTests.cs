@@ -195,7 +195,8 @@ public class TextSlotResolverTests
     {
         public DateTime CurrentTime { get; set; } = DateTime.Now;
         public DateTime GetCurrentTime() => CurrentTime;
-        public void Calibrate(DateTime cloudTime) { }
+        public void Calibrate(DateTime cloudTime, TimeJumpReason reason = TimeJumpReason.CloudCalibration, TimeJumpSeverity severity = TimeJumpSeverity.Major) { }
+        public void CalibrateMinor(DateTime cloudTime) { }
         public event EventHandler<TimeJumpedEventArgs>? TimeJumped;
         public bool IsCloudSynchronized => false;
     }

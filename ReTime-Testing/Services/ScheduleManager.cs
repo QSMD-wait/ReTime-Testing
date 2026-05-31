@@ -312,7 +312,14 @@ public class ScheduleManager : IScheduleManager
     /// <param name="e">时间跳跃事件参数</param>
     private void OnTimeJumped(object? sender, TimeJumpedEventArgs e)
     {
-        Logger.Info("ScheduleManager", $"时间跳跃: {e.OldTime:HH:mm:ss} → {e.NewTime:HH:mm:ss} (偏移: {e.Offset.TotalSeconds}秒)");
+        Logger.Info("ScheduleManager", $"时间跳跃: {e.OldTime:HH:mm:ss} → {e.NewTime:HH:mm:ss} (偏移: {e.Offset.TotalSeconds}秒, 原因: {e.Reason}, 严重程度: {e.Severity})");
+
+        // 微调校准（Minor）不触发调度状态重算，避免进度条闪烁
+        if (e.Severity == TimeJumpSeverity.Minor)
+        {
+            Logger.Info("ScheduleManager", "微调校准，跳过调度状态重算");
+            return;
+        }
 
         if (e.NewTime > e.OldTime)
         {

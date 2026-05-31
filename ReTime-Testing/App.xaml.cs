@@ -24,7 +24,7 @@ public partial class App : Application
         // 新增：时间服务字段（改为 internal 便于调试）
         internal ITimeService? _timeService;
         internal ScheduleManager? _scheduleManager;
-        internal CloudCalibrationService? _cloudCalibrationService;
+        internal ICloudCalibrationService? _cloudCalibrationService;
         internal IThemeService? _themeService;
         internal IAutoStartService? _autoStartService;
 
@@ -59,7 +59,7 @@ var ex = e.ExceptionObject as Exception;
         // 公共属性用于访问服务
         public ITimeService? TimeService => _timeService;
         public ScheduleManager? ScheduleManager => _scheduleManager;
-        public CloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
+        public ICloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
         public IThemeService? ThemeService => _themeService;
         public IAutoStartService? AutoStartService => _autoStartService;
 
@@ -172,45 +172,22 @@ protected override void OnStartup(StartupEventArgs e)
                 _cloudCalibrationService.Configure(
                     enabled: timeTopSetting.Calibration.Enabled,
                     interval: timeTopSetting.Calibration.IntervalSeconds,
+                    timeout: timeTopSetting.Calibration.TimeoutSeconds,
+                    maxRetryCount: timeTopSetting.Calibration.MaxRetryCount,
+                    backoffMultiplier: timeTopSetting.Calibration.BackoffMultiplier,
                     triggerThreshold: timeTopSetting.Calibration.TriggerSeconds
                 );
 
+                // 配置NTP服务器
+                var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
                 var selectedServer = timeTopSetting.Calibration.SelectedServerAddress;
-                var timeSourceType = timeTopSetting.Calibration.TimeSourceType.ToLower();
+                var selectedIndex = ntpServers.IndexOf(selectedServer);
+                if (selectedIndex < 0) selectedIndex = 0;
 
-                if (timeSourceType == "ntp")
-                {
-                    var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
-                    var selectedIndex = ntpServers.IndexOf(selectedServer);
-                    if (selectedIndex < 0) selectedIndex = 0;
-
-                    _cloudCalibrationService.ConfigureTimeSource(
-                        timeSourceType: "ntp",
-                        ntpServers: ntpServers,
-                        httpServers: null,
-                        selectedNtpServerIndex: selectedIndex,
-                        selectedHttpServerIndex: 0
-                    );
-                }
-                else
-                {
-                    var httpServers = new List<string>
-                    {
-                        "https://worldtimeapi.org/api/timezone/Etc/UTC",
-                        "https://timeapi.io/api/Time/current/zone?timeZone=UTC",
-                        "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC"
-                    };
-                    var selectedIndex = httpServers.IndexOf(selectedServer);
-                    if (selectedIndex < 0) selectedIndex = 0;
-
-                    _cloudCalibrationService.ConfigureTimeSource(
-                        timeSourceType: "http",
-                        ntpServers: null,
-                        httpServers: httpServers,
-                        selectedNtpServerIndex: 0,
-                        selectedHttpServerIndex: selectedIndex
-                    );
-                }
+                _cloudCalibrationService.ConfigureNtpServers(
+                    ntpServers: ntpServers,
+                    selectedNtpServerIndex: selectedIndex
+                );
 
                 Logger.Info(GetType().FullName ?? "App", "云端校准服务已配置");
 

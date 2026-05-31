@@ -554,8 +554,11 @@ namespace ReTime_Testing.Services
                 "calibration 整域解析失败，尝试逐子域解析");
             var result = new CalibrationConfig();
             result.Enabled = TryGetBool(calNode, "enabled") ?? result.Enabled;
-            result.TimeSourceType = TryGetString(calNode, "timeSourceType") ?? result.TimeSourceType;
+            result.SelectedServerAddress = TryGetString(calNode, "selectedServerAddress") ?? result.SelectedServerAddress;
             result.IntervalSeconds = TryGetInt(calNode, "intervalSeconds") ?? result.IntervalSeconds;
+            result.TimeoutSeconds = TryGetInt(calNode, "timeoutSeconds") ?? result.TimeoutSeconds;
+            result.MaxRetryCount = TryGetInt(calNode, "maxRetryCount") ?? result.MaxRetryCount;
+            result.BackoffMultiplier = TryGetDouble(calNode, "backoffMultiplier") ?? result.BackoffMultiplier;
             result.TriggerSeconds = TryGetInt(calNode, "triggerSeconds") ?? result.TriggerSeconds;
             return result;
         }

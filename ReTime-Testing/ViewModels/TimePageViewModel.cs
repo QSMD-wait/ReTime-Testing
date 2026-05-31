@@ -7,12 +7,11 @@ using System.Windows.Threading;
 namespace ReTime_Testing.ViewModels;
 
 /// <summary>
-/// 时间服务器选项
+/// NTP服务器选项
 /// </summary>
-public class TimeServerOption
+public class NtpServerOption
 {
     public string DisplayName { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
 }
 
@@ -23,6 +22,8 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 {
     private readonly IConfigurationManager _configManager;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _statusRefreshTimer;
+    private readonly ITimeService? _timeService;
     private readonly ICloudCalibrationService? _cloudCalibrationService;
     private TimeTopSetting _setting;
 
@@ -36,7 +37,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     private bool _isCalibrationEnabled = false;
 
     [ObservableProperty]
-    private TimeServerOption? _selectedTimeServer = null;
+    private NtpServerOption? _selectedNtpServer = null;
 
     [ObservableProperty]
     private int _intervalSeconds = 300;
@@ -56,30 +57,40 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _calibrateButtonText = "立即校准";
 
-    public List<TimeServerOption> TimeServers { get; } = new()
+    [ObservableProperty]
+    private string _calibrationInfo = string.Empty;
+
+    public List<NtpServerOption> NtpServers { get; } = new()
     {
-        new TimeServerOption { DisplayName = "NTP协议 - 阿里云NTP", Type = "ntp", Address = "ntp.aliyun.com" },
-        new TimeServerOption { DisplayName = "NTP协议 - 国家授时中心", Type = "ntp", Address = "ntp.ntsc.ac.cn" },
-        new TimeServerOption { DisplayName = "NTP协议 - Windows时间", Type = "ntp", Address = "time.windows.com" },
-        new TimeServerOption { DisplayName = "HTTP API - WorldTimeAPI", Type = "http", Address = "https://worldtimeapi.org/api/timezone/Etc/UTC" },
-        new TimeServerOption { DisplayName = "HTTP API - TimeAPI.io", Type = "http", Address = "https://timeapi.io/api/Time/current/zone?timeZone=UTC" },
-        new TimeServerOption { DisplayName = "HTTP API - TimeAPI.io (备用)", Type = "http", Address = "https://www.timeapi.io/api/Time/current/zone?timeZone=UTC" }
+        new NtpServerOption { DisplayName = "阿里云NTP", Address = "ntp.aliyun.com" },
+        new NtpServerOption { DisplayName = "国家授时中心", Address = "ntp.ntsc.ac.cn" },
+        new NtpServerOption { DisplayName = "Windows时间", Address = "time.windows.com" }
     };
 
-    public TimePageViewModel(IConfigurationManager? configManager = null, ICloudCalibrationService? cloudCalibrationService = null)
+    public TimePageViewModel(IConfigurationManager? configManager = null, ITimeService? timeService = null, ICloudCalibrationService? cloudCalibrationService = null)
     {
         _configManager = configManager ?? ConfigurationManager.Instance;
+        _timeService = timeService;
         _cloudCalibrationService = cloudCalibrationService;
         _setting = _configManager.LoadTimeTopSetting();
 
         LoadSettings();
 
+        // 时间显示定时器（100ms刷新）
         _timer = new DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(100)
         };
         _timer.Tick += Timer_Tick;
         _timer.Start();
+
+        // 校准状态刷新定时器（2秒刷新）
+        _statusRefreshTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        _statusRefreshTimer.Tick += StatusRefreshTimer_Tick;
+        _statusRefreshTimer.Start();
 
         UpdateTime();
         UpdateCalibrationStatus();
@@ -90,9 +101,15 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         UpdateTime();
     }
 
+    private void StatusRefreshTimer_Tick(object? sender, EventArgs e)
+    {
+        UpdateCalibrationStatus();
+    }
+
     private void UpdateTime()
     {
-        var now = DateTime.Now;
+        // 优先使用校准后的绝对时间，回退到系统时间
+        var now = _timeService?.GetCurrentTime() ?? DateTime.Now;
         CurrentTime = now.ToString("HH:mm:ss");
         CurrentDate = now.ToString("yyyy年MM月dd日 dddd");
     }
@@ -117,10 +134,14 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
             {
                 CalibrationStatus = "已禁用";
             }
+
+            // 显示详细校准信息
+            CalibrationInfo = $"提供者: {_cloudCalibrationService.CurrentProviderName} | RTT: {_cloudCalibrationService.LastRttMs:F0}ms | 失败: {_cloudCalibrationService.FailureCount}次";
         }
         else
         {
             CalibrationStatus = "服务未初始化";
+            CalibrationInfo = string.Empty;
         }
     }
 
@@ -163,39 +184,64 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         IntervalSeconds = _setting.Calibration.IntervalSeconds;
         TriggerSeconds = _setting.Calibration.TriggerSeconds;
 
-        var timeSourceType = _setting.Calibration.TimeSourceType.ToLower();
         var address = _setting.Calibration.SelectedServerAddress;
 
-        SelectedTimeServer = TimeServers.FirstOrDefault(s =>
-            s.Type == timeSourceType && s.Address == address) ?? TimeServers[0];
+        SelectedNtpServer = NtpServers.FirstOrDefault(s => s.Address == address) ?? NtpServers[0];
+    }
+
+    /// <summary>
+    /// 将当前设置同步到运行中的 CloudCalibrationService 实例
+    /// </summary>
+    private void SyncSettingsToService()
+    {
+        if (_cloudCalibrationService == null) return;
+
+        _cloudCalibrationService.Configure(
+            enabled: IsCalibrationEnabled,
+            interval: IntervalSeconds,
+            triggerThreshold: TriggerSeconds
+        );
+
+        // 同步NTP服务器选择
+        if (SelectedNtpServer != null)
+        {
+            var selectedIndex = NtpServers.FindIndex(s => s.Address == SelectedNtpServer.Address);
+            if (selectedIndex < 0) selectedIndex = 0;
+            _cloudCalibrationService.ConfigureNtpServers(
+                ntpServers: NtpServers.Select(s => s.Address).ToList(),
+                selectedNtpServerIndex: selectedIndex
+            );
+        }
     }
 
     partial void OnIsCalibrationEnabledChanged(bool value)
     {
         _setting.Calibration.Enabled = value;
         SaveSettings();
+        SyncSettingsToService();
     }
 
-    partial void OnSelectedTimeServerChanged(TimeServerOption? value)
+    partial void OnSelectedNtpServerChanged(NtpServerOption? value)
     {
         if (value == null) return;
 
-        _setting.Calibration.TimeSourceType = value.Type;
         _setting.Calibration.SelectedServerAddress = value.Address;
-
         SaveSettings();
+        SyncSettingsToService();
     }
 
     partial void OnIntervalSecondsChanged(int value)
     {
         _setting.Calibration.IntervalSeconds = value;
         SaveSettings();
+        SyncSettingsToService();
     }
 
     partial void OnTriggerSecondsChanged(int value)
     {
         _setting.Calibration.TriggerSeconds = value;
         SaveSettings();
+        SyncSettingsToService();
     }
 
     private void SaveSettings()
@@ -207,5 +253,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     {
         _timer?.Stop();
         _timer?.Tick -= Timer_Tick;
+        _statusRefreshTimer?.Stop();
+        _statusRefreshTimer?.Tick -= StatusRefreshTimer_Tick;
     }
 }

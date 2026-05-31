@@ -7,150 +7,160 @@
              xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="600">
+             d:DesignHeight="600" d:DesignWidth="600">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
         <StackPanel>
 
-            <!-- 当前时间显示 -->
-            <StackPanel Margin="0,0,0,24">
-                <TextBlock Text="{Binding CurrentTime}"
-                           FontSize="48"
-                           FontWeight="SemiBold"
-                           FontFamily="Consolas, Courier New, monospace"
-                           HorizontalAlignment="Center"
-                           Foreground="{DynamicResource SystemControlHighlightAccentBrush}"/>
-                <TextBlock Text="{Binding CurrentDate}"
-                           FontSize="16"
-                           Margin="0,8,0,0"
-                           HorizontalAlignment="Center"
-                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-            </StackPanel>
+            <!-- 当前时间显示（Hero Card） -->
+            <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
+                    CornerRadius="8"
+                    BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+                    BorderThickness="1"
+                    Padding="24,20"
+                    Margin="0,0,0,16">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding CurrentTime}"
+                               FontSize="56"
+                               FontWeight="Bold"
+                               FontFamily="Consolas, Courier New, monospace"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
+                    <TextBlock Text="{Binding CurrentDate}"
+                               FontSize="14"
+                               Margin="0,6,0,0"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"
+                               Opacity="0.6"/>
+                </StackPanel>
+            </Border>
 
             <!-- 云端校准开关 -->
             <controls:SettingsCard Title="启用云端校准"
-                                    Description="定期从云端获取时间进行校准，确保系统时间准确"
+                                    Description="定期从NTP服务器获取时间进行校准，确保系统时间准确"
                                     Icon="{x:Static ui:FluentSystemIcons.Clock_20_Filled}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0" Margin="0,0,12,0"/>
-                        <Button Content="{Binding CalibrateButtonText}"
-                                Command="{Binding CalibrateNowCommand}"
-                                IsEnabled="{Binding IsCalibrationEnabled}"
-                                MinWidth="80"/>
-                    </StackPanel>
+                    <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
-            <!-- 校准状态信息 -->
-            <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Padding="16"
-                    Margin="0,8,0,0">
-                <StackPanel>
-                    <TextBlock Text="校准状态"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,8"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="状态:"
-                                   Grid.Column="0"
-                                   Margin="0,0,8,0"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CalibrationStatus}"
-                                   Grid.Column="1"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
-                    </Grid>
-                    <Grid Margin="0,4,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="上次校准:"
-                                   Grid.Column="0"
-                                   Margin="0,0,8,0"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding LastCalibrationTime}"
-                                   Grid.Column="1"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- 时间服务器选择 -->
-            <controls:SettingsCard Title="时间服务器"
-                                    Description="选择用于时间同步的服务器"
-                                    Icon="{x:Static ui:FluentSystemIcons.Cloud_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
-                    <ComboBox ItemsSource="{Binding TimeServers}"
-                              SelectedItem="{Binding SelectedTimeServer, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"
-                              Width="300"
-                              HorizontalAlignment="Left"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
-
-            <!-- 校准间隔 -->
-            <controls:SettingsCard Title="校准间隔"
-                                    Description="云端校准的时间间隔（秒）"
-                                    Icon="{x:Static ui:FluentSystemIcons.Timer_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
-                    <ui:NumberBox Value="{Binding IntervalSeconds, Mode=TwoWay}"
-                                  Minimum="60"
-                                  Maximum="3600"
-                                  SmallChange="60"
-                                  LargeChange="300"
-                                  Width="150"
-                                  HorizontalAlignment="Left"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
-
-            <!-- 触发阈值 -->
-            <controls:SettingsCard Title="触发阈值"
-                                    Description="触发校准的时间偏差阈值（秒）"
+            <!-- 立即校准按钮 -->
+            <controls:SettingsCard Title="手动校准"
+                                    Description="立即从NTP服务器获取时间进行一次校准"
                                     Icon="{x:Static ui:FluentSystemIcons.ArrowSync_20_Filled}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
-                    <ui:NumberBox Value="{Binding TriggerSeconds, Mode=TwoWay}"
-                                  Minimum="1"
-                                  Maximum="60"
-                                  SmallChange="1"
-                                  LargeChange="5"
-                                  Width="150"
-                                  HorizontalAlignment="Left"/>
+                    <Button Content="{Binding CalibrateButtonText}"
+                            Command="{Binding CalibrateNowCommand}"
+                            IsEnabled="{Binding IsCalibrationEnabled}"
+                            MinWidth="100"/>
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
-            <!-- 说明信息 -->
-            <Border Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Padding="16"
-                    Margin="0,16,0,0">
-                <StackPanel>
-                    <TextBlock Text="说明"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,8"/>
-                    <TextBlock Text="• NTP服务器返回UTC时间，系统会自动转换为北京时间（UTC+8）"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,4"/>
-                    <TextBlock Text="• 建议校准间隔设置为300秒（5分钟）"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,4"/>
-                    <TextBlock Text="• 触发阈值建议设置为5秒，避免频繁校准"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
+            <!-- 校准状态（可展开） -->
+            <controls:SettingsCard Title="校准状态"
+                                    Description="{Binding CalibrationStatus}"
+                                    Icon="{x:Static ui:FluentSystemIcons.Info_20_Filled}"
+                                    IsExpandable="True"
+                                    Margin="0">
+                <controls:SettingsCard.ExpandContent>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- 状态行 -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="运行状态"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CalibrationStatus}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                        <!-- 上次校准 -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="上次校准"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding LastCalibrationTime}"
+                                       Grid.Column="1"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                        <!-- 校准详情 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="详细信息"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CalibrationInfo}"
+                                       Grid.Column="1"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </controls:SettingsCard.ExpandContent>
+            </controls:SettingsCard>
+
+            <!-- NTP服务器选择 -->
+            <controls:SettingsCard Title="NTP服务器"
+                                    Description="选择用于时间同步的NTP服务器"
+                                    Icon="{x:Static ui:FluentSystemIcons.Cloud_20_Filled}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ComboBox ItemsSource="{Binding NtpServers}"
+                              SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              MinWidth="180"/>
+                </controls:SettingsCard.ControlContent>
+            </controls:SettingsCard>
+
+            <!-- 说明信息（可展开） -->
+            <controls:SettingsCard Title="关于云端校准"
+                                    Description="NTP协议、RTT补偿与校准策略说明"
+                                    Icon="{x:Static ui:FluentSystemIcons.QuestionCircle_20_Filled}"
+                                    IsExpandable="True"
+                                    Margin="0">
+                <controls:SettingsCard.ExpandContent>
+                    <StackPanel Margin="0,8,0,0">
+                        <TextBlock Text="NTP协议"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="NTP（网络时间协议）通过UDP 123端口与时间服务器通信，精度可达毫秒级。系统会自动补偿网络延迟（RTT/2），并将UTC时间转换为北京时间（UTC+8）。"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                   Margin="0,0,0,12"/>
+                        <TextBlock Text="校准策略"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="微调校准：偏差 ≤ 30 秒时，仅调整时钟偏移量，不触发调度状态重算，进度条平滑过渡。"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="跳跃校准：偏差 > 30 秒时，重置时钟基准并触发调度状态重新计算，确保进度条状态正确。"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                    </StackPanel>
+                </controls:SettingsCard.ExpandContent>
+            </controls:SettingsCard>
 
         </StackPanel>
     </ScrollViewer>
