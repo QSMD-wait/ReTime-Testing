@@ -15,19 +15,20 @@ public interface ITimeService
     DateTime GetCurrentTime();
 
     /// <summary>
-    /// 从云端校准时间（硬跳，触发 TimeJumped 事件）
+    /// 校准时间（硬跳，重置基准并触发 TimeJumped 事件）
+    /// 适用于偏差较大的校准，需要重新计算调度状态
     /// </summary>
-    /// <param name="cloudTime">云端时间</param>
+    /// <param name="calibratedTime">校准后的时间</param>
     /// <param name="reason">跳跃原因</param>
     /// <param name="severity">跳跃严重程度</param>
-    void Calibrate(DateTime cloudTime, TimeJumpReason reason = TimeJumpReason.CloudCalibration, TimeJumpSeverity severity = TimeJumpSeverity.Major);
+    void Calibrate(DateTime calibratedTime, TimeJumpReason reason = TimeJumpReason.CloudCalibration, TimeJumpSeverity severity = TimeJumpSeverity.Major);
 
     /// <summary>
-    /// 微调校准（仅调整偏移量，不触发 TimeJumped 事件）
-    /// 适用于偏差较小的校准，避免不必要的状态重算
+    /// 应用偏移量（微调，不重置 Stopwatch 起点以保持单调性，不触发 TimeJumped 事件）
+    /// 适用于偏差较小的校准，仅调整基准时间偏移
     /// </summary>
-    /// <param name="cloudTime">云端时间</param>
-    void CalibrateMinor(DateTime cloudTime);
+    /// <param name="offset">时间偏移量</param>
+    void ApplyOffset(TimeSpan offset);
 
     /// <summary>
     /// 时间跳跃事件

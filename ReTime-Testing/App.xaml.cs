@@ -21,10 +21,11 @@ public partial class App : Application
         private MutexManager? _mutexManager;
         private TrayIconService? _trayIconService;
 
-        // 新增：时间服务字段（改为 internal 便于调试）
+        // 服务字段（改为 internal 便于调试）
         internal ITimeService? _timeService;
-        internal ScheduleManager? _scheduleManager;
         internal ICloudCalibrationService? _cloudCalibrationService;
+        internal ITimeCalibrationService? _timeCalibrationService;
+        internal ScheduleManager? _scheduleManager;
         internal IThemeService? _themeService;
         internal IAutoStartService? _autoStartService;
 
@@ -58,8 +59,9 @@ var ex = e.ExceptionObject as Exception;
 
         // 公共属性用于访问服务
         public ITimeService? TimeService => _timeService;
-        public ScheduleManager? ScheduleManager => _scheduleManager;
         public ICloudCalibrationService? CloudCalibrationService => _cloudCalibrationService;
+        public ITimeCalibrationService? TimeCalibrationService => _timeCalibrationService;
+        public ScheduleManager? ScheduleManager => _scheduleManager;
         public IThemeService? ThemeService => _themeService;
         public IAutoStartService? AutoStartService => _autoStartService;
 
@@ -96,44 +98,6 @@ protected override void OnStartup(StartupEventArgs e)
             }
         }
 
-        /// <summary>
-        /// 尝试从云端获取时间
-        /// </summary>
-        /// <param name="timeout">超时时间</param>
-        /// <returns>云端时间（如果成功），否则返回null</returns>
-        private async Task<DateTime?> TryGetCloudTimeAsync(TimeSpan timeout)
-        {
-            try
-            {
-                // 使用已配置的 _cloudCalibrationService 实例
-                if (_cloudCalibrationService == null)
-                {
-                    Logger.Warn(GetType().FullName ?? "App", "云端校准服务未初始化");
-                    return null;
-                }
-
-                // 尝试手动触发校准
-                var success = await _cloudCalibrationService.CalibrateAsync();
-
-                if (success)
-                {
-                    // 返回当前时间（已校准）
-                    return _timeService?.GetCurrentTime();
-                }
-
-                return null;
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warn(GetType().FullName ?? "App", "云端时间获取超时");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Logger.Warn(GetType().FullName ?? "App", $"云端时间获取失败: {ex.Message}");
-                return null;
-            }
-        }
 
 /// <summary>
         /// 启动应用程序主窗口
@@ -161,61 +125,46 @@ protected override void OnStartup(StartupEventArgs e)
                 var scheduleManager = Services.TimeScheduleManager.Instance;
                 scheduleManager.Initialize();
 
-                // ===== 新增：初始化时间服务 =====
-                // 1. 初始化绝对时间服务
+                // ===== 初始化时间服务 =====
+                // 1. 初始化绝对时间服务（纯单调时钟）
                 _timeService = new AbsoluteTimeService();
-                Logger.Info(GetType().FullName ?? "App", "时间服务已初始化");
+                Logger.Info(GetType().FullName ?? "App", "单调时钟服务已初始化");
 
-                // 2. 初始化云端校准服务（统一使用一个实例）
+                // 2. 初始化云端校准数据源（纯NTP数据源）
                 var timeTopSetting = configManager.LoadTimeTopSetting();
-                _cloudCalibrationService = new CloudCalibrationService(_timeService);
-                _cloudCalibrationService.Configure(
-                    enabled: timeTopSetting.Calibration.Enabled,
-                    interval: timeTopSetting.Calibration.IntervalSeconds,
-                    timeout: timeTopSetting.Calibration.TimeoutSeconds,
-                    maxRetryCount: timeTopSetting.Calibration.MaxRetryCount,
-                    backoffMultiplier: timeTopSetting.Calibration.BackoffMultiplier,
-                    triggerThreshold: timeTopSetting.Calibration.TriggerSeconds
-                );
+                _cloudCalibrationService = new CloudCalibrationService();
 
-                // 配置NTP服务器
-                var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
-                var selectedServer = timeTopSetting.Calibration.SelectedServerAddress;
-                var selectedIndex = ntpServers.IndexOf(selectedServer);
-                if (selectedIndex < 0) selectedIndex = 0;
+                // 3. 初始化时间校准服务（校准协调器）
+                _timeCalibrationService = new TimeCalibrationService(_timeService, _cloudCalibrationService);
+                _timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
+                Logger.Info(GetType().FullName ?? "App", "时间校准服务已初始化");
 
-                _cloudCalibrationService.ConfigureNtpServers(
-                    ntpServers: ntpServers,
-                    selectedNtpServerIndex: selectedIndex
-                );
-
-                Logger.Info(GetType().FullName ?? "App", "云端校准服务已配置");
-
-                // 3. 尝试从云端获取时间（3秒超时）
-                try
+                // 4. 启动时执行首次校准
+                if (timeTopSetting.Calibration.Enabled)
                 {
-                    var cloudTime = await TryGetCloudTimeAsync(TimeSpan.FromSeconds(3));
-
-                    if (cloudTime.HasValue)
+                    try
                     {
-                        _timeService.Calibrate(cloudTime.Value);
-                        Logger.Info(GetType().FullName ?? "App", $"时间已从云端同步: {cloudTime.Value:yyyy-MM-dd HH:mm:ss}");
+                        var success = await _timeCalibrationService.CalibrateAsync();
+                        if (success)
+                        {
+                            Logger.Info(GetType().FullName ?? "App", "首次校准成功");
+                        }
+                        else
+                        {
+                            Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Logger.Warn(GetType().FullName ?? "App", "云端时间获取失败，使用系统时间");
+                        Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
                     }
                 }
-                catch (Exception ex)
-                {
-                    Logger.Warn(GetType().FullName ?? "App", $"云端时间获取异常: {ex.Message}，使用系统时间");
-                }
 
-                // 4. 初始化执行计划生成器
+                // 5. 初始化执行计划生成器
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
-                // 5. 生成执行计划
+                // 6. 生成执行计划
                 if (!timeTopSetting.Schedule.Enabled)
                 {
                     Logger.Info(GetType().FullName ?? "App", "时间计划控制已禁用，跳过调度初始化");
@@ -243,7 +192,7 @@ protected override void OnStartup(StartupEventArgs e)
                         {
                             Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
 
-                            // 6. 初始化调度管理器
+                            // 7. 初始化调度管理器
                             _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
                             _scheduleManager.Initialize(executionPlan);
                             Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
@@ -251,9 +200,9 @@ protected override void OnStartup(StartupEventArgs e)
                     }
                 }
 
-                // 7. 启动云端校准服务（长期运行）
-                _cloudCalibrationService.Start();
-                Logger.Info(GetType().FullName ?? "App", "云端校准服务已启动");
+                // 8. 启动时间校准服务（长期运行）
+                _timeCalibrationService.Start();
+                Logger.Info(GetType().FullName ?? "App", "时间校准服务已启动");
 
                 // 注意：不再调用 GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule()
                 // 因为现在使用新的 ScheduleManager 进行调度，避免双重调度冲突
@@ -522,7 +471,7 @@ else
 
                 // 1. 停止所有服务
                 _scheduleManager?.Stop();
-                _cloudCalibrationService?.Stop();
+                _timeCalibrationService?.Stop();
 
                 // 2. 清理托盘图标
                 _trayIconService?.Dispose();
@@ -562,7 +511,7 @@ else
 
                 // 清理新服务
                 _scheduleManager?.Stop();
-                _cloudCalibrationService?.Stop();
+                _timeCalibrationService?.Stop();
 
                 // 清理托盘图标
                 _trayIconService?.Dispose();
@@ -599,7 +548,7 @@ else
         {
             // 清理新服务
             _scheduleManager?.Stop();
-            _cloudCalibrationService?.Stop();
+            _timeCalibrationService?.Stop();
 
             // 释放托盘图标
             _trayIconService?.Dispose();

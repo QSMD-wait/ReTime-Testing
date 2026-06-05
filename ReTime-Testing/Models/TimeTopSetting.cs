@@ -33,7 +33,7 @@ namespace ReTime_Testing.Models
         public ProgressBarBehaviorConfig Behavior { get; set; } = new();
 
         /// <summary>
-        /// 云端校准配置
+        /// 时间校准配置
         /// </summary>
         [JsonPropertyName("calibration")]
         public CalibrationConfig Calibration { get; set; } = new();
@@ -143,21 +143,38 @@ namespace ReTime_Testing.Models
     }
 
     /// <summary>
-    /// 云端校准配置
+    /// 校准源类型
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum CalibrationSource
+    {
+        /// <summary>
+        /// 系统时间校准
+        /// </summary>
+        System,
+
+        /// <summary>
+        /// 云端NTP校准
+        /// </summary>
+        Cloud
+    }
+
+    /// <summary>
+    /// 时间校准配置
     /// </summary>
     public class CalibrationConfig
     {
         /// <summary>
-        /// 是否启用云端校准
+        /// 是否启用时间校准
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = false;
 
         /// <summary>
-        /// 选中的NTP服务器地址
+        /// 校准源类型：System = 系统时间, Cloud = 云端NTP
         /// </summary>
-        [JsonPropertyName("selectedServerAddress")]
-        public string SelectedServerAddress { get; set; } = "ntp.aliyun.com";
+        [JsonPropertyName("source")]
+        public CalibrationSource Source { get; set; } = CalibrationSource.System;
 
         /// <summary>
         /// 校准间隔（秒）
@@ -166,28 +183,91 @@ namespace ReTime_Testing.Models
         public int IntervalSeconds { get; set; } = 300;
 
         /// <summary>
-        /// 校准超时（秒）
+        /// 触发校准的偏差阈值（秒）
         /// </summary>
-        [JsonPropertyName("timeoutSeconds")]
-        public int TimeoutSeconds { get; set; } = 3;
+        [JsonPropertyName("triggerSeconds")]
+        public int TriggerSeconds { get; set; } = 5;
 
         /// <summary>
-        /// 最大重试次数
+        /// 微调/跳跃分界阈值（秒）：偏差小于等于此值时微调，大于此值时跳跃
+        /// </summary>
+        [JsonPropertyName("minorThresholdSeconds")]
+        public int MinorThresholdSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// 休眠恢复校准阈值（秒）：系统休眠超过此时间后触发重新校准
+        /// </summary>
+        [JsonPropertyName("resumeThresholdSeconds")]
+        public int ResumeThresholdSeconds { get; set; } = 300;
+
+        /// <summary>
+        /// 最大重试次数（所有校准源通用）
         /// </summary>
         [JsonPropertyName("maxRetryCount")]
         public int MaxRetryCount { get; set; } = 3;
 
         /// <summary>
-        /// 退避乘数
+        /// 退避乘数（所有校准源通用）
         /// </summary>
         [JsonPropertyName("backoffMultiplier")]
         public double BackoffMultiplier { get; set; } = 2.0;
 
         /// <summary>
-        /// 触发校准的偏差阈值（秒）
+        /// 云端校准专用配置（Source=Cloud时生效）
         /// </summary>
-        [JsonPropertyName("triggerSeconds")]
-        public int TriggerSeconds { get; set; } = 5;
+        [JsonPropertyName("cloud")]
+        public CloudCalibrationConfig Cloud { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 云端校准专用配置
+    /// </summary>
+    public class CloudCalibrationConfig
+    {
+        /// <summary>
+        /// 选中的NTP服务器地址
+        /// </summary>
+        [JsonPropertyName("selectedServerAddress")]
+        public string SelectedServerAddress { get; set; } = NtpServerDefaults.DefaultServerAddress;
+
+        /// <summary>
+        /// NTP请求超时（秒）
+        /// </summary>
+        [JsonPropertyName("timeoutSeconds")]
+        public int TimeoutSeconds { get; set; } = 3;
+    }
+
+    /// <summary>
+    /// NTP服务器默认配置（单一来源，消除硬编码重复）
+    /// </summary>
+    public static class NtpServerDefaults
+    {
+        /// <summary>
+        /// 默认NTP服务器地址
+        /// </summary>
+        public const string DefaultServerAddress = "ntp.aliyun.com";
+
+        /// <summary>
+        /// 预定义NTP服务器地址列表
+        /// </summary>
+        public static readonly IReadOnlyList<string> Servers = new List<string>
+        {
+            "ntp.aliyun.com",
+            "ntp.ntsc.ac.cn",
+            "time.windows.com"
+        }.AsReadOnly();
+
+        /// <summary>
+        /// 根据服务器地址查找索引，未找到返回0
+        /// </summary>
+        public static int IndexOf(string address)
+        {
+            for (int i = 0; i < Servers.Count; i++)
+            {
+                if (Servers[i] == address) return i;
+            }
+            return 0;
+        }
     }
 
     /// <summary>

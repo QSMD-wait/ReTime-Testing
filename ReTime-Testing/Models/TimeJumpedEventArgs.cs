@@ -18,7 +18,12 @@ public enum TimeJumpReason
     /// <summary>
     /// 手动触发校准
     /// </summary>
-    ManualCalibration
+    ManualCalibration,
+
+    /// <summary>
+    /// 系统时间校准导致的跳跃
+    /// </summary>
+    SystemCalibration
 }
 
 /// <summary>

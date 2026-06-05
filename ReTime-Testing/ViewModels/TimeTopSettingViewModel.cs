@@ -168,7 +168,7 @@ namespace ReTime_Testing.ViewModels
         private readonly MutexManager _mutexManager;
         private ITimeService? _timeService;
         private ScheduleManager? _scheduleManager;
-        private ICloudCalibrationService? _cloudCalibrationService;
+        private ITimeCalibrationService? _timeCalibrationService;
         private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
         // 导航属性
@@ -267,12 +267,7 @@ namespace ReTime_Testing.ViewModels
         private string _lastCalibrationTime = "未校准";
 
         [ObservableProperty]
-        private List<string> _ntpServers = new()
-        {
-            "ntp.aliyun.com",
-            "ntp.ntsc.ac.cn",
-            "time.windows.com"
-        };
+        private List<string> _ntpServers = NtpServerDefaults.Servers.ToList();
 
         [ObservableProperty]
         private int _selectedNtpServerIndex = 0;
@@ -320,9 +315,9 @@ namespace ReTime_Testing.ViewModels
             {
                 _timeService = app.TimeService;
                 _scheduleManager = app.ScheduleManager;
-                _cloudCalibrationService = app.CloudCalibrationService;
+                _timeCalibrationService = app.TimeCalibrationService;
 
-                Logger.Info("TimeTopSettingViewModel", $"新服务引用已初始化: TimeService={_timeService != null}, ScheduleManager={_scheduleManager != null}, CloudCalibrationService={_cloudCalibrationService != null}");
+                Logger.Info("TimeTopSettingViewModel", $"新服务引用已初始化: TimeService={_timeService != null}, ScheduleManager={_scheduleManager != null}, TimeCalibrationService={_timeCalibrationService != null}");
             }
             else
             {
@@ -346,7 +341,7 @@ namespace ReTime_Testing.ViewModels
             try
             {
                 // 如果服务尚未初始化，尝试初始化
-                if (_timeService == null || _scheduleManager == null || _cloudCalibrationService == null)
+                if (_timeService == null || _scheduleManager == null || _timeCalibrationService == null)
                 {
                     InitializeNewServices();
                 }
@@ -394,16 +389,16 @@ namespace ReTime_Testing.ViewModels
                 }
 
                 // 云端校准服务信息
-                if (_cloudCalibrationService != null)
+                if (_timeCalibrationService != null)
                 {
-                    IsCloudCalibrationRunning = _cloudCalibrationService.IsRunning;
-                    CalibrationFailureCount = _cloudCalibrationService.FailureCount;
-                    CurrentCalibrationInterval = $"{_cloudCalibrationService.CurrentInterval}秒";
-                    LastCalibrationTime = _cloudCalibrationService.LastCalibrationTime > DateTime.MinValue 
-                        ? _cloudCalibrationService.LastCalibrationTime.ToString("HH:mm:ss") 
+                    IsCloudCalibrationRunning = _timeCalibrationService.IsRunning;
+                    CalibrationFailureCount = _timeCalibrationService.FailureCount;
+                    CurrentCalibrationInterval = $"{_timeCalibrationService.CurrentInterval}秒";
+                    LastCalibrationTime = _timeCalibrationService.LastCalibrationTime > DateTime.MinValue 
+                        ? _timeCalibrationService.LastCalibrationTime.ToString("HH:mm:ss") 
                         : "未校准";
-                    CurrentProviderName = _cloudCalibrationService.CurrentProviderName;
-                    LastRttMs = _cloudCalibrationService.LastRttMs;
+                    CurrentProviderName = _timeCalibrationService.CurrentProviderName;
+                    LastRttMs = _timeCalibrationService.LastRttMs;
                 }
                 else
                 {
@@ -443,7 +438,7 @@ namespace ReTime_Testing.ViewModels
             {
                 TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
                 TAG_APPEARANCE => new AppearancePageViewModel(),
-                TAG_TIME => new TimePageViewModel(timeService: _timeService, cloudCalibrationService: _cloudCalibrationService),
+                TAG_TIME => new TimePageViewModel(timeService: _timeService, timeCalibrationService: _timeCalibrationService),
                 TAG_WINDOW => new WindowPageViewModel(),
                 TAG_ABOUT => new AboutPageViewModel(),
                 _ => new BasicPageViewModel(themeService!, autoStartService!)
@@ -548,7 +543,7 @@ namespace ReTime_Testing.ViewModels
             // 清理服务引用
             _timeService = null;
             _scheduleManager = null;
-            _cloudCalibrationService = null;
+            _timeCalibrationService = null;
         }
 
         /// <summary>
@@ -1052,9 +1047,9 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                if (_cloudCalibrationService != null)
+                if (_timeCalibrationService != null)
                 {
-                    var success = await _cloudCalibrationService.CalibrateAsync();
+                    var success = await _timeCalibrationService.CalibrateAsync();
                     LastCalibrationTime = DateTime.Now.ToString("HH:mm:ss");
                     Logger.Info("TimeTopSettingViewModel", $"手动校准{(success ? "成功" : "失败")}");
                     RefreshDebugInfo();
@@ -1076,9 +1071,9 @@ namespace ReTime_Testing.ViewModels
         [RelayCommand]
         private void ResetCalibrationFailures()
         {
-            if (_cloudCalibrationService != null)
+            if (_timeCalibrationService != null)
             {
-                _cloudCalibrationService.Reset();
+                _timeCalibrationService.Reset();
                 CalibrationFailureCount = 0;
                 Logger.Info("TimeTopSettingViewModel", "校准失败计数已重置");
                 RefreshDebugInfo();
@@ -1093,29 +1088,25 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                if (_cloudCalibrationService != null)
+                if (_timeCalibrationService != null)
                 {
-                    var ntpServers = new List<string> { "ntp.aliyun.com", "ntp.ntsc.ac.cn", "time.windows.com" };
+                    var selectedServer = NtpServerDefaults.Servers[SelectedNtpServerIndex];
 
-                    _cloudCalibrationService.ConfigureNtpServers(
-                        ntpServers: ntpServers,
-                        selectedNtpServerIndex: SelectedNtpServerIndex
-                    );
-
+                    // 更新配置并应用到校准服务
                     var configManager = ConfigurationManager.Instance;
                     var timeTopSetting = configManager.LoadTimeTopSetting();
-
-                    var selectedServer = ntpServers[SelectedNtpServerIndex];
-
-                    timeTopSetting.Calibration.SelectedServerAddress = selectedServer;
+                    timeTopSetting.Calibration.Cloud.SelectedServerAddress = selectedServer;
                     configManager.SaveTimeTopSetting(timeTopSetting);
+
+                    // 通过 ApplyConfig 统一应用配置（内部会配置NTP服务器）
+                    _timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
 
                     Logger.Info("TimeTopSettingViewModel", $"NTP服务器配置已应用: 服务器={selectedServer}");
                     RefreshDebugInfo();
                 }
                 else
                 {
-                    Logger.Warn("TimeTopSettingViewModel", "云端校准服务未初始化");
+                    Logger.Warn("TimeTopSettingViewModel", "时间校准服务未初始化");
                 }
             }
             catch (Exception ex)
@@ -1216,7 +1207,7 @@ namespace ReTime_Testing.ViewModels
             Logger.Info("TimeTopSettingViewModel", $"主服务: {(_service != null ? "正常" : "未初始化")}");
             Logger.Info("TimeTopSettingViewModel", $"时间服务: {(_timeService != null ? "正常" : "未初始化")}");
             Logger.Info("TimeTopSettingViewModel", $"调度管理器: {(_scheduleManager != null ? "正常" : "未初始化")}");
-            Logger.Info("TimeTopSettingViewModel", $"云校准服务: {(_cloudCalibrationService != null ? "正常" : "未初始化")}");
+            Logger.Info("TimeTopSettingViewModel", $"云校准服务: {(_timeCalibrationService != null ? "正常" : "未初始化")}");
 
             // 记录详细状态
             Logger.Info("TimeTopSettingViewModel", $"当前时间: {CurrentTime}, 云同步: {IsCloudSynchronized}");
@@ -1244,11 +1235,11 @@ namespace ReTime_Testing.ViewModels
             Logger.Info("TimeTopSettingViewModel", $"  - 状态: {(IsScheduleRunning ? "运行中" : "已停止")}");
 
             Logger.Info("TimeTopSettingViewModel", "云校准服务状态:");
-            if (_cloudCalibrationService != null)
+            if (_timeCalibrationService != null)
             {
-                Logger.Info("TimeTopSettingViewModel", $"  - 上次校准: {_cloudCalibrationService.LastCalibrationTime:yyyy-MM-dd HH:mm:ss}");
-                Logger.Info("TimeTopSettingViewModel", $"  - 失败次数: {_cloudCalibrationService.FailureCount}");
-                Logger.Info("TimeTopSettingViewModel", $"  - 当前间隔: {_cloudCalibrationService.CurrentInterval}秒");
+                Logger.Info("TimeTopSettingViewModel", $"  - 上次校准: {_timeCalibrationService.LastCalibrationTime:yyyy-MM-dd HH:mm:ss}");
+                Logger.Info("TimeTopSettingViewModel", $"  - 失败次数: {_timeCalibrationService.FailureCount}");
+                Logger.Info("TimeTopSettingViewModel", $"  - 当前间隔: {_timeCalibrationService.CurrentInterval}秒");
             }
             else
             {

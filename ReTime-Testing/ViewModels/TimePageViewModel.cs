@@ -24,7 +24,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _statusRefreshTimer;
     private readonly ITimeService? _timeService;
-    private readonly ICloudCalibrationService? _cloudCalibrationService;
+    private readonly ITimeCalibrationService? _timeCalibrationService;
     private TimeTopSetting _setting;
 
     [ObservableProperty]
@@ -62,16 +62,16 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     public List<NtpServerOption> NtpServers { get; } = new()
     {
-        new NtpServerOption { DisplayName = "阿里云NTP", Address = "ntp.aliyun.com" },
-        new NtpServerOption { DisplayName = "国家授时中心", Address = "ntp.ntsc.ac.cn" },
-        new NtpServerOption { DisplayName = "Windows时间", Address = "time.windows.com" }
+        new NtpServerOption { DisplayName = "阿里云NTP", Address = NtpServerDefaults.Servers[0] },
+        new NtpServerOption { DisplayName = "国家授时中心", Address = NtpServerDefaults.Servers[1] },
+        new NtpServerOption { DisplayName = "Windows时间", Address = NtpServerDefaults.Servers[2] }
     };
 
-    public TimePageViewModel(IConfigurationManager? configManager = null, ITimeService? timeService = null, ICloudCalibrationService? cloudCalibrationService = null)
+    public TimePageViewModel(IConfigurationManager? configManager = null, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
     {
         _configManager = configManager ?? ConfigurationManager.Instance;
         _timeService = timeService;
-        _cloudCalibrationService = cloudCalibrationService;
+        _timeCalibrationService = timeCalibrationService;
         _setting = _configManager.LoadTimeTopSetting();
 
         LoadSettings();
@@ -116,17 +116,17 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     private void UpdateCalibrationStatus()
     {
-        if (_cloudCalibrationService != null)
+        if (_timeCalibrationService != null)
         {
-            LastCalibrationTime = _cloudCalibrationService.LastCalibrationTime == DateTime.MinValue
+            LastCalibrationTime = _timeCalibrationService.LastCalibrationTime == DateTime.MinValue
                 ? "从未校准"
-                : _cloudCalibrationService.LastCalibrationTime.ToString("yyyy-MM-dd HH:mm:ss");
+                : _timeCalibrationService.LastCalibrationTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-            if (_cloudCalibrationService.IsRunning)
+            if (_timeCalibrationService.IsRunning)
             {
                 CalibrationStatus = "运行中";
             }
-            else if (_cloudCalibrationService.IsEnabled)
+            else if (_timeCalibrationService.IsEnabled)
             {
                 CalibrationStatus = "已启用（未运行）";
             }
@@ -136,7 +136,10 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
             }
 
             // 显示详细校准信息
-            CalibrationInfo = $"提供者: {_cloudCalibrationService.CurrentProviderName} | RTT: {_cloudCalibrationService.LastRttMs:F0}ms | 失败: {_cloudCalibrationService.FailureCount}次";
+            var rttInfo = _timeCalibrationService.CurrentSource == CalibrationSource.Cloud
+                ? $" | RTT: {_timeCalibrationService.LastRttMs:F0}ms"
+                : "";
+            CalibrationInfo = $"源: {_timeCalibrationService.CurrentProviderName}{rttInfo} | 失败: {_timeCalibrationService.FailureCount}次";
         }
         else
         {
@@ -151,7 +154,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task CalibrateNow()
     {
-        if (_cloudCalibrationService == null)
+        if (_timeCalibrationService == null)
         {
             CalibrationStatus = "服务未初始化";
             return;
@@ -163,7 +166,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
         try
         {
-            var success = await _cloudCalibrationService.CalibrateAsync();
+            var success = await _timeCalibrationService.CalibrateAsync();
             CalibrationStatus = success ? "校准成功" : "校准失败";
             UpdateCalibrationStatus();
         }
@@ -184,34 +187,18 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         IntervalSeconds = _setting.Calibration.IntervalSeconds;
         TriggerSeconds = _setting.Calibration.TriggerSeconds;
 
-        var address = _setting.Calibration.SelectedServerAddress;
-
+        var address = _setting.Calibration.Cloud.SelectedServerAddress;
         SelectedNtpServer = NtpServers.FirstOrDefault(s => s.Address == address) ?? NtpServers[0];
     }
 
     /// <summary>
-    /// 将当前设置同步到运行中的 CloudCalibrationService 实例
+    /// 将当前设置同步到运行中的 TimeCalibrationService 实例
     /// </summary>
     private void SyncSettingsToService()
     {
-        if (_cloudCalibrationService == null) return;
+        if (_timeCalibrationService == null) return;
 
-        _cloudCalibrationService.Configure(
-            enabled: IsCalibrationEnabled,
-            interval: IntervalSeconds,
-            triggerThreshold: TriggerSeconds
-        );
-
-        // 同步NTP服务器选择
-        if (SelectedNtpServer != null)
-        {
-            var selectedIndex = NtpServers.FindIndex(s => s.Address == SelectedNtpServer.Address);
-            if (selectedIndex < 0) selectedIndex = 0;
-            _cloudCalibrationService.ConfigureNtpServers(
-                ntpServers: NtpServers.Select(s => s.Address).ToList(),
-                selectedNtpServerIndex: selectedIndex
-            );
-        }
+        _timeCalibrationService.ApplyConfig(_setting.Calibration);
     }
 
     partial void OnIsCalibrationEnabledChanged(bool value)
@@ -225,7 +212,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     {
         if (value == null) return;
 
-        _setting.Calibration.SelectedServerAddress = value.Address;
+        _setting.Calibration.Cloud.SelectedServerAddress = value.Address;
         SaveSettings();
         SyncSettingsToService();
     }

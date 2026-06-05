@@ -387,8 +387,24 @@ namespace ReTime_Testing.Services
 
             // calibration 域
             target.Calibration ??= new CalibrationConfig();
-            target.Calibration.IntervalSeconds = Math.Max(1, target.Calibration.IntervalSeconds);
+            target.Calibration.IntervalSeconds = Math.Clamp(target.Calibration.IntervalSeconds, 1, 86400);
             target.Calibration.TriggerSeconds = Math.Max(1, target.Calibration.TriggerSeconds);
+            target.Calibration.MinorThresholdSeconds = Math.Max(1, target.Calibration.MinorThresholdSeconds);
+            target.Calibration.ResumeThresholdSeconds = Math.Max(60, target.Calibration.ResumeThresholdSeconds);
+            target.Calibration.MaxRetryCount = Math.Max(0, target.Calibration.MaxRetryCount);
+            target.Calibration.BackoffMultiplier = Math.Max(1.0, target.Calibration.BackoffMultiplier);
+
+            // 确保 TriggerSeconds ≤ MinorThresholdSeconds
+            if (target.Calibration.TriggerSeconds > target.Calibration.MinorThresholdSeconds)
+            {
+                target.Calibration.MinorThresholdSeconds = target.Calibration.TriggerSeconds;
+            }
+
+            // Cloud 子对象
+            target.Calibration.Cloud ??= new CloudCalibrationConfig();
+            target.Calibration.Cloud.TimeoutSeconds = Math.Max(1, target.Calibration.Cloud.TimeoutSeconds);
+            if (string.IsNullOrWhiteSpace(target.Calibration.Cloud.SelectedServerAddress))
+                target.Calibration.Cloud.SelectedServerAddress = new CloudCalibrationConfig().SelectedServerAddress;
 
             // stateStyles 域
             target.StateStyles ??= new StateStylesConfig();
@@ -554,12 +570,32 @@ namespace ReTime_Testing.Services
                 "calibration 整域解析失败，尝试逐子域解析");
             var result = new CalibrationConfig();
             result.Enabled = TryGetBool(calNode, "enabled") ?? result.Enabled;
-            result.SelectedServerAddress = TryGetString(calNode, "selectedServerAddress") ?? result.SelectedServerAddress;
+            // source 字段同时支持整数（0=System, 1=Cloud）和字符串（"System"/"Cloud"）
+            var sourceStr = TryGetString(calNode, "source");
+            var sourceInt = TryGetInt(calNode, "source");
+            result.Source = (sourceStr, sourceInt) switch
+            {
+                ("cloud", _) => CalibrationSource.Cloud,
+                ("system", _) => CalibrationSource.System,
+                (_, 1) => CalibrationSource.Cloud,
+                (_, 0) => CalibrationSource.System,
+                _ => CalibrationSource.System
+            };
             result.IntervalSeconds = TryGetInt(calNode, "intervalSeconds") ?? result.IntervalSeconds;
-            result.TimeoutSeconds = TryGetInt(calNode, "timeoutSeconds") ?? result.TimeoutSeconds;
+            result.TriggerSeconds = TryGetInt(calNode, "triggerSeconds") ?? result.TriggerSeconds;
+            result.MinorThresholdSeconds = TryGetInt(calNode, "minorThresholdSeconds") ?? result.MinorThresholdSeconds;
+            result.ResumeThresholdSeconds = TryGetInt(calNode, "resumeThresholdSeconds") ?? result.ResumeThresholdSeconds;
             result.MaxRetryCount = TryGetInt(calNode, "maxRetryCount") ?? result.MaxRetryCount;
             result.BackoffMultiplier = TryGetDouble(calNode, "backoffMultiplier") ?? result.BackoffMultiplier;
-            result.TriggerSeconds = TryGetInt(calNode, "triggerSeconds") ?? result.TriggerSeconds;
+
+            // 解析 cloud 子域
+            var cloudNode = calNode["cloud"];
+            if (cloudNode != null)
+            {
+                result.Cloud.SelectedServerAddress = TryGetString(cloudNode, "selectedServerAddress") ?? result.Cloud.SelectedServerAddress;
+                result.Cloud.TimeoutSeconds = TryGetInt(cloudNode, "timeoutSeconds") ?? result.Cloud.TimeoutSeconds;
+            }
+
             return result;
         }
 
