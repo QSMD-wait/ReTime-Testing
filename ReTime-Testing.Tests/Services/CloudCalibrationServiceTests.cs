@@ -1,22 +1,20 @@
 using ReTime_Testing.Services;
-using Moq;
 using FluentAssertions;
 
 namespace ReTime_Testing.Tests.Services;
 
 /// <summary>
 /// CloudCalibrationService 单元测试
-/// 注意：由于网络请求难以在单元测试中 Mock，主要测试配置管理和逻辑
+/// CloudCalibrationService 是纯NTP数据源，仅负责从NTP服务器获取时间（含RTT补偿）
+/// 校准策略和调度由 TimeCalibrationService 统一管理
 /// </summary>
 public class CloudCalibrationServiceTests
 {
-    private readonly Mock<ITimeService> _mockTimeService;
     private readonly CloudCalibrationService _service;
 
     public CloudCalibrationServiceTests()
     {
-        _mockTimeService = new Mock<ITimeService>();
-        _service = new CloudCalibrationService(_mockTimeService.Object);
+        _service = new CloudCalibrationService();
     }
 
     [Fact]
@@ -24,301 +22,93 @@ public class CloudCalibrationServiceTests
     {
         // Assert
         _service.Should().NotBeNull();
-        _service.IsEnabled.Should().BeTrue();
-        _service.IsRunning.Should().BeFalse();
+        _service.CurrentProviderName.Should().Be("未初始化");
+        _service.LastRttMs.Should().Be(0);
     }
 
     [Fact]
-    public void Configure_应该更新配置参数()
+    public void CurrentProviderName_未配置时应该是未初始化()
+    {
+        // Assert
+        _service.CurrentProviderName.Should().Be("未初始化");
+    }
+
+    [Fact]
+    public void LastRttMs_初始值应该是零()
+    {
+        // Assert
+        _service.LastRttMs.Should().Be(0);
+    }
+
+    [Fact]
+    public void ConfigureNtpServers_应该更新提供者名称()
     {
         // Act
-        _service.Configure(
-            enabled: true,
-            interval: 600,
-            timeout: 10,
-            maxRetryCount: 10,
-            backoffMultiplier: 3.0,
-            triggerThreshold: 15);
+        _service.ConfigureNtpServers(new List<string> { "ntp.aliyun.com" }, 0);
 
         // Assert
-        _service.IsEnabled.Should().BeTrue();
-        _service.CalibrationInterval.Should().Be(600);
-        _service.CalibrationTimeout.Should().Be(10);
-        _service.MaxRetryCount.Should().Be(10);
-        _service.BackoffMultiplier.Should().Be(3.0);
-        _service.CalibrationTriggerThreshold.Should().Be(15);
+        _service.CurrentProviderName.Should().NotBe("未初始化");
     }
 
     [Fact]
-    public void Configure_禁用后不应该启动()
+    public void ConfigureNtpServers_空列表不应该抛出异常()
     {
-        // Arrange
-        _service.Configure(enabled: false, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
-
-        // Act
-        _service.Start();
-
-        // Assert
-        _service.IsRunning.Should().BeFalse();
-    }
-
-    [Fact]
-    public void Configure_启用后应该可以启动()
-    {
-        // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
-
-        // Act
-        _service.Start();
-
-        // Assert
-        _service.IsRunning.Should().BeTrue();
-        
-        // Cleanup
-        _service.Stop();
-    }
-
-    [Fact]
-    public void Stop_应该停止服务()
-    {
-        // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
-        _service.Start();
-
-        // Act
-        _service.Stop();
-
-        // Assert
-        _service.IsRunning.Should().BeFalse();
-    }
-
-    [Fact]
-    public void Stop_多次调用不应该抛出异常()
-    {
-        // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
-        _service.Start();
-
-        // Act & Assert - 不应该抛出异常
-        var action = () =>
-        {
-            _service.Stop();
-            _service.Stop();
-            _service.Stop();
-        };
+        // Act & Assert
+        var action = () => _service.ConfigureNtpServers(new List<string>(), 0);
         action.Should().NotThrow();
     }
 
     [Fact]
-    public void Reset_应该重置失败计数器()
+    public void ConfigureNtpServers_null列表不应该抛出异常()
+    {
+        // Act & Assert - null会被替换为默认服务器列表
+        var action = () => _service.ConfigureNtpServers(null!, 0);
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void ConfigureNtpServers_无效索引应该使用全部服务器()
+    {
+        // Act - 索引超出范围时应使用全部服务器
+        var action = () => _service.ConfigureNtpServers(new List<string> { "ntp.aliyun.com", "ntp.tencent.com" }, 99);
+        action.Should().NotThrow();
+        _service.CurrentProviderName.Should().NotBe("未初始化");
+    }
+
+    [Fact]
+    public async Task GetCloudTimeAsync_配置后不应该抛出异常()
     {
         // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
-        
-        // Act
-        _service.Reset();
+        _service.ConfigureNtpServers(new List<string> { "ntp.aliyun.com" }, 0);
 
-        // Assert
-        _service.FailureCount.Should().Be(0);
+        // Act & Assert - 网络请求可能成功也可能失败，但不应抛出异常
+        var result = await _service.GetCloudTimeAsync(TimeSpan.FromSeconds(3));
+
+        // Assert - 结果可能为null（网络不可达）或有效值，都不算错误
+        // 仅验证不抛异常
     }
 
     [Fact]
-    public void Configure_应该正确设置默认值()
+    public void ConfigureNtpServers_多次配置应该正确切换()
     {
         // Act
-        _service.Configure(
-            enabled: true,
-            interval: 300,
-            timeout: 3,
-            maxRetryCount: 5,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 5);
+        _service.ConfigureNtpServers(new List<string> { "ntp.aliyun.com" }, 0);
+        var name1 = _service.CurrentProviderName;
 
-        // Assert - 验证默认值
-        _service.IsEnabled.Should().BeTrue();
-        _service.CalibrationInterval.Should().Be(300);
-        _service.CalibrationTimeout.Should().Be(3);
-        _service.MaxRetryCount.Should().Be(5);
-        _service.BackoffMultiplier.Should().Be(2.0);
-        _service.CalibrationTriggerThreshold.Should().Be(5);
+        _service.ConfigureNtpServers(new List<string> { "ntp.tencent.com" }, 0);
+        var name2 = _service.CurrentProviderName;
+
+        // Assert - 两次配置都应成功
+        name1.Should().NotBe("未初始化");
+        name2.Should().NotBe("未初始化");
     }
 
     [Fact]
-    public void Configure_更新配置后应该重置失败计数器()
+    public void ConfigureNtpServers_负索引不应该抛出异常()
     {
-        // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
-        
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 600,
-            timeout: 10,
-            maxRetryCount: 10,
-            backoffMultiplier: 3.0,
-            triggerThreshold: 15);
-
-        // Assert
-        _service.FailureCount.Should().Be(0);
-    }
-
-    [Fact]
-    public void Start_未启用时不应该启动()
-    {
-        // Arrange
-        _service.Configure(enabled: false, interval: 300, timeout: 3, maxRetryCount: 3, backoffMultiplier: 2.0, triggerThreshold: 5);
-
-        // Act
-        _service.Start();
-
-        // Assert
-        _service.IsRunning.Should().BeFalse();
-    }
-
-    [Fact]
-    public void FailureCount_应该正确记录失败次数()
-    {
-        // Arrange
-        _service.Configure(enabled: true, interval: 300, timeout: 3, maxRetryCount: 5, backoffMultiplier: 2.0, triggerThreshold: 5);
-
-        // Act & Assert - FailureCount 应该是 0
-        _service.FailureCount.Should().Be(0);
-    }
-
-    [Fact]
-    public void IsCloudSynchronized_应该反映时间服务的状态()
-    {
-        // Arrange
-        _mockTimeService.Setup(x => x.IsCloudSynchronized).Returns(true);
-
-        // Act
-        var isSynced = _mockTimeService.Object.IsCloudSynchronized;
-
-        // Assert
-        isSynced.Should().BeTrue();
-    }
-
-    [Fact]
-    public void Configure_应该支持零间隔()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 0,
-            timeout: 3,
-            maxRetryCount: 5,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 5);
-
-        // Assert
-        _service.CalibrationInterval.Should().Be(0);
-    }
-
-    [Fact]
-    public void Configure_应该支持很大的间隔()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 3600,
-            timeout: 10,
-            maxRetryCount: 5,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 5);
-
-        // Assert
-        _service.CalibrationInterval.Should().Be(3600);
-    }
-
-    [Fact]
-    public void Configure_应该支持零超时()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 300,
-            timeout: 0,
-            maxRetryCount: 5,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 5);
-
-        // Assert
-        _service.CalibrationTimeout.Should().Be(0);
-    }
-
-    [Fact]
-    public void Configure_应该支持零重试次数()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 300,
-            timeout: 3,
-            maxRetryCount: 0,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 5);
-
-        // Assert
-        _service.MaxRetryCount.Should().Be(0);
-    }
-
-    [Fact]
-    public void Configure_应该支持零退避乘数()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 300,
-            timeout: 3,
-            maxRetryCount: 5,
-            backoffMultiplier: 0.0,
-            triggerThreshold: 5);
-
-        // Assert
-        _service.BackoffMultiplier.Should().Be(0.0);
-    }
-
-    [Fact]
-    public void Configure_应该支持零触发阈值()
-    {
-        // Act
-        _service.Configure(
-            enabled: true,
-            interval: 300,
-            timeout: 3,
-            maxRetryCount: 5,
-            backoffMultiplier: 2.0,
-            triggerThreshold: 0);
-
-        // Assert
-        _service.CalibrationTriggerThreshold.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task Calibrate_应该触发时间跳跃事件()
-    {
-        // Arrange
-        var testTime = new DateTime(2026, 3, 15, 10, 0, 0);
-        _mockTimeService.Setup(x => x.GetCurrentTime()).Returns(testTime);
-        _mockTimeService.Setup(x => x.IsCloudSynchronized).Returns(true);
-
-        // Act
-        await _service.CalibrateAsync();
-
-        // Assert
-        // 注意：由于网络请求可能失败，我们只验证没有抛出异常
-        // 真正的时间跳跃应该在成功校准时触发
-    }
-
-    [Fact]
-    public async Task CalibrateAsync_应该不抛出异常()
-    {
-        // Arrange
-        var testTime = new DateTime(2026, 3, 15, 10, 0, 0);
-        _mockTimeService.Setup(x => x.GetCurrentTime()).Returns(testTime);
-
-        // Act & Assert - 不应该抛出异常
-        var action = async () => await _service.CalibrateAsync();
-        await action.Should().NotThrowAsync();
+        // Act & Assert - 负索引应使用全部服务器
+        var action = () => _service.ConfigureNtpServers(new List<string> { "ntp.aliyun.com" }, -1);
+        action.Should().NotThrow();
+        _service.CurrentProviderName.Should().NotBe("未初始化");
     }
 }
