@@ -1,29 +1,9 @@
 using System;
 using System.Diagnostics;
+using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services
 {
-    /// <summary>
-    /// 日志等级
-    /// </summary>
-    public enum LogLevel
-    {
-        /// <summary>
-        /// 信息
-        /// </summary>
-        INF,
-
-        /// <summary>
-        /// 警告
-        /// </summary>
-        WRN,
-
-        /// <summary>
-        /// 错误
-        /// </summary>
-        ERR
-    }
-
     /// <summary>
     /// 日志记录器
     /// </summary>

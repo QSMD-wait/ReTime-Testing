@@ -62,6 +62,11 @@ namespace ReTime_Testing.Services
         public string TimeTopSettingFilePath { get; private set; } = string.Empty;
 
         /// <summary>
+        /// 获取日志文件目录路径
+        /// </summary>
+        public string LogsDirectory { get; private set; } = string.Empty;
+
+        /// <summary>
         /// 全局配置变更事件
         /// </summary>
         public event Action<GlobalSetting>? OnGlobalSettingChanged;
@@ -87,6 +92,7 @@ namespace ReTime_Testing.Services
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
                 TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeSchedules");
                 TimeTopSettingFilePath = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeTopSetting.json");
+                LogsDirectory = Path.Combine(DataDirectory, "Logs");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
@@ -111,6 +117,7 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(ConfigsDirectory);
                 EnsureDirectoryExists(TimeSchedulesDirectory);
                 EnsureTimeTopSettingExists();
+                EnsureDirectoryExists(LogsDirectory);
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager", 
                     "目录结构初始化完成");
@@ -202,6 +209,11 @@ namespace ReTime_Testing.Services
                 var result = new GlobalSetting();
                 result.Version = TryGetString(rootNode, "version") ?? result.Version;
                 result.Basic = TryDeserializeDomain<BasicSetting>(rootNode, "basic") ?? result.Basic;
+
+                // 填充日志配置缺失字段的默认值
+                result.Basic.Log ??= new LogConfig();
+                result.Basic.Log.RetainedDays = Math.Max(1, result.Basic.Log.RetainedDays);
+                result.Basic.Log.FileSizeLimitMB = Math.Max(1, result.Basic.Log.FileSizeLimitMB);
 
                 _cachedGlobalSetting = result;
 

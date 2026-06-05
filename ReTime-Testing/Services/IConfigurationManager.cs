@@ -24,6 +24,11 @@ public interface IConfigurationManager
     string TimeSchedulesDirectory { get; }
 
     /// <summary>
+    /// 获取日志文件目录路径
+    /// </summary>
+    string LogsDirectory { get; }
+
+    /// <summary>
     /// 全局配置变更事件
     /// </summary>
     event Action<GlobalSetting>? OnGlobalSettingChanged;
