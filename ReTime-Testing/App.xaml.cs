@@ -113,6 +113,12 @@ protected override void OnStartup(StartupEventArgs e)
                 // 加载全局配置（确保空文件/缺失字段被正确初始化）
                 var globalSetting = configManager.LoadGlobalSetting();
 
+                // 初始化 Serilog 日志服务（必须在其他服务之前，确保 Logger 走 Serilog 管道）
+                var logConfig = new LogServiceConfiguration(globalSetting.Basic.Log, configManager.LogsDirectory);
+                SerilogLogService.Initialize(logConfig);
+                Logger.OnSerilogReady(); // 回放缓存的早期日志到同一文件
+                Logger.Info(GetType().FullName ?? "App", "Serilog 日志服务已初始化");
+
                 // 初始化主题服务并应用配置
                 _themeService = new ThemeService();
                 _themeService.ApplyTheme(globalSetting.Basic.Theme);
@@ -519,6 +525,9 @@ else
                 // 释放互斥锁
                 _mutexManager?.Release();
 
+                // 释放日志服务（确保缓冲区刷新）
+                SerilogLogService.Instance?.Dispose();
+
                 // 取消事件订阅
                 if (_trayIconService != null)
                 {
@@ -572,6 +581,9 @@ else
             }
 
             Logger.Info(GetType().FullName ?? "App", "应用程序退出");
+
+            // 释放日志服务（确保缓冲区刷新）
+            SerilogLogService.Instance?.Dispose();
 
             base.OnExit(e);
         }

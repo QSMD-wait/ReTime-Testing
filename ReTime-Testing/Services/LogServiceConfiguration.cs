@@ -1,4 +1,5 @@
 
+using System.IO;
 using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services
@@ -35,13 +36,13 @@ namespace ReTime_Testing.Services
         public long FileSizeLimitBytes { get; }
 
         /// <summary>
-        /// 默认构造函数（使用默认值）
+        /// 默认构造函数（使用默认值，基于应用根目录的绝对路径）
         /// </summary>
         public LogServiceConfiguration()
         {
             EnableFileOutput = true;
             MinimumLevel = LogLevel.INF;
-            LogDirectory = "data/Logs";
+            LogDirectory = Path.Combine(AppContext.BaseDirectory, "data", "Logs");
             RetainedFileCountLimit = 30;
             FileSizeLimitBytes = 10 * 1024L * 1024L;
         }

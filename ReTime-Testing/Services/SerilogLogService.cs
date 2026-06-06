@@ -1,9 +1,11 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Serilog;
 using Serilog.Events;
 using Serilog.Configuration;
+using Serilog.Parsing;
 using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services
@@ -11,29 +13,20 @@ namespace ReTime_Testing.Services
     /// <summary>
     /// 基于 Serilog 的日志服务实现
     /// </summary>
-    public class SerilogLogService : ILogService
+    public class SerilogLogService : ILogService, IDisposable
     {
         private readonly ILogger _logger;
         private static SerilogLogService? _instance;
         private static readonly object _lock = new();
+        private static readonly MessageTemplateParser _templateParser = new();
+        private static readonly Regex _datePattern = new(@"RTT_log-(\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
+        private bool _disposed;
 
         /// <summary>
-        /// 获取日志服务单例实例
+        /// 获取日志服务单例实例。
+        /// 若尚未通过 Initialize() 初始化，则返回 null。
         /// </summary>
-        public static SerilogLogService Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        _instance ??= new SerilogLogService(new LogServiceConfiguration());
-                    }
-                }
-                return _instance;
-            }
-        }
+        public static SerilogLogService? Instance => _instance;
 
         /// <summary>
         /// 使用配置初始化日志服务单例
@@ -51,6 +44,9 @@ namespace ReTime_Testing.Services
         /// </summary>
         private SerilogLogService(LogServiceConfiguration configuration)
         {
+            // 确保控制台输出使用 UTF-8 编码，解决中文乱码
+            System.Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             var serilogLevel = ToSerilogLevel(configuration.MinimumLevel);
             var logDirectory = Path.GetFullPath(configuration.LogDirectory);
 
@@ -83,7 +79,8 @@ namespace ReTime_Testing.Services
                     rollingInterval: RollingInterval.Infinite,
                     fileSizeLimitBytes: configuration.FileSizeLimitBytes,
                     rollOnFileSizeLimit: true,
-                    restrictedToMinimumLevel: serilogLevel);
+                    restrictedToMinimumLevel: serilogLevel,
+                    encoding: System.Text.Encoding.UTF8);
 
                 // 清理过期日志文件
                 CleanExpiredLogs(logDirectory, configuration.RetainedFileCountLimit);
@@ -121,7 +118,8 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 清理过期的日志文件。
-        /// 按文件创建时间，删除超过保留天数的 RTT_log-*.log 文件。
+        /// 从文件名 RTT_log-YYYY-MM-DD-HH-MM-SS.log 中解析日期，
+        /// 删除超过保留天数的文件。
         /// </summary>
         private static void CleanExpiredLogs(string logDirectory, int retainedDays)
         {
@@ -134,8 +132,10 @@ namespace ReTime_Testing.Services
 
                 foreach (var file in logFiles)
                 {
-                    var fileInfo = new FileInfo(file);
-                    if (fileInfo.CreationTime < cutoff)
+                    var match = _datePattern.Match(Path.GetFileName(file));
+                    if (!match.Success) continue;
+
+                    if (DateTime.TryParse(match.Groups[1].Value, out var fileDate) && fileDate < cutoff)
                     {
                         try
                         {
@@ -188,6 +188,31 @@ namespace ReTime_Testing.Services
         public void Error(string module, string message, Exception exception)
         {
             _logger.ForContext("SourceContext", module).Error(exception, message);
+        }
+
+        /// <summary>
+        /// 使用指定时间戳写入日志（用于回放早期缓存日志）
+        /// </summary>
+        internal void WriteWithTimestamp(LogLevel level, string module, string message, DateTimeOffset timestamp, Exception? exception = null)
+        {
+            var serilogLevel = ToSerilogLevel(level);
+            var parsedTemplate = _templateParser.Parse(message);
+            var properties = new[]
+            {
+                new LogEventProperty("SourceContext", new ScalarValue(module))
+            };
+            var logEvent = new LogEvent(timestamp, serilogLevel, exception, parsedTemplate, properties);
+            _logger.Write(logEvent);
+        }
+
+        /// <summary>
+        /// 释放 Serilog 日志资源，确保缓冲区刷新
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            (_logger as IDisposable)?.Dispose();
         }
 
         /// <summary>
