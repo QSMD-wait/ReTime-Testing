@@ -145,27 +145,6 @@ protected override void OnStartup(StartupEventArgs e)
                 _timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
                 Logger.Info(GetType().FullName ?? "App", "时间校准服务已初始化");
 
-                // 4. 启动时执行首次校准
-                if (timeTopSetting.Calibration.Enabled)
-                {
-                    try
-                    {
-                        var success = await _timeCalibrationService.CalibrateAsync();
-                        if (success)
-                        {
-                            Logger.Info(GetType().FullName ?? "App", "首次校准成功");
-                        }
-                        else
-                        {
-                            Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
-                    }
-                }
-
                 // 5. 初始化执行计划生成器
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
@@ -211,6 +190,27 @@ protected override void OnStartup(StartupEventArgs e)
                 // 8. 启动时间校准服务（长期运行）
                 _timeCalibrationService.Start();
                 Logger.Info(GetType().FullName ?? "App", "时间校准服务已启动");
+
+                // 9. 启动后执行首次校准
+                if (timeTopSetting.Calibration.Enabled)
+                {
+                    try
+                    {
+                        var success = await _timeCalibrationService.CalibrateAsync();
+                        if (success)
+                        {
+                            Logger.Info(GetType().FullName ?? "App", "首次校准成功");
+                        }
+                        else
+                        {
+                            Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
+                    }
+                }
 
                 // 注意：不再调用 GlobalTimeTopDesktopService.Instance.InitializeAndApplySchedule()
                 // 因为现在使用新的 ScheduleManager 进行调度，避免双重调度冲突

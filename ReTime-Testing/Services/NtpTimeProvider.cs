@@ -31,7 +31,7 @@ public class NtpTimeProvider : ITimeProvider
                 var result = await GetNtpTimeWithRttAsync(serverAddress, timeout);
                 if (result != null)
                 {
-                    Logger.Info("NtpTimeProvider",
+                    Logger.Debug("NtpTimeProvider",
                         $"成功从 {serverAddress} 获取NTP时间: UTC={result.UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
                     return result;
                 }

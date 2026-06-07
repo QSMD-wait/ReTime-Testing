@@ -95,7 +95,7 @@ public class AbsoluteTimeService : ITimeService, IDisposable
             _isCloudSynchronized = true;
         }
 
-        Logger.Info("AbsoluteTimeService", $"微调偏移: 偏移量={offset.TotalSeconds:F2}秒");
+        Logger.Debug("AbsoluteTimeService", $"微调偏移: 偏移量={offset.TotalSeconds:F2}秒");
     }
 
     /// <summary>

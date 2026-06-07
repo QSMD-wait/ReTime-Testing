@@ -89,7 +89,7 @@ public class CloudCalibrationService : ICloudCalibrationService
             {
                 LastRttMs = result.RoundTripTime.TotalMilliseconds;
 
-                Logger.Info("CloudCalibrationService",
+                Logger.Debug("CloudCalibrationService",
                     $"获取云端时间成功: UTC={result.UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
             }
 

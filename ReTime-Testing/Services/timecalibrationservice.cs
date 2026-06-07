@@ -102,7 +102,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
             return;
         }
 
-        _calibrationTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(_currentInterval));
+        _calibrationTimer.Change(TimeSpan.FromSeconds(_currentInterval), TimeSpan.FromSeconds(_currentInterval));
         _isRunning = true;
 
         Logger.Info("TimeCalibrationService",
@@ -239,7 +239,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
 
                 if (absOffset.TotalSeconds > _config.TriggerSeconds)
                 {
-                    Logger.Info("TimeCalibrationService",
+                    Logger.Debug("TimeCalibrationService",
                         $"校准时间: 本地={localTime:HH:mm:ss.fff}, 校准源={calibratedTime.Value:HH:mm:ss.fff}, " +
                         $"偏差={absOffset.TotalSeconds:F2}秒, 源={_config.Source}");
 
@@ -248,14 +248,14 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
                     {
                         // 微调校准：偏差较小，仅应用偏移量，不触发 TimeJumped 事件
                         _timeService.ApplyOffset(offset);
-                        Logger.Info("TimeCalibrationService",
+                        Logger.Debug("TimeCalibrationService",
                             $"微调校准: 偏差={absOffset.TotalSeconds:F2}秒 (阈值<={_config.MinorThresholdSeconds}秒)");
                     }
                     else
                     {
                         // 跳跃校准：偏差较大，硬跳并触发 TimeJumped 事件
                         _timeService.Calibrate(calibratedTime.Value, reason, TimeJumpSeverity.Major);
-                        Logger.Info("TimeCalibrationService",
+                        Logger.Debug("TimeCalibrationService",
                             $"跳跃校准: 偏差={absOffset.TotalSeconds:F2}秒 (阈值>{_config.MinorThresholdSeconds}秒)");
                     }
 
@@ -271,8 +271,12 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
                 }
                 else
                 {
-                    Logger.Info("TimeCalibrationService",
+                    Logger.Debug("TimeCalibrationService",
                         $"偏差在阈值内: {absOffset.TotalSeconds:F2}秒 (阈值<={_config.TriggerSeconds}秒)，无需校准");
+
+                    _lastCalibrationTime = _timeService.GetCurrentTime();
+                    _failureCount = 0;
+                    return true;
                 }
             }
 
