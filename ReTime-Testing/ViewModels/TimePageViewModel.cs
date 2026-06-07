@@ -16,6 +16,15 @@ public class NtpServerOption
 }
 
 /// <summary>
+/// 校准源选项
+/// </summary>
+public class CalibrationSourceOption
+{
+    public string DisplayName { get; set; } = string.Empty;
+    public CalibrationSource Source { get; set; }
+}
+
+/// <summary>
 /// 时间设置页面 ViewModel
 /// </summary>
 public partial class TimePageViewModel : ObservableObject, IDisposable
@@ -60,11 +69,23 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _calibrationInfo = string.Empty;
 
+    [ObservableProperty]
+    private CalibrationSourceOption? _selectedSource = null;
+
+    [ObservableProperty]
+    private bool _isCloudSourceSelected = false;
+
     public List<NtpServerOption> NtpServers { get; } = new()
     {
         new NtpServerOption { DisplayName = "阿里云NTP", Address = NtpServerDefaults.Servers[0] },
         new NtpServerOption { DisplayName = "国家授时中心", Address = NtpServerDefaults.Servers[1] },
         new NtpServerOption { DisplayName = "Windows时间", Address = NtpServerDefaults.Servers[2] }
+    };
+
+    public List<CalibrationSourceOption> CalibrationSources { get; } = new()
+    {
+        new CalibrationSourceOption { DisplayName = "系统时间", Source = CalibrationSource.System },
+        new CalibrationSourceOption { DisplayName = "云端NTP", Source = CalibrationSource.Cloud }
     };
 
     public TimePageViewModel(IConfigurationManager? configManager = null, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
@@ -187,6 +208,9 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         IntervalSeconds = _setting.Calibration.IntervalSeconds;
         TriggerSeconds = _setting.Calibration.TriggerSeconds;
 
+        SelectedSource = CalibrationSources.FirstOrDefault(s => s.Source == _setting.Calibration.Source) ?? CalibrationSources[0];
+        IsCloudSourceSelected = _setting.Calibration.Source == CalibrationSource.Cloud;
+
         var address = _setting.Calibration.Cloud.SelectedServerAddress;
         SelectedNtpServer = NtpServers.FirstOrDefault(s => s.Address == address) ?? NtpServers[0];
     }
@@ -227,6 +251,16 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     partial void OnTriggerSecondsChanged(int value)
     {
         _setting.Calibration.TriggerSeconds = value;
+        SaveSettings();
+        SyncSettingsToService();
+    }
+
+    partial void OnSelectedSourceChanged(CalibrationSourceOption? value)
+    {
+        if (value == null) return;
+
+        _setting.Calibration.Source = value.Source;
+        IsCloudSourceSelected = value.Source == CalibrationSource.Cloud;
         SaveSettings();
         SyncSettingsToService();
     }

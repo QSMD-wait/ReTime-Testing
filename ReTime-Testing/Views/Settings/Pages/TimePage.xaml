@@ -8,6 +8,9 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="600">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
         <StackPanel>
 
@@ -33,9 +36,9 @@
                 </StackPanel>
             </Border>
 
-            <!-- 云端校准开关 -->
-            <controls:SettingsCard Title="启用云端校准"
-                                    Description="定期从NTP服务器获取时间进行校准，确保系统时间准确"
+            <!-- 时间校准总开关 -->
+            <controls:SettingsCard Title="启用时间校准"
+                                    Description="启用后定期从选定来源获取时间，校准绝对时钟，确保进度条走时准确"
                                     Icon="{x:Static ui:FluentSystemIcons.Clock_20_Filled}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
@@ -43,9 +46,22 @@
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
+            <!-- 校准源选择 -->
+            <controls:SettingsCard Title="校准源"
+                                    Description="选择时间校准的来源"
+                                    Icon="{x:Static ui:FluentSystemIcons.Globe_20_Filled}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ComboBox ItemsSource="{Binding CalibrationSources}"
+                              SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              MinWidth="180"/>
+                </controls:SettingsCard.ControlContent>
+            </controls:SettingsCard>
+
             <!-- 立即校准按钮 -->
             <controls:SettingsCard Title="手动校准"
-                                    Description="立即从NTP服务器获取时间进行一次校准"
+                                    Description="立即从选定校准源获取时间进行一次校准"
                                     Icon="{x:Static ui:FluentSystemIcons.ArrowSync_20_Filled}"
                                     Margin="0">
                 <controls:SettingsCard.ControlContent>
@@ -119,11 +135,12 @@
                 </controls:SettingsCard.ExpandContent>
             </controls:SettingsCard>
 
-            <!-- NTP服务器选择 -->
+            <!-- NTP服务器选择（仅云端源可见） -->
             <controls:SettingsCard Title="NTP服务器"
                                     Description="选择用于时间同步的NTP服务器"
                                     Icon="{x:Static ui:FluentSystemIcons.Cloud_20_Filled}"
-                                    Margin="0">
+                                    Margin="0"
+                                    Visibility="{Binding IsCloudSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <controls:SettingsCard.ControlContent>
                     <ComboBox ItemsSource="{Binding NtpServers}"
                               SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
