@@ -188,6 +188,9 @@ protected override void OnStartup(StartupEventArgs e)
                         var currentTime = _timeService.GetCurrentTime();
                         var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
 
+                        // 始终创建 ScheduleManager 实例（窗口构造需要非空实例）
+                        _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
+
                         if (executionPlan == null)
                         {
                             // 验证失败，保持空闲状态，记录警告
@@ -199,7 +202,6 @@ protected override void OnStartup(StartupEventArgs e)
                             Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
 
                             // 7. 初始化调度管理器
-                            _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
                             _scheduleManager.Initialize(executionPlan);
                             Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
                         }
