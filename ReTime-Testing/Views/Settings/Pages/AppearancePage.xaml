@@ -21,6 +21,22 @@
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
+            <!-- 文字效果 -->
+            <controls:SettingsCard Title="字体效果"
+                                    Description="选择进度条文字的字体效果样式（描边可能造成文字边缘模糊）"
+                                    Icon="{x:Static ui:FluentSystemIcons.TextFont_20_Filled}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ComboBox SelectedValue="{Binding SelectedTextEffect, Mode=TwoWay}"
+                              SelectedValuePath="Tag"
+                              MinWidth="120">
+                        <ComboBoxItem Content="无效果" Tag="none"/>
+                        <ComboBoxItem Content="阴影" Tag="shadow"/>
+                        <ComboBoxItem Content="描边" Tag="outline"/>
+                    </ComboBox>
+                </controls:SettingsCard.ControlContent>
+            </controls:SettingsCard>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -88,18 +88,29 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _enableShadow = true;
 
+        [ObservableProperty]
+        private string _selectedTextEffect = "none";
+
         public AppearancePageViewModel(IConfigurationManager? configManager = null)
         {
             _configManager = configManager ?? ConfigurationManager.Instance;
             _setting = _configManager.LoadTimeTopSetting();
 
             EnableShadow = _setting.ProgressBar.EnableShadow;
+            SelectedTextEffect = _setting.TextOverlay.Style.TextEffect ?? "shadow";
         }
 
         partial void OnEnableShadowChanged(bool value)
         {
             _setting.ProgressBar.EnableShadow = value;
             SaveSetting();
+        }
+
+        partial void OnSelectedTextEffectChanged(string value)
+        {
+            _setting.TextOverlay.Style.TextEffect = value;
+            SaveSetting();
+            DesktopWindowManager.Instance.RefreshTextOverlay();
         }
 
         private void SaveSetting()
@@ -130,7 +141,7 @@ namespace ReTime_Testing.ViewModels
         private string _selectedTopmostMode = "OnDeactivated";
 
         [ObservableProperty]
-        private string _selectedPosition = "Top";
+        private string _selectedPosition = "top";
 
         [ObservableProperty]
         private bool _useFullScreen = false;
@@ -141,7 +152,7 @@ namespace ReTime_Testing.ViewModels
             _setting = _configManager.LoadTimeTopSetting();
 
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
-            SelectedPosition = PositionToString(ParsePosition(_setting.ProgressBar.Position));
+            SelectedPosition = _setting.ProgressBar.Position ?? "top";
             UseFullScreen = _setting.Window.UseFullScreen;
         }
 
@@ -179,17 +190,6 @@ namespace ReTime_Testing.ViewModels
                 "left" => ProgressBarPosition.Left,
                 "right" => ProgressBarPosition.Right,
                 _ => ProgressBarPosition.Top
-            };
-        }
-
-        private static string PositionToString(ProgressBarPosition position)
-        {
-            return position switch
-            {
-                ProgressBarPosition.Bottom => "Bottom",
-                ProgressBarPosition.Left => "Left",
-                ProgressBarPosition.Right => "Right",
-                _ => "Top"
             };
         }
 

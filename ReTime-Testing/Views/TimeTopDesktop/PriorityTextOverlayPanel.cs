@@ -186,12 +186,14 @@ public class PriorityTextOverlayPanel : FrameworkElement
         double baseY = (RenderSize.Height - fontSize) / 2 - 2;
         double y = Math.Max(0, baseY - verticalOffset);
 
+        var textEffect = style.TextEffect ?? "none";
+
         foreach (var item in leftItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
         foreach (var item in centerItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
         foreach (var item in rightItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
     }
 
     private static List<MeasuredSlot> MeasureGroup(
@@ -230,19 +232,67 @@ public class PriorityTextOverlayPanel : FrameworkElement
 
     private static void DrawItem(DrawingContext dc, MeasuredSlot item, double y,
         Typeface typeface, double pixelsPerDip, double fontSize,
-        Brush textBrush, Brush separatorBrush)
+        Brush textBrush, Brush separatorBrush, string textEffect)
     {
-        var formattedText = new FormattedText(
+        var mainText = new FormattedText(
             item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
             typeface, fontSize, textBrush, pixelsPerDip);
-        dc.DrawText(formattedText, new Point(item.X, y));
+
+        switch (textEffect)
+        {
+            case "shadow":
+                var shadowBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+                shadowBrush.Freeze();
+                dc.DrawText(new FormattedText(
+                    item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                    typeface, fontSize, shadowBrush, pixelsPerDip),
+                    new Point(item.X + 1, y + 1));
+                dc.DrawText(mainText, new Point(item.X, y));
+                break;
+
+            case "outline":
+                var outlinePen = new Pen(new SolidColorBrush(Color.FromArgb(160, 0, 0, 0)), 0.8);
+                outlinePen.Freeze();
+                var textGeo = mainText.BuildGeometry(new Point(item.X, y));
+                dc.DrawGeometry(null, outlinePen, textGeo);
+                dc.DrawText(mainText, new Point(item.X, y));
+                break;
+
+            default:
+                dc.DrawText(mainText, new Point(item.X, y));
+                break;
+        }
 
         if (item.SeparatorWidth > 0)
         {
-            var formattedSep = new FormattedText(
+            var mainSep = new FormattedText(
                 item.Slot.Separator, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 typeface, fontSize, separatorBrush, pixelsPerDip);
-            dc.DrawText(formattedSep, new Point(item.X + item.TextWidth, y));
+
+            switch (textEffect)
+            {
+                case "shadow":
+                    var shadowBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+                    shadowBrush.Freeze();
+                    dc.DrawText(new FormattedText(
+                        item.Slot.Separator, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                        typeface, fontSize, shadowBrush, pixelsPerDip),
+                        new Point(item.X + item.TextWidth + 1, y + 1));
+                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
+                    break;
+
+                case "outline":
+                    var outlinePen = new Pen(new SolidColorBrush(Color.FromArgb(160, 0, 0, 0)), 0.8);
+                    outlinePen.Freeze();
+                    var sepGeo = mainSep.BuildGeometry(new Point(item.X + item.TextWidth, y));
+                    dc.DrawGeometry(null, outlinePen, sepGeo);
+                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
+                    break;
+
+                default:
+                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
+                    break;
+            }
         }
     }
 

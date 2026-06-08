@@ -58,10 +58,8 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isVisible;
 
-    /// <summary>
-    /// 样式配置
-    /// </summary>
-    public TextOverlayStyleConfig Style => _config.Style;
+    [ObservableProperty]
+    private TextOverlayStyleConfig _style = new();
 
     /// <summary>
     /// 构造函数
@@ -94,6 +92,7 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
         var setting = _configManager.LoadTimeTopSetting();
         _config = setting.TextOverlay ?? new TextOverlayConfig();
         IsVisible = _config.Enabled;
+        Style = _config.Style;
     }
 
     /// <summary>

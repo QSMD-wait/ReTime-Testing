@@ -177,6 +177,12 @@ public class TextOverlayStyleConfig
     /// </summary>
     [JsonPropertyName("verticalOffset")]
     public double VerticalOffset { get; set; } = 0;
+
+    /// <summary>
+    /// 文字效果类型：none=无效果，shadow=阴影，outline=描边
+    /// </summary>
+    [JsonPropertyName("textEffect")]
+    public string TextEffect { get; set; } = "none";
 }
 
 /// <summary>

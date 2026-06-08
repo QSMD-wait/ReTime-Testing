@@ -21,10 +21,10 @@
                     <ComboBox SelectedValue="{Binding SelectedPosition, Mode=TwoWay}"
                               SelectedValuePath="Tag"
                               MinWidth="160">
-                        <ComboBoxItem Content="顶部" Tag="Top"/>
-                        <ComboBoxItem Content="底部" Tag="Bottom"/>
-                        <ComboBoxItem Content="左侧" Tag="Left"/>
-                        <ComboBoxItem Content="右侧" Tag="Right"/>
+                        <ComboBoxItem Content="顶部" Tag="top"/>
+                        <ComboBoxItem Content="底部" Tag="bottom"/>
+                        <ComboBoxItem Content="左侧" Tag="left"/>
+                        <ComboBoxItem Content="右侧" Tag="right"/>
                     </ComboBox>
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>

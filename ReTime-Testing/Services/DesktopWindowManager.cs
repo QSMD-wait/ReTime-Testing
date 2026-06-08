@@ -74,6 +74,19 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 刷新文字覆盖配置（用于文字效果等样式变更后热重载）
+        /// </summary>
+        public void RefreshTextOverlay()
+        {
+            if (_currentWindow == null || !_currentWindow.IsLoaded) return;
+
+            if (_currentWindow.DataContext is TimeTopDesktopViewModel vm && vm.TextOverlay != null)
+            {
+                vm.TextOverlay.LoadConfig();
+            }
+        }
+
+        /// <summary>
         /// 获取当前窗口
         /// </summary>
         public Window? CurrentWindow => _currentWindow;
