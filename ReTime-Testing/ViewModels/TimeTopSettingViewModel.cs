@@ -132,6 +132,9 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedPosition = "Top";
 
+        [ObservableProperty]
+        private bool _useFullScreen = false;
+
         public WindowPageViewModel(IConfigurationManager? configManager = null)
         {
             _configManager = configManager ?? ConfigurationManager.Instance;
@@ -139,6 +142,7 @@ namespace ReTime_Testing.ViewModels
 
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
             SelectedPosition = PositionToString(ParsePosition(_setting.ProgressBar.Position));
+            UseFullScreen = _setting.Window.UseFullScreen;
         }
 
         partial void OnSelectedTopmostModeChanged(string value)
@@ -157,6 +161,14 @@ namespace ReTime_Testing.ViewModels
             SaveSetting();
 
             DesktopWindowManager.Instance.SetPosition(position);
+        }
+
+        partial void OnUseFullScreenChanged(bool value)
+        {
+            _setting.Window.UseFullScreen = value;
+            SaveSetting();
+
+            DesktopWindowManager.Instance.RefreshPosition();
         }
 
         private static ProgressBarPosition ParsePosition(string value)

@@ -45,6 +45,16 @@
                 </controls:SettingsCard.ControlContent>
             </controls:SettingsCard>
 
+            <!-- 使用实际屏幕尺寸 -->
+            <controls:SettingsCard Title="使用实际屏幕尺寸"
+                                    Description="使用实际屏幕尺寸定位窗口，忽略系统工作区范围（进度条将覆盖任务栏及类似功能区域）"
+                                    Icon="{x:Static ui:FluentSystemIcons.ResizeLarge_24_Filled}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ui:ToggleSwitch IsOn="{Binding UseFullScreen, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                </controls:SettingsCard.ControlContent>
+            </controls:SettingsCard>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

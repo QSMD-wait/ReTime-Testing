@@ -363,10 +363,10 @@ namespace ReTime_Testing.Models
     /// </summary>
     public class WindowConfig
     {
-        /// <summary>
-        /// 窗口层级维持模式
-        /// </summary>
         [JsonPropertyName("topmostMode")]
         public TopmostMode TopmostMode { get; set; } = TopmostMode.OnDeactivated;
+
+        [JsonPropertyName("useFullScreen")]
+        public bool UseFullScreen { get; set; } = false;
     }
 }

@@ -63,6 +63,17 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 刷新当前位置（重新应用窗口定位，用于全屏模式变更后）
+        /// </summary>
+        public void RefreshPosition()
+        {
+            if (_currentWindow != null && _currentWindow.IsLoaded)
+            {
+                DesktopWindowHelper.SetWindowPosition(_currentWindow, _currentPosition);
+            }
+        }
+
+        /// <summary>
         /// 获取当前窗口
         /// </summary>
         public Window? CurrentWindow => _currentWindow;

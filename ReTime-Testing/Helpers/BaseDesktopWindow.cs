@@ -55,21 +55,39 @@ namespace ReTime_Testing.Helpers
         /// </summary>
         public static void SetWindowPosition(Window window, ProgressBarPosition position)
         {
-            var workingArea = SystemParameters.WorkArea;
+            var setting = Services.ConfigurationManager.Instance.LoadTimeTopSetting();
+            SetWindowPosition(window, position, setting.Window.UseFullScreen);
+        }
+
+        public static void SetWindowPosition(Window window, ProgressBarPosition position, bool useFullScreen)
+        {
+            double width, height;
+
+            if (useFullScreen)
+            {
+                width = SystemParameters.PrimaryScreenWidth;
+                height = SystemParameters.PrimaryScreenHeight;
+            }
+            else
+            {
+                var workingArea = SystemParameters.WorkArea;
+                width = workingArea.Width;
+                height = workingArea.Height;
+            }
 
             switch (position)
             {
                 case ProgressBarPosition.Top:
-                    WindowHelper.SetWindowPosition(window, 0, 0, workingArea.Width, WindowExtension);
+                    WindowHelper.SetWindowPosition(window, 0, 0, width, WindowExtension);
                     break;
                 case ProgressBarPosition.Bottom:
-                    WindowHelper.SetWindowPosition(window, 0, workingArea.Height - WindowExtension, workingArea.Width, WindowExtension);
+                    WindowHelper.SetWindowPosition(window, 0, height - WindowExtension, width, WindowExtension);
                     break;
                 case ProgressBarPosition.Left:
-                    WindowHelper.SetWindowPosition(window, 0, 0, WindowExtension, workingArea.Height);
+                    WindowHelper.SetWindowPosition(window, 0, 0, WindowExtension, height);
                     break;
                 case ProgressBarPosition.Right:
-                    WindowHelper.SetWindowPosition(window, workingArea.Width - WindowExtension, 0, WindowExtension, workingArea.Height);
+                    WindowHelper.SetWindowPosition(window, width - WindowExtension, 0, WindowExtension, height);
                     break;
             }
         }
