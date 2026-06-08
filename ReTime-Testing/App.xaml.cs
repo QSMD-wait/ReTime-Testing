@@ -149,6 +149,9 @@ protected override void OnStartup(StartupEventArgs e)
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
+                // 始终创建 ScheduleManager 实例（窗口构造需要非空实例）
+                _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
+
                 // 6. 生成执行计划
                 if (!timeTopSetting.Schedule.Enabled)
                 {
@@ -166,9 +169,6 @@ protected override void OnStartup(StartupEventArgs e)
                     {
                         var currentTime = _timeService.GetCurrentTime();
                         var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
-
-                        // 始终创建 ScheduleManager 实例（窗口构造需要非空实例）
-                        _scheduleManager = new ScheduleManager(_timeService, GlobalTimeTopDesktopService.Instance.StateManager);
 
                         if (executionPlan == null)
                         {
@@ -240,8 +240,9 @@ protected override void OnStartup(StartupEventArgs e)
                 // WindowManager.ShowDebugTest();
                 // WindowManager.ShowTimeScheduleEditor();
 
-                // 使用 DesktopWindowManager 打开进度条窗口（默认顶部）
-                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
+                // 使用 DesktopWindowManager 打开进度条窗口（从配置读取位置）
+                var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
+                DesktopWindowManager.Instance.SetPosition(initialPosition);
 
                 Logger.Info(GetType().FullName ?? "App", "应用程序启动成功");
             }
@@ -588,6 +589,20 @@ else
             SerilogLogService.Instance?.Dispose();
 
             base.OnExit(e);
+        }
+
+        /// <summary>
+        /// 将配置字符串解析为 ProgressBarPosition 枚举
+        /// </summary>
+        private static ProgressBarPosition ParsePosition(string position)
+        {
+            return position?.ToLowerInvariant() switch
+            {
+                "bottom" => ProgressBarPosition.Bottom,
+                "left" => ProgressBarPosition.Left,
+                "right" => ProgressBarPosition.Right,
+                _ => ProgressBarPosition.Top
+            };
         }
     }
 }
