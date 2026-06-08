@@ -6,17 +6,22 @@
         xmlns:local="clr-namespace:ReTime_Testing.Views.TimeTopDesktop"
         xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
         Title="TimeTopDesktop.Left">
 
-    <Grid IsHitTestVisible="False">
-        <ProgressBar x:Name="ProgressBar"
-                       Orientation="Vertical"
-                       HorizontalAlignment="Left"
-                       Width="5"
-                       Margin="0,0,0,0"
-                       Padding="0"
-                       BorderThickness="0"
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:BooleanToEffectConverter x:Key="BooleanToEffectConverter"/>
+    </Window.Resources>
+
+    <!-- 整体逆时针旋转90°：水平布局→垂直，进度条底→顶填充 -->
+    <Grid>
+        <Grid.LayoutTransform>
+            <RotateTransform Angle="-90"/>
+        </Grid.LayoutTransform>
+
+        <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5" Margin="0,-1,0,0"
                        Value="{Binding ProgressValue}"
                        IsIndeterminate="{Binding IsIndeterminate}"
                        Foreground="{Binding Foreground, FallbackValue=Transparent}"
@@ -25,7 +30,25 @@
                        IsEnabled="{Binding IsEnabled}"
                        Opacity="{Binding Opacity}"
                        Minimum="{Binding Minimum}"
-                       Maximum="{Binding Maximum}" />
+                       Maximum="{Binding Maximum}">
+            <ui:ProgressBar.Effect>
+                <Binding Path="EnableShadow" Converter="{StaticResource BooleanToEffectConverter}">
+                    <Binding.ConverterParameter>
+                        <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="Black" Opacity="0.3"/>
+                    </Binding.ConverterParameter>
+                </Binding>
+            </ui:ProgressBar.Effect>
+        </ui:ProgressBar>
+
+        <local:PriorityTextOverlayPanel
+              VerticalAlignment="Top"
+              Margin="0,7,0,0"
+              Height="18"
+              Visibility="{Binding TextOverlay.IsVisible, Converter={StaticResource BoolToVisibilityConverter}, FallbackValue=Collapsed}"
+              LeftSlots="{Binding TextOverlay.LeftSlots}"
+              CenterSlots="{Binding TextOverlay.CenterSlots}"
+              RightSlots="{Binding TextOverlay.RightSlots}"
+              StyleConfig="{Binding TextOverlay.Style}"/>
     </Grid>
 
 </Window>
