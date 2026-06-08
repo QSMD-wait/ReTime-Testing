@@ -12,6 +12,23 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
         <StackPanel>
 
+            <!-- 进度条位置 -->
+            <controls:SettingsCard Title="进度条位置"
+                                    Description="选择进度条在屏幕上的显示位置"
+                                    Icon="{x:Static ui:FluentSystemIcons.ArrowMove_24_Filled}"
+                                    Margin="0">
+                <controls:SettingsCard.ControlContent>
+                    <ComboBox SelectedValue="{Binding SelectedPosition, Mode=TwoWay}"
+                              SelectedValuePath="Tag"
+                              MinWidth="160">
+                        <ComboBoxItem Content="顶部" Tag="Top"/>
+                        <ComboBoxItem Content="底部" Tag="Bottom"/>
+                        <ComboBoxItem Content="左侧" Tag="Left"/>
+                        <ComboBoxItem Content="右侧" Tag="Right"/>
+                    </ComboBox>
+                </controls:SettingsCard.ControlContent>
+            </controls:SettingsCard>
+
             <!-- 窗口置顶模式 -->
             <controls:SettingsCard Title="窗口置顶维持模式"
                                     Description="选择窗口层级维持模式，保持置顶状态"

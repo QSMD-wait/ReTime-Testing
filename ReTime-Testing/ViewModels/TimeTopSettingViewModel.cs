@@ -129,12 +129,16 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedTopmostMode = "OnDeactivated";
 
+        [ObservableProperty]
+        private string _selectedPosition = "Top";
+
         public WindowPageViewModel(IConfigurationManager? configManager = null)
         {
             _configManager = configManager ?? ConfigurationManager.Instance;
             _setting = _configManager.LoadTimeTopSetting();
 
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
+            SelectedPosition = PositionToString(ParsePosition(_setting.ProgressBar.Position));
         }
 
         partial void OnSelectedTopmostModeChanged(string value)
@@ -144,6 +148,48 @@ namespace ReTime_Testing.ViewModels
                 _setting.Window.TopmostMode = mode;
                 SaveSetting();
             }
+        }
+
+        partial void OnSelectedPositionChanged(string value)
+        {
+            var position = ParsePosition(value);
+            _setting.ProgressBar.Position = PositionToConfigString(position);
+            SaveSetting();
+
+            DesktopWindowManager.Instance.SetPosition(position);
+        }
+
+        private static ProgressBarPosition ParsePosition(string value)
+        {
+            return value?.ToLowerInvariant() switch
+            {
+                "bottom" => ProgressBarPosition.Bottom,
+                "left" => ProgressBarPosition.Left,
+                "right" => ProgressBarPosition.Right,
+                _ => ProgressBarPosition.Top
+            };
+        }
+
+        private static string PositionToString(ProgressBarPosition position)
+        {
+            return position switch
+            {
+                ProgressBarPosition.Bottom => "Bottom",
+                ProgressBarPosition.Left => "Left",
+                ProgressBarPosition.Right => "Right",
+                _ => "Top"
+            };
+        }
+
+        private static string PositionToConfigString(ProgressBarPosition position)
+        {
+            return position switch
+            {
+                ProgressBarPosition.Bottom => "bottom",
+                ProgressBarPosition.Left => "left",
+                ProgressBarPosition.Right => "right",
+                _ => "top"
+            };
         }
 
         private void SaveSetting()
@@ -863,6 +909,7 @@ namespace ReTime_Testing.ViewModels
             try
             {
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
+                SavePositionConfig(ProgressBarPosition.Top);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到顶部");
             }
@@ -881,6 +928,7 @@ namespace ReTime_Testing.ViewModels
             try
             {
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Bottom);
+                SavePositionConfig(ProgressBarPosition.Bottom);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到底部");
             }
@@ -899,6 +947,7 @@ namespace ReTime_Testing.ViewModels
             try
             {
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Left);
+                SavePositionConfig(ProgressBarPosition.Left);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到左侧");
             }
@@ -917,6 +966,7 @@ namespace ReTime_Testing.ViewModels
             try
             {
                 DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Right);
+                SavePositionConfig(ProgressBarPosition.Right);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到右侧");
             }
@@ -924,6 +974,23 @@ namespace ReTime_Testing.ViewModels
             {
                 Logger.Error("TimeTopSettingViewModel", "切换进度条位置到右侧时发生异常", ex);
             }
+        }
+
+        /// <summary>
+        /// 保存位置配置到文件
+        /// </summary>
+        private static void SavePositionConfig(ProgressBarPosition position)
+        {
+            var configManager = Services.ConfigurationManager.Instance;
+            var setting = configManager.LoadTimeTopSetting();
+            setting.ProgressBar.Position = position switch
+            {
+                ProgressBarPosition.Bottom => "bottom",
+                ProgressBarPosition.Left => "left",
+                ProgressBarPosition.Right => "right",
+                _ => "top"
+            };
+            configManager.SaveTimeTopSetting(setting);
         }
 
         // ==================== 时间服务调试命令 ====================
