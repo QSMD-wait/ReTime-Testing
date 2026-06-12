@@ -19,6 +19,7 @@ namespace ReTime_Testing.ViewModels
         private readonly IThemeService _themeService;
         private readonly IAutoStartService _autoStartService;
         private GlobalSetting _setting;
+        private bool _isInitializing = true;
 
         [ObservableProperty]
         private string _selectedTheme = "light";
@@ -40,10 +41,13 @@ namespace ReTime_Testing.ViewModels
             SelectedTheme = _setting.Basic.Theme;
             IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
             SelectedAutoStartMethod = _setting.Basic.AutoStart.Method;
+
+            _isInitializing = false;
         }
 
         partial void OnSelectedThemeChanged(string value)
         {
+            if (_isInitializing) return;
             _setting.Basic.Theme = value;
             _themeService.ApplyTheme(value);
             SaveSetting();
@@ -51,6 +55,7 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnIsAutoStartEnabledChanged(bool value)
         {
+            if (_isInitializing) return;
             _setting.Basic.AutoStart.Enabled = value;
 
             if (value)
@@ -63,6 +68,7 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnSelectedAutoStartMethodChanged(string value)
         {
+            if (_isInitializing) return;
             _setting.Basic.AutoStart.Method = value;
 
             if (IsAutoStartEnabled)
@@ -84,6 +90,7 @@ namespace ReTime_Testing.ViewModels
     {
         private readonly IConfigurationManager _configManager;
         private TimeTopSetting _setting;
+        private bool _isInitializing = true;
 
         [ObservableProperty]
         private bool _enableShadow = true;
@@ -98,16 +105,20 @@ namespace ReTime_Testing.ViewModels
 
             EnableShadow = _setting.ProgressBar.EnableShadow;
             SelectedTextEffect = _setting.TextOverlay.Style.TextEffect ?? "shadow";
+
+            _isInitializing = false;
         }
 
         partial void OnEnableShadowChanged(bool value)
         {
+            if (_isInitializing) return;
             _setting.ProgressBar.EnableShadow = value;
             SaveSetting();
         }
 
         partial void OnSelectedTextEffectChanged(string value)
         {
+            if (_isInitializing) return;
             _setting.TextOverlay.Style.TextEffect = value;
             SaveSetting();
             DesktopWindowManager.Instance.RefreshTextOverlay();
@@ -136,6 +147,7 @@ namespace ReTime_Testing.ViewModels
     {
         private readonly IConfigurationManager _configManager;
         private TimeTopSetting _setting;
+        private bool _isInitializing = true;
 
         [ObservableProperty]
         private string _selectedTopmostMode = "OnDeactivated";
@@ -154,10 +166,13 @@ namespace ReTime_Testing.ViewModels
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
             SelectedPosition = _setting.ProgressBar.Position ?? "top";
             UseFullScreen = _setting.Window.UseFullScreen;
+
+            _isInitializing = false;
         }
 
         partial void OnSelectedTopmostModeChanged(string value)
         {
+            if (_isInitializing) return;
             if (Enum.TryParse<TopmostMode>(value, out var mode))
             {
                 _setting.Window.TopmostMode = mode;
@@ -167,6 +182,7 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnSelectedPositionChanged(string value)
         {
+            if (_isInitializing) return;
             var position = ParsePosition(value);
             _setting.ProgressBar.Position = PositionToConfigString(position);
             SaveSetting();
@@ -176,6 +192,7 @@ namespace ReTime_Testing.ViewModels
 
         partial void OnUseFullScreenChanged(bool value)
         {
+            if (_isInitializing) return;
             _setting.Window.UseFullScreen = value;
             SaveSetting();
 
@@ -479,14 +496,19 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void InitializeNavigation()
         {
-            // 默认选中全局设置
-             NavigateTo(TAG_BASIC);
+            NavigateTo(TAG_BASIC);
         }
 
+        private BasicPageViewModel? _basicPage;
+        private AppearancePageViewModel? _appearancePage;
+        private TimePageViewModel? _timePage;
+        private WindowPageViewModel? _windowPage;
+        private AboutPageViewModel? _aboutPage;
+
         /// <summary>
-        /// 导航到指定页面
+        /// 导航到指定页面（缓存 ViewModel 实例，避免重复加载配置）
         /// </summary>
-         public void NavigateTo(string tag)
+        public void NavigateTo(string tag)
         {
             var app = Application.Current as App;
             var themeService = app?.ThemeService;
@@ -494,12 +516,12 @@ namespace ReTime_Testing.ViewModels
 
             CurrentPage = tag switch
             {
-                TAG_BASIC => new BasicPageViewModel(themeService!, autoStartService!),
-                TAG_APPEARANCE => new AppearancePageViewModel(),
-                TAG_TIME => new TimePageViewModel(timeService: _timeService, timeCalibrationService: _timeCalibrationService),
-                TAG_WINDOW => new WindowPageViewModel(),
-                TAG_ABOUT => new AboutPageViewModel(),
-                _ => new BasicPageViewModel(themeService!, autoStartService!)
+                TAG_BASIC => _basicPage ??= new BasicPageViewModel(themeService!, autoStartService!),
+                TAG_APPEARANCE => _appearancePage ??= new AppearancePageViewModel(),
+                TAG_TIME => _timePage ??= new TimePageViewModel(timeService: _timeService, timeCalibrationService: _timeCalibrationService),
+                TAG_WINDOW => _windowPage ??= new WindowPageViewModel(),
+                TAG_ABOUT => _aboutPage ??= new AboutPageViewModel(),
+                _ => _basicPage ??= new BasicPageViewModel(themeService!, autoStartService!)
             };
         }
 
@@ -597,6 +619,14 @@ namespace ReTime_Testing.ViewModels
             {
                 _service.OnScheduleStateChanged -= OnScheduleStateChanged;
             }
+
+            // 释放缓存的 PageViewModel 资源
+            _timePage?.Dispose();
+            _timePage = null;
+            _basicPage = null;
+            _appearancePage = null;
+            _windowPage = null;
+            _aboutPage = null;
 
             // 清理服务引用
             _timeService = null;

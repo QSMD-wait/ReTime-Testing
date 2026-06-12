@@ -19,10 +19,7 @@ namespace ReTime_Testing.Views.Settings
             // 注册导航事件
             MainNavigation.SelectionChanged += MainNavigation_SelectionChanged;
 
-            // 初始化导航：默认选中全局设置
-            _viewModel.InitializeNavigation();
-
-            // 默认选中第一个导航项
+            // 默认选中第一个导航项（会触发 SelectionChanged → NavigateTo，无需额外调用 InitializeNavigation）
             MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
         }
 

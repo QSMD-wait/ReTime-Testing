@@ -35,6 +35,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     private readonly ITimeService? _timeService;
     private readonly ITimeCalibrationService? _timeCalibrationService;
     private TimeTopSetting _setting;
+    private bool _isInitializing = true;
 
     [ObservableProperty]
     private string _currentTime = string.Empty;
@@ -115,6 +116,8 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
         UpdateTime();
         UpdateCalibrationStatus();
+
+        _isInitializing = false;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -227,6 +230,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     partial void OnIsCalibrationEnabledChanged(bool value)
     {
+        if (_isInitializing) return;
         _setting.Calibration.Enabled = value;
         SaveSettings();
         SyncSettingsToService();
@@ -234,6 +238,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedNtpServerChanged(NtpServerOption? value)
     {
+        if (_isInitializing) return;
         if (value == null) return;
 
         _setting.Calibration.Cloud.SelectedServerAddress = value.Address;
@@ -243,6 +248,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     partial void OnIntervalSecondsChanged(int value)
     {
+        if (_isInitializing) return;
         _setting.Calibration.IntervalSeconds = value;
         SaveSettings();
         SyncSettingsToService();
@@ -250,6 +256,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     partial void OnTriggerSecondsChanged(int value)
     {
+        if (_isInitializing) return;
         _setting.Calibration.TriggerSeconds = value;
         SaveSettings();
         SyncSettingsToService();
@@ -257,6 +264,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedSourceChanged(CalibrationSourceOption? value)
     {
+        if (_isInitializing) return;
         if (value == null) return;
 
         _setting.Calibration.Source = value.Source;
