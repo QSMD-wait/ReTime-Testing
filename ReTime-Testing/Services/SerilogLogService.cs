@@ -206,13 +206,22 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 释放 Serilog 日志资源，确保缓冲区刷新
+        /// 显式刷新日志缓冲区到磁盘
+        /// </summary>
+        public void Flush()
+        {
+            if (_disposed) return;
+            (_logger as IDisposable)?.Dispose();
+        }
+
+        /// <summary>
+        /// 释放 Serilog 日志资源，确保缓冲区完全刷新到磁盘后关闭
         /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
-            (_logger as IDisposable)?.Dispose();
+            Log.CloseAndFlush();
         }
 
         /// <summary>

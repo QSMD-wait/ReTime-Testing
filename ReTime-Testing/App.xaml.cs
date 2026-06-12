@@ -478,17 +478,7 @@ else
             {
                 Logger.Info(GetType().FullName ?? "App", "应用程序重启请求");
 
-                // 1. 停止所有服务
-                _scheduleManager?.Stop();
-                _timeCalibrationService?.Stop();
-
-                // 2. 清理托盘图标
-                _trayIconService?.Dispose();
-
-                // 3. 释放互斥锁
-                _mutexManager?.Release();
-
-                // 4. 启动新进程
+                // 启动新进程
                 var exePath = Environment.ProcessPath;
                 if (!string.IsNullOrEmpty(exePath))
                 {
@@ -499,7 +489,7 @@ else
                     });
                 }
 
-                // 5. 延迟后退出
+                // 延迟后退出（资源清理统一由 OnExit 执行）
                 await Task.Delay(1500);
                 Shutdown();
             }
@@ -511,42 +501,13 @@ else
 
         /// <summary>
         /// 退出应用程序
+        /// 仅记录退出请求并触发 Shutdown，所有资源清理统一在 OnExit 中执行
         /// </summary>
         private void ExitApplication()
         {
             try
             {
                 Logger.Info(GetType().FullName ?? "App", "应用程序退出请求");
-
-                // 清理新服务
-                _scheduleManager?.Stop();
-                _timeCalibrationService?.Stop();
-
-                // 清理托盘图标
-                _trayIconService?.Dispose();
-
-                // 释放互斥锁
-                _mutexManager?.Release();
-
-                // 释放日志服务（确保缓冲区刷新）
-                SerilogLogService.Instance?.Dispose();
-
-                // 取消事件订阅
-                if (_trayIconService != null)
-                {
-                    _trayIconService.OpenSettingRequested -= OpenSetting;
-                    _trayIconService.OpenDebugRequested -= OpenDebugTest;
-                    _trayIconService.AboutRequested -= OpenMainWindow;
-                    _trayIconService.ExitRequested -= ExitApplication;
-                }
-
-                if (_mutexManager != null)
-                {
-                    _mutexManager.OnConflictDetected -= OnMutexConflictDetected;
-                    _mutexManager.OnMutexAcquired -= OnMutexAcquired;
-                }
-
-                // 退出应用
                 Shutdown();
             }
             catch (Exception ex)
@@ -558,7 +519,7 @@ else
 
         protected override void OnExit(ExitEventArgs e)
         {
-            // 清理新服务
+            // 停止业务服务
             _scheduleManager?.Stop();
             _timeCalibrationService?.Stop();
 
@@ -583,9 +544,8 @@ else
                 _mutexManager.OnMutexAcquired -= OnMutexAcquired;
             }
 
+            // 所有 Logger 调用完成后，最后释放日志服务
             Logger.Info(GetType().FullName ?? "App", "应用程序退出");
-
-            // 释放日志服务（确保缓冲区刷新）
             SerilogLogService.Instance?.Dispose();
 
             base.OnExit(e);
