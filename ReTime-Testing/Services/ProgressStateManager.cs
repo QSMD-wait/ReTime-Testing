@@ -311,8 +311,8 @@ namespace ReTime_Testing.Services
             // 2. 尝试从配置文件读取样式配置
             try
             {
-                var configManager = Services.ConfigurationManager.Instance;
-                var timeTopSetting = configManager.LoadTimeTopSetting();
+                var settingsService = Services.SettingsService.Instance;
+                var timeTopSetting = settingsService.GetTimeTopSetting();
                 var stateName = stateType.ToString();
                 
                 if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.Enabled

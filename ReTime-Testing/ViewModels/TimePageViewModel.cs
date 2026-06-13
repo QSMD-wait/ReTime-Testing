@@ -29,7 +29,7 @@ public class CalibrationSourceOption
 /// </summary>
 public partial class TimePageViewModel : ObservableObject, IDisposable
 {
-    private readonly IConfigurationManager _configManager;
+    private readonly ISettingsService _settingsService;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _statusRefreshTimer;
     private readonly ITimeService? _timeService;
@@ -89,12 +89,12 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         new CalibrationSourceOption { DisplayName = "云端NTP", Source = CalibrationSource.Cloud }
     };
 
-    public TimePageViewModel(IConfigurationManager? configManager = null, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
+    public TimePageViewModel(ISettingsService? settingsService = null, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
     {
-        _configManager = configManager ?? ConfigurationManager.Instance;
+        _settingsService = settingsService ?? SettingsService.Instance;
         _timeService = timeService;
         _timeCalibrationService = timeCalibrationService;
-        _setting = _configManager.LoadTimeTopSetting();
+        _setting = _settingsService.GetTimeTopSetting();
 
         LoadSettings();
 
@@ -275,7 +275,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
 
     private void SaveSettings()
     {
-        _configManager.SaveTimeTopSetting(_setting);
+        _settingsService.SaveTimeTopSetting(_setting);
     }
 
     public void Dispose()

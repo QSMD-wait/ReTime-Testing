@@ -532,8 +532,8 @@ namespace ReTime_Testing.Services
             try
             {
                 // 加载 TimeTopSetting
-                var configManager = ConfigurationManager.Instance;
-                var timeTopSetting = configManager.LoadTimeTopSetting();
+                var settingsService = SettingsService.Instance;
+                var timeTopSetting = settingsService.GetTimeTopSetting();
 
                 // 检查是否启用时间计划控制
                 if (!timeTopSetting.Schedule.Enabled)
@@ -550,7 +550,7 @@ namespace ReTime_Testing.Services
                 if (selectedSchedule == null)
                 {
                     timeTopSetting.Schedule.SelectedId = "Default";
-                    configManager.SaveTimeTopSetting(timeTopSetting);
+                    settingsService.SaveTimeTopSetting(timeTopSetting);
                     selectedSchedule = scheduleManager.LoadSchedule("Default");
                 }
 

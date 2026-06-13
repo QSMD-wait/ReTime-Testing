@@ -106,12 +106,13 @@ protected override void OnStartup(StartupEventArgs e)
         {
             try
             {
-                // 初始化配置管理器（必须在其他服务之前初始化）
+                // 初始化配置管理器（必须在其他服务之前初始化，负责路径和目录）
                 var configManager = Services.ConfigurationManager.Instance;
                 configManager.InitializeDirectories();
 
-                // 加载全局配置（确保空文件/缺失字段被正确初始化）
-                var globalSetting = configManager.LoadGlobalSetting();
+                // 通过 SettingsService 加载全局配置
+                var settingsService = Services.SettingsService.Instance;
+                var globalSetting = settingsService.GetGlobalSetting();
 
                 // 初始化 Serilog 日志服务（必须在其他服务之前，确保 Logger 走 Serilog 管道）
                 var logConfig = new LogServiceConfiguration(globalSetting.Basic.Log, configManager.LogsDirectory);
@@ -137,7 +138,7 @@ protected override void OnStartup(StartupEventArgs e)
                 Logger.Info(GetType().FullName ?? "App", "单调时钟服务已初始化");
 
                 // 2. 初始化云端校准数据源（纯NTP数据源）
-                var timeTopSetting = configManager.LoadTimeTopSetting();
+                var timeTopSetting = settingsService.GetTimeTopSetting();
                 _cloudCalibrationService = new CloudCalibrationService();
 
                 // 3. 初始化时间校准服务（校准协调器）

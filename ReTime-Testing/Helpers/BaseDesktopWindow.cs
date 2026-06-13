@@ -55,7 +55,7 @@ namespace ReTime_Testing.Helpers
         /// </summary>
         public static void SetWindowPosition(Window window, ProgressBarPosition position)
         {
-            var setting = Services.ConfigurationManager.Instance.LoadTimeTopSetting();
+            var setting = Services.SettingsService.Instance.GetTimeTopSetting();
             SetWindowPosition(window, position, setting.Window.UseFullScreen);
         }
 

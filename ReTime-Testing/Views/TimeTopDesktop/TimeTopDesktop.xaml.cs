@@ -31,7 +31,7 @@ namespace ReTime_Testing.Views.TimeTopDesktop
 
             // 创建文字覆盖 ViewModel（通过 App 属性获取服务实例）
             var app = System.Windows.Application.Current as App;
-            var configManager = Services.ConfigurationManager.Instance;
+            var configManager = Services.SettingsService.Instance;
             var scheduleManager = app?.ScheduleManager
                 ?? throw new InvalidOperationException("ScheduleManager 未初始化");
             var timeService = app?.TimeService

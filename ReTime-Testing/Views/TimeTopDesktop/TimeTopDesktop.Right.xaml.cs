@@ -27,7 +27,7 @@ namespace ReTime_Testing.Views.TimeTopDesktop
             DataContext = _viewModel;
 
             var app = System.Windows.Application.Current as App;
-            var configManager = Services.ConfigurationManager.Instance;
+            var configManager = Services.SettingsService.Instance;
             var scheduleManager = app?.ScheduleManager
                 ?? throw new InvalidOperationException("ScheduleManager 未初始化");
             var timeService = app?.TimeService

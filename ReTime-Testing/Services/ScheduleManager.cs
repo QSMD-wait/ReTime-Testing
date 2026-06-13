@@ -465,9 +465,9 @@ public class ScheduleManager : IScheduleManager
     {
         try
         {
-            var configManager = Services.ConfigurationManager.Instance;
-            if (configManager == null) return null;
-            var timeTopSetting = configManager.LoadTimeTopSetting();
+            var settingsService = Services.SettingsService.Instance;
+            if (settingsService == null) return null;
+            var timeTopSetting = settingsService.GetTimeTopSetting();
             return timeTopSetting?.DefaultBehavior;
         }
         catch (Exception ex)

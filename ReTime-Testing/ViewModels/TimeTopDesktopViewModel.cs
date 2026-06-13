@@ -9,7 +9,7 @@ namespace ReTime_Testing.ViewModels
     public partial class TimeTopDesktopViewModel : ObservableObject
     {
         private readonly GlobalTimeTopDesktopService _service;
-        private readonly IConfigurationManager? _configManager;
+        private readonly ISettingsService? _settingsService;
 
         [ObservableProperty]
         private double _progressValue = 0;
@@ -44,19 +44,17 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _enableShadow = true;
 
-        public TimeTopDesktopViewModel(IConfigurationManager? configManager = null)
+        public TimeTopDesktopViewModel(ISettingsService? settingsService = null)
         {
             try
             {
-                _configManager = configManager ?? ConfigurationManager.Instance;
+                _settingsService = settingsService ?? SettingsService.Instance;
                 _service = GlobalTimeTopDesktopService.Instance;
                 _service.OnStateChanged = OnStateChanged;
                 
-                // 从配置中加载阴影设置
-                var setting = _configManager?.LoadTimeTopSetting();
+                var setting = _settingsService?.GetTimeTopSetting();
                 if (setting != null)
                 {
-                    // 默认使用progressBar域中的设置
                     EnableShadow = setting.ProgressBar.EnableShadow;
                 }
                 
@@ -109,11 +107,10 @@ namespace ReTime_Testing.ViewModels
         private void UpdateShadowBasedOnState(ProgressStateType stateType)
         {
             // 首先获取全局配置作为基础值
-            var globalSetting = _configManager?.LoadTimeTopSetting();
+            var globalSetting = _settingsService?.GetTimeTopSetting();
             var baseEnableShadow = globalSetting?.ProgressBar.EnableShadow ?? true;
             
-            // 检查状态特定配置是否覆盖
-            if (_configManager != null && globalSetting != null && globalSetting.StateStyles.Enabled)
+            if (_settingsService != null && globalSetting != null && globalSetting.StateStyles.Enabled)
             {
                 var stateName = stateType.ToString();
                 if (globalSetting.StateStyles.Styles.ContainsKey(stateName))

@@ -35,7 +35,7 @@ public class TextSlotDisplay
 public partial class TextOverlayViewModel : ObservableObject, IDisposable
 {
     private readonly ITextSlotResolver _resolver;
-    private readonly IConfigurationManager _configManager;
+    private readonly ISettingsService _settingsService;
     private readonly DispatcherTimer _refreshTimer;
 
     private TextOverlayConfig _config = new();
@@ -64,10 +64,10 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     /// <summary>
     /// 构造函数
     /// </summary>
-    public TextOverlayViewModel(ITextSlotResolver resolver, IConfigurationManager configManager)
+    public TextOverlayViewModel(ITextSlotResolver resolver, ISettingsService settingsService)
     {
         _resolver = resolver;
-        _configManager = configManager;
+        _settingsService = settingsService;
 
         LoadConfig();
 
@@ -89,7 +89,7 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     /// </summary>
     public void LoadConfig()
     {
-        var setting = _configManager.LoadTimeTopSetting();
+        var setting = _settingsService.GetTimeTopSetting();
         _config = setting.TextOverlay ?? new TextOverlayConfig();
         IsVisible = _config.Enabled;
         Style = _config.Style;

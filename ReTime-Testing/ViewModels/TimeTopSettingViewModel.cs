@@ -15,9 +15,7 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class BasicPageViewModel : ObservableObject
     {
-        private readonly IConfigurationManager _configManager;
-        private readonly IThemeService _themeService;
-        private readonly IAutoStartService _autoStartService;
+        private readonly ISettingsService _settingsService;
         private GlobalSetting _setting;
         private bool _isInitializing = true;
 
@@ -30,13 +28,10 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedAutoStartMethod = "registry";
 
-        public BasicPageViewModel(IThemeService themeService, IAutoStartService autoStartService,
-            IConfigurationManager? configManager = null)
+        public BasicPageViewModel(ISettingsService? settingsService = null)
         {
-            _configManager = configManager ?? ConfigurationManager.Instance;
-            _themeService = themeService;
-            _autoStartService = autoStartService;
-            _setting = _configManager.LoadGlobalSetting();
+            _settingsService = settingsService ?? SettingsService.Instance;
+            _setting = _settingsService.GetGlobalSetting();
 
             SelectedTheme = _setting.Basic.Theme;
             IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
@@ -49,37 +44,21 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.Basic.Theme = value;
-            _themeService.ApplyTheme(value);
-            SaveSetting();
+            _settingsService.SaveGlobalSetting(_setting);
         }
 
         partial void OnIsAutoStartEnabledChanged(bool value)
         {
             if (_isInitializing) return;
             _setting.Basic.AutoStart.Enabled = value;
-
-            if (value)
-                _autoStartService.Enable(SelectedAutoStartMethod);
-            else
-                _autoStartService.Disable();
-
-            SaveSetting();
+            _settingsService.SaveGlobalSetting(_setting);
         }
 
         partial void OnSelectedAutoStartMethodChanged(string value)
         {
             if (_isInitializing) return;
             _setting.Basic.AutoStart.Method = value;
-
-            if (IsAutoStartEnabled)
-                _autoStartService.Enable(value);
-
-            SaveSetting();
-        }
-
-        private void SaveSetting()
-        {
-            _configManager.SaveGlobalSetting(_setting);
+            _settingsService.SaveGlobalSetting(_setting);
         }
     }
 
@@ -88,7 +67,7 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class AppearancePageViewModel : ObservableObject
     {
-        private readonly IConfigurationManager _configManager;
+        private readonly ISettingsService _settingsService;
         private TimeTopSetting _setting;
         private bool _isInitializing = true;
 
@@ -98,10 +77,10 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedTextEffect = "none";
 
-        public AppearancePageViewModel(IConfigurationManager? configManager = null)
+        public AppearancePageViewModel(ISettingsService? settingsService = null)
         {
-            _configManager = configManager ?? ConfigurationManager.Instance;
-            _setting = _configManager.LoadTimeTopSetting();
+            _settingsService = settingsService ?? SettingsService.Instance;
+            _setting = _settingsService.GetTimeTopSetting();
 
             EnableShadow = _setting.ProgressBar.EnableShadow;
             SelectedTextEffect = _setting.TextOverlay.Style.TextEffect ?? "shadow";
@@ -113,20 +92,15 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.ProgressBar.EnableShadow = value;
-            SaveSetting();
+            _settingsService.SaveTimeTopSetting(_setting);
         }
 
         partial void OnSelectedTextEffectChanged(string value)
         {
             if (_isInitializing) return;
             _setting.TextOverlay.Style.TextEffect = value;
-            SaveSetting();
+            _settingsService.SaveTimeTopSetting(_setting);
             DesktopWindowManager.Instance.RefreshTextOverlay();
-        }
-
-        private void SaveSetting()
-        {
-            _configManager.SaveTimeTopSetting(_setting);
         }
     }
 
@@ -145,7 +119,7 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class WindowPageViewModel : ObservableObject
     {
-        private readonly IConfigurationManager _configManager;
+        private readonly ISettingsService _settingsService;
         private TimeTopSetting _setting;
         private bool _isInitializing = true;
 
@@ -158,10 +132,10 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _useFullScreen = false;
 
-        public WindowPageViewModel(IConfigurationManager? configManager = null)
+        public WindowPageViewModel(ISettingsService? settingsService = null)
         {
-            _configManager = configManager ?? ConfigurationManager.Instance;
-            _setting = _configManager.LoadTimeTopSetting();
+            _settingsService = settingsService ?? SettingsService.Instance;
+            _setting = _settingsService.GetTimeTopSetting();
 
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
             SelectedPosition = _setting.ProgressBar.Position ?? "top";
@@ -176,7 +150,7 @@ namespace ReTime_Testing.ViewModels
             if (Enum.TryParse<TopmostMode>(value, out var mode))
             {
                 _setting.Window.TopmostMode = mode;
-                SaveSetting();
+                _settingsService.SaveTimeTopSetting(_setting);
             }
         }
 
@@ -185,7 +159,7 @@ namespace ReTime_Testing.ViewModels
             if (_isInitializing) return;
             var position = ParsePosition(value);
             _setting.ProgressBar.Position = PositionToConfigString(position);
-            SaveSetting();
+            _settingsService.SaveTimeTopSetting(_setting);
 
             DesktopWindowManager.Instance.SetPosition(position);
         }
@@ -194,7 +168,7 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.Window.UseFullScreen = value;
-            SaveSetting();
+            _settingsService.SaveTimeTopSetting(_setting);
 
             DesktopWindowManager.Instance.RefreshPosition();
         }
@@ -219,11 +193,6 @@ namespace ReTime_Testing.ViewModels
                 ProgressBarPosition.Right => "right",
                 _ => "top"
             };
-        }
-
-        private void SaveSetting()
-        {
-            _configManager.SaveTimeTopSetting(_setting);
         }
     }
 
@@ -510,18 +479,14 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void NavigateTo(string tag)
         {
-            var app = Application.Current as App;
-            var themeService = app?.ThemeService;
-            var autoStartService = app?.AutoStartService;
-
             CurrentPage = tag switch
             {
-                TAG_BASIC => _basicPage ??= new BasicPageViewModel(themeService!, autoStartService!),
+                TAG_BASIC => _basicPage ??= new BasicPageViewModel(),
                 TAG_APPEARANCE => _appearancePage ??= new AppearancePageViewModel(),
                 TAG_TIME => _timePage ??= new TimePageViewModel(timeService: _timeService, timeCalibrationService: _timeCalibrationService),
                 TAG_WINDOW => _windowPage ??= new WindowPageViewModel(),
                 TAG_ABOUT => _aboutPage ??= new AboutPageViewModel(),
-                _ => _basicPage ??= new BasicPageViewModel(themeService!, autoStartService!)
+                _ => _basicPage ??= new BasicPageViewModel()
             };
         }
 

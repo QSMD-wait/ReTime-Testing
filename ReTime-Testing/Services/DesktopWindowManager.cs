@@ -58,7 +58,18 @@ namespace ReTime_Testing.Services
         {
             if (_currentWindow == null) return;
 
-            var config = ConfigurationManager.Instance.LoadTimeTopSetting();
+            var config = SettingsService.Instance.GetTimeTopSetting();
+            TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
+        }
+
+        /// <summary>
+        /// 从配置重新应用层级维持模式（供 SettingsService 热重载调用）
+        /// </summary>
+        public void ApplyTopmostModeFromConfig()
+        {
+            if (_currentWindow == null || !_currentWindow.IsLoaded) return;
+
+            var config = SettingsService.Instance.GetTimeTopSetting();
             TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
