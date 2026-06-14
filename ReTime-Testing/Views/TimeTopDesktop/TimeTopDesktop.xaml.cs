@@ -1,6 +1,6 @@
 using System;
 using System.Windows;
-using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -25,29 +25,25 @@ namespace ReTime_Testing.Views.TimeTopDesktop
         {
             InitializeComponent();
 
-            // 创建主 ViewModel
-            _viewModel = new TimeTopDesktopViewModel();
+            var app = System.Windows.Application.Current as App;
+            var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
+
+            // 通过 DI 创建 ViewModel
+            _viewModel = services.GetRequiredService<TimeTopDesktopViewModel>();
             DataContext = _viewModel;
 
-            // 创建文字覆盖 ViewModel（通过 App 属性获取服务实例）
-            var app = System.Windows.Application.Current as App;
-            var configManager = Services.SettingsService.Instance;
-            var scheduleManager = app?.ScheduleManager
-                ?? throw new InvalidOperationException("ScheduleManager 未初始化");
-            var timeService = app?.TimeService
-                ?? throw new InvalidOperationException("TimeService 未初始化");
+            // 创建文字覆盖 ViewModel
+            var settingsService = services.GetRequiredService<ISettingsService>();
+            var scheduleManager = services.GetRequiredService<IScheduleManager>();
+            var timeService = services.GetRequiredService<ITimeService>();
 
             var resolver = new TextSlotResolver(scheduleManager, timeService);
-            _textOverlayViewModel = new TextOverlayViewModel(resolver, configManager);
+            _textOverlayViewModel = new TextOverlayViewModel(resolver, settingsService);
             _viewModel.TextOverlay = _textOverlayViewModel;
 
-            // 应用标准样式
             DesktopWindowHelper.ApplyStandardStyles(this);
-
-            // 设置窗口位置
             DesktopWindowHelper.SetWindowPosition(this, Position);
 
-            // 注册窗口关闭事件
             Closing += TimeTopDesktop_Closing;
         }
 
@@ -55,16 +51,12 @@ namespace ReTime_Testing.Views.TimeTopDesktop
         {
             base.OnSourceInitialized(e);
 
-            // 设置工具窗口样式（必须在 OnSourceInitialized 之后调用）
             DesktopWindowHelper.SetToolWindowStyle(this);
-
-            // 设置点击穿透（所有点击直接穿透到下层窗口）
             WindowHelper.SetClickThrough(this);
         }
 
         private void TimeTopDesktop_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            // 清理 ViewModel 资源
             _viewModel?.Cleanup();
             _textOverlayViewModel?.Dispose();
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -23,18 +24,19 @@ namespace ReTime_Testing.Views.TimeTopDesktop
         public TimeTopDesktop_Right()
         {
             InitializeComponent();
-            _viewModel = new TimeTopDesktopViewModel();
-            DataContext = _viewModel;
 
             var app = System.Windows.Application.Current as App;
-            var configManager = Services.SettingsService.Instance;
-            var scheduleManager = app?.ScheduleManager
-                ?? throw new InvalidOperationException("ScheduleManager 未初始化");
-            var timeService = app?.TimeService
-                ?? throw new InvalidOperationException("TimeService 未初始化");
+            var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
+
+            _viewModel = services.GetRequiredService<TimeTopDesktopViewModel>();
+            DataContext = _viewModel;
+
+            var settingsService = services.GetRequiredService<ISettingsService>();
+            var scheduleManager = services.GetRequiredService<IScheduleManager>();
+            var timeService = services.GetRequiredService<ITimeService>();
 
             var resolver = new TextSlotResolver(scheduleManager, timeService);
-            _textOverlayViewModel = new TextOverlayViewModel(resolver, configManager);
+            _textOverlayViewModel = new TextOverlayViewModel(resolver, settingsService);
             _viewModel.TextOverlay = _textOverlayViewModel;
 
             DesktopWindowHelper.ApplyStandardStyles(this);

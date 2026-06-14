@@ -17,10 +17,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TrayIconService : ITrayIconService
     {
-        private static readonly Lazy<TrayIconService> _instance =
-            new Lazy<TrayIconService>(() => new TrayIconService());
-
-        public static TrayIconService Instance => _instance.Value;
+        private static TrayIconService? _currentInstance;
 
         private Window? _trayIconWindow;
         private TaskbarIcon? _trayIcon;
@@ -60,8 +57,8 @@ namespace ReTime_Testing.Services
             {
                 try
                 {
-                    var instance = _instance.Value;
-                    if (instance._menuToClose != null && instance._menuToClose.IsOpen)
+                    var instance = _currentInstance;
+                    if (instance?._menuToClose != null && instance._menuToClose.IsOpen)
                     {
                         // 延迟关闭，给菜单时间处理点击
                         var timer = new System.Windows.Threading.DispatcherTimer
@@ -152,8 +149,14 @@ namespace ReTime_Testing.Services
         // 主题服务引用
         private IThemeService? _themeService;
 
-        private TrayIconService()
+        /// <summary>
+        /// 构造函数（支持 DI 注入）
+        /// </summary>
+        /// <param name="themeService">主题服务</param>
+        public TrayIconService(IThemeService? themeService = null)
         {
+            _themeService = themeService;
+            _currentInstance = this;
         }
 
         /// <summary>
@@ -166,9 +169,11 @@ namespace ReTime_Testing.Services
 
             _config = config ?? new TrayIconConfig();
             
-            // 获取主题服务实例
-            var app = Application.Current as App;
-            _themeService = app?.ThemeService;
+            if (_themeService == null)
+            {
+                var app = Application.Current as App;
+                _themeService = app?.ThemeService;
+            }
             
             InitializeIcon();
         }

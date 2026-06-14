@@ -1,4 +1,7 @@
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using ReTime_Testing.Services;
+using ReTime_Testing.ViewModels;
 
 namespace ReTime_Testing.Views.Testing
 {
@@ -7,11 +10,18 @@ namespace ReTime_Testing.Views.Testing
         public DebugTest()
         {
             InitializeComponent();
-            
-            // 设置 ViewModel
+
             if (DataContext is null)
             {
-                DataContext = new ViewModels.TimeTopSettingViewModel();
+                var app = System.Windows.Application.Current as App;
+                var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
+
+                DataContext = new TimeTopSettingViewModel(
+                    services.GetRequiredService<IGlobalTimeTopDesktopService>(),
+                    services.GetRequiredService<IMutexManager>(),
+                    services.GetRequiredService<ISettingsService>(),
+                    services.GetRequiredService<IDesktopWindowManager>()
+                );
             }
         }
 
@@ -19,8 +29,7 @@ namespace ReTime_Testing.Views.Testing
         {
             base.OnClosed(e);
 
-            // 清理 ViewModel 资源
-            if (DataContext is ViewModels.TimeTopSettingViewModel viewModel)
+            if (DataContext is TimeTopSettingViewModel viewModel)
             {
                 viewModel.Cleanup();
             }

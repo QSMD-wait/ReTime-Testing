@@ -4,20 +4,16 @@ using System.Text.Json.Nodes;
 namespace ReTime_Testing.Services
 {
     /// <summary>
-    /// 设置配置服务（单例）
+    /// 设置配置服务
     /// 职责：配置的缓存、校验、默认值填充、变更通知、热重载分发
     /// 通过 JsonConfigProvider 进行文件 I/O
     /// </summary>
     public class SettingsService : ISettingsService
     {
         private const string LOG_MODULE = "SettingsService";
-        private static readonly Lazy<SettingsService> _instance =
-            new Lazy<SettingsService>(() => new SettingsService());
-
-        public static SettingsService Instance => _instance.Value;
 
         private readonly JsonConfigProvider _provider;
-        private readonly ConfigurationManager _configManager;
+        private readonly IConfigurationManager _configManager;
 
         private GlobalSetting? _cachedGlobalSetting;
         private TimeTopSetting? _cachedTimeTopSetting;
@@ -32,10 +28,14 @@ namespace ReTime_Testing.Services
         /// </summary>
         public event Action<TimeTopSetting>? OnTimeTopSettingChanged;
 
-        private SettingsService()
+        /// <summary>
+        /// 构造函数（支持 DI 注入）
+        /// </summary>
+        /// <param name="configManager">配置管理器</param>
+        public SettingsService(IConfigurationManager configManager)
         {
             _provider = new JsonConfigProvider();
-            _configManager = ConfigurationManager.Instance;
+            _configManager = configManager;
         }
 
         #region GlobalSetting
@@ -63,16 +63,13 @@ namespace ReTime_Testing.Services
                 _provider.Write(_configManager.GlobalSettingFilePath, setting);
                 _cachedGlobalSetting = setting;
 
-                Logger.Info("ReTime_Testing.Services.SettingsService",
-                    "全局配置保存成功");
+                Logger.Info(LOG_MODULE, "全局配置保存成功");
 
                 OnGlobalSettingChanged?.Invoke(setting);
-                ApplyGlobalSettingChanges(setting);
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.SettingsService",
-                    $"全局配置保存失败: {ex.Message}", ex);
+                Logger.Error(LOG_MODULE, $"全局配置保存失败: {ex.Message}", ex);
                 throw new ConfigurationException("全局配置保存失败", ex);
             }
         }
@@ -85,8 +82,7 @@ namespace ReTime_Testing.Services
             var defaultSetting = new GlobalSetting();
             SaveGlobalSetting(defaultSetting);
 
-            Logger.Info("ReTime_Testing.Services.SettingsService",
-                "全局配置已重置为默认值");
+            Logger.Info(LOG_MODULE, "全局配置已重置为默认值");
         }
 
         /// <summary>
@@ -108,8 +104,7 @@ namespace ReTime_Testing.Services
 
                 if (!_provider.FileExists(filePath))
                 {
-                    Logger.Warn("ReTime_Testing.Services.SettingsService",
-                        "全局配置文件不存在，创建默认配置");
+                    Logger.Warn(LOG_MODULE, "全局配置文件不存在，创建默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
                     return newSetting;
@@ -119,8 +114,7 @@ namespace ReTime_Testing.Services
 
                 if (jsonContent == null)
                 {
-                    Logger.Info("ReTime_Testing.Services.SettingsService",
-                        "全局配置文件为空，写入默认配置");
+                    Logger.Info(LOG_MODULE, "全局配置文件为空，写入默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
                     return newSetting;
@@ -133,8 +127,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("ReTime_Testing.Services.SettingsService",
-                        $"全局配置文件 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                    Logger.Error(LOG_MODULE, $"全局配置文件 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                     return new GlobalSetting();
                 }
 
@@ -149,40 +142,14 @@ namespace ReTime_Testing.Services
                 result.Basic.Log.RetainedDays = Math.Max(1, result.Basic.Log.RetainedDays);
                 result.Basic.Log.FileSizeLimitMB = Math.Max(1, result.Basic.Log.FileSizeLimitMB);
 
-                Logger.Info("ReTime_Testing.Services.SettingsService",
-                    "全局配置加载成功");
+                Logger.Info(LOG_MODULE, "全局配置加载成功");
 
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.SettingsService",
-                    $"全局配置加载失败: {ex.Message}，使用默认配置（不覆盖原文件）");
+                Logger.Error(LOG_MODULE, $"全局配置加载失败: {ex.Message}，使用默认配置（不覆盖原文件）");
                 return new GlobalSetting();
-            }
-        }
-
-        /// <summary>
-        /// 应用全局配置变更（热重载分发）
-        /// </summary>
-        private void ApplyGlobalSettingChanges(GlobalSetting setting)
-        {
-            try
-            {
-                var app = System.Windows.Application.Current as App;
-                if (app == null) return;
-
-                app.ThemeService?.ApplyTheme(setting.Basic.Theme);
-
-                if (setting.Basic.AutoStart.Enabled)
-                    app.AutoStartService?.Enable(setting.Basic.AutoStart.Method);
-                else
-                    app.AutoStartService?.Disable();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("SettingsService",
-                    $"热重载全局配置变更时发生异常: {ex.Message}", ex);
             }
         }
 
@@ -213,16 +180,13 @@ namespace ReTime_Testing.Services
                 _provider.Write(_configManager.TimeTopSettingFilePath, setting);
                 _cachedTimeTopSetting = setting;
 
-                Logger.Info("ReTime_Testing.Services.SettingsService",
-                    "TimeTop设置保存成功");
+                Logger.Info(LOG_MODULE, "TimeTop设置保存成功");
 
                 OnTimeTopSettingChanged?.Invoke(setting);
-                ApplyTimeTopSettingChanges(setting);
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.SettingsService",
-                    $"保存TimeTop设置失败: {ex.Message}", ex);
+                Logger.Error(LOG_MODULE, $"保存TimeTop设置失败: {ex.Message}", ex);
                 throw;
             }
         }
@@ -246,8 +210,7 @@ namespace ReTime_Testing.Services
 
                 if (!_provider.FileExists(filePath))
                 {
-                    Logger.Info("ReTime_Testing.Services.SettingsService",
-                        "TimeTop设置文件不存在，创建默认配置");
+                    Logger.Info(LOG_MODULE, "TimeTop设置文件不存在，创建默认配置");
                     var newSetting = new TimeTopSetting();
                     SaveTimeTopSetting(newSetting);
                     return newSetting;
@@ -257,8 +220,7 @@ namespace ReTime_Testing.Services
 
                 if (jsonContent == null)
                 {
-                    Logger.Info("ReTime_Testing.Services.SettingsService",
-                        "TimeTop设置文件为空，创建默认配置");
+                    Logger.Info(LOG_MODULE, "TimeTop设置文件为空，创建默认配置");
                     var newSetting = new TimeTopSetting();
                     SaveTimeTopSetting(newSetting);
                     return newSetting;
@@ -271,8 +233,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("ReTime_Testing.Services.SettingsService",
-                        $"TimeTop设置 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                    Logger.Error(LOG_MODULE, $"TimeTop设置 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                     return new TimeTopSetting();
                 }
 
@@ -293,22 +254,19 @@ namespace ReTime_Testing.Services
 
                 if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
                 {
-                    Logger.Warn("ReTime_Testing.Services.SettingsService",
-                        $"TimeTop设置版本不匹配: {result.Version}，填充默认值");
+                    Logger.Warn(LOG_MODULE, $"TimeTop设置版本不匹配: {result.Version}，填充默认值");
                 }
 
                 var defaults = new TimeTopSetting();
                 result = FillMissingFields(result, defaults);
 
-                Logger.Info("ReTime_Testing.Services.SettingsService",
-                    "TimeTop设置加载成功");
+                Logger.Info(LOG_MODULE, "TimeTop设置加载成功");
 
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.SettingsService",
-                    $"加载TimeTop设置失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                Logger.Error(LOG_MODULE, $"加载TimeTop设置失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
                 return new TimeTopSetting();
             }
         }
@@ -376,26 +334,6 @@ namespace ReTime_Testing.Services
             target.Window ??= new WindowConfig();
 
             return target;
-        }
-
-        /// <summary>
-        /// 应用TimeTop配置变更（热重载分发）
-        /// </summary>
-        private void ApplyTimeTopSettingChanges(TimeTopSetting setting)
-        {
-            try
-            {
-                var app = System.Windows.Application.Current as App;
-                if (app == null) return;
-
-                app.TimeCalibrationService?.ApplyConfig(setting.Calibration);
-                DesktopWindowManager.Instance.ApplyTopmostModeFromConfig();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("ReTime_Testing.Services.SettingsService",
-                    $"热重载TimeTop配置变更时发生异常: {ex.Message}", ex);
-            }
         }
 
         #endregion

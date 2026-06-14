@@ -87,35 +87,30 @@
                 <!-- 状态切换按钮 -->
                 <Button Content="Loading 状态"
                            Command="{Binding SetLoadingCommand}"
-                           IsEnabled="{Binding IsStateControlsEnabled}"
                            Width="150"
                            Height="32"
                            Margin="0,0,0,8"/>
                 
                 <Button Content="Success 状态"
                            Command="{Binding SetSuccessCommand}"
-                           IsEnabled="{Binding IsStateControlsEnabled}"
                            Width="150"
                            Height="32"
                            Margin="0,0,0,8"/>
                 
                 <Button Content="Error 状态"
                            Command="{Binding SetErrorCommand}"
-                           IsEnabled="{Binding IsStateControlsEnabled}"
                            Width="150"
                            Height="32"
                            Margin="0,0,0,8"/>
                 
                 <Button Content="Paused 状态"
                            Command="{Binding SetPausedCommand}"
-                           IsEnabled="{Binding IsStateControlsEnabled}"
                            Width="150"
                            Height="32"
                            Margin="0,0,0,8"/>
                 
                 <Button Content="Progress 状态 (50%)"
                            Command="{Binding SetProgressCommand}"
-                           IsEnabled="{Binding IsStateControlsEnabled}"
                            Width="150"
                            Height="32"
                            Margin="0,0,0,24"/>
@@ -196,41 +191,6 @@
                                Margin="4,0,0,0"/>
                 </StackPanel>
                 
-                <!-- 时间控制按钮 -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                    <Button Content="开始（已废弃）"
-                               Command="{Binding StartScheduleCommand}"
-                               Width="120"
-                               Height="32"
-                               Margin="0,0,8,0"
-                               IsEnabled="False"
-                               ToolTip="此功能已废弃，请使用 ScheduleManager"/>
-
-                    <Button Content="停止（已废弃）"
-                               Command="{Binding StopScheduleCommand}"
-                               Width="120"
-                               Height="32"
-                               IsEnabled="False"
-                               ToolTip="此功能已废弃，请使用 ScheduleManager"/>
-                </StackPanel>
-
-                <!-- 当前进度 -->
-                <TextBlock Text="当前进度"
-                           FontSize="14"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,8"/>
-
-                <TextBlock Text="{Binding ScheduleProgress, StringFormat={}{0:F1}%}"
-                           FontSize="16"
-                           FontWeight="Bold"
-                           Foreground="Blue"
-                           Margin="0,0,0,8"/>
-
-                <TextBlock Text="{Binding ScheduleStatus}"
-                           FontSize="12"
-                           Foreground="Gray"
-                           Margin="0,0,0,32"/>
-
                 <!-- 互斥锁调试 -->
                 <TextBlock Text="互斥锁调试"
                            FontSize="18"
@@ -369,7 +329,7 @@
                 <!-- 位置状态信息 -->
                 <Border BorderBrush="Gray"
                         BorderThickness="1"
-                        Background="#F5F5F5"
+                        Background="{DynamicResource SystemControlBackgroundAltMediumBrush}"
                         Padding="16"
                         Margin="0,0,0,16"
                         CornerRadius="4">

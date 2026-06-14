@@ -15,11 +15,6 @@ public interface IGlobalTimeTopDesktopService
     IProgressStateManager StateManager { get; }
 
     /// <summary>
-    /// 调度是否正在运行
-    /// </summary>
-    bool IsScheduleRunning { get; }
-
-    /// <summary>
     /// 状态变更回调（用于 ViewModel 更新 UI）
     /// </summary>
     Action<ProgressStateConfig>? OnStateChanged { get; set; }

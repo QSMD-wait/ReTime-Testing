@@ -10,7 +10,8 @@ namespace ReTime_Testing.Services;
 public class ScheduleManager : IScheduleManager
 {
     private readonly ITimeService _timeService;
-    private readonly ProgressStateManager _stateManager;
+    private readonly IProgressStateManager _stateManager;
+    private readonly ISettingsService? _settingsService;
 
     private ExecutionPlan? _currentPlan;
     private DispatcherTimer? _timer;
@@ -32,12 +33,15 @@ public class ScheduleManager : IScheduleManager
     /// </summary>
     /// <param name="timeService">时间服务</param>
     /// <param name="stateManager">状态管理器</param>
+    /// <param name="settingsService">设置服务（可选）</param>
     public ScheduleManager(
         ITimeService timeService,
-        ProgressStateManager stateManager)
+        IProgressStateManager stateManager,
+        ISettingsService? settingsService = null)
     {
         _timeService = timeService;
         _stateManager = stateManager;
+        _settingsService = settingsService;
 
         // 订阅时间跳跃事件
         _timeService.TimeJumped += OnTimeJumped;
@@ -465,9 +469,8 @@ public class ScheduleManager : IScheduleManager
     {
         try
         {
-            var settingsService = Services.SettingsService.Instance;
-            if (settingsService == null) return null;
-            var timeTopSetting = settingsService.GetTimeTopSetting();
+            if (_settingsService == null) return null;
+            var timeTopSetting = _settingsService.GetTimeTopSetting();
             return timeTopSetting?.DefaultBehavior;
         }
         catch (Exception ex)

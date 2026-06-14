@@ -28,9 +28,9 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedAutoStartMethod = "registry";
 
-        public BasicPageViewModel(ISettingsService? settingsService = null)
+        public BasicPageViewModel(ISettingsService settingsService)
         {
-            _settingsService = settingsService ?? SettingsService.Instance;
+            _settingsService = settingsService;
             _setting = _settingsService.GetGlobalSetting();
 
             SelectedTheme = _setting.Basic.Theme;
@@ -68,6 +68,7 @@ namespace ReTime_Testing.ViewModels
     public partial class AppearancePageViewModel : ObservableObject
     {
         private readonly ISettingsService _settingsService;
+        private readonly IDesktopWindowManager _desktopWindowManager;
         private TimeTopSetting _setting;
         private bool _isInitializing = true;
 
@@ -77,9 +78,10 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedTextEffect = "none";
 
-        public AppearancePageViewModel(ISettingsService? settingsService = null)
+        public AppearancePageViewModel(ISettingsService settingsService, IDesktopWindowManager desktopWindowManager)
         {
-            _settingsService = settingsService ?? SettingsService.Instance;
+            _settingsService = settingsService;
+            _desktopWindowManager = desktopWindowManager;
             _setting = _settingsService.GetTimeTopSetting();
 
             EnableShadow = _setting.ProgressBar.EnableShadow;
@@ -100,7 +102,7 @@ namespace ReTime_Testing.ViewModels
             if (_isInitializing) return;
             _setting.TextOverlay.Style.TextEffect = value;
             _settingsService.SaveTimeTopSetting(_setting);
-            DesktopWindowManager.Instance.RefreshTextOverlay();
+            _desktopWindowManager.RefreshTextOverlay();
         }
     }
 
@@ -120,6 +122,7 @@ namespace ReTime_Testing.ViewModels
     public partial class WindowPageViewModel : ObservableObject
     {
         private readonly ISettingsService _settingsService;
+        private readonly IDesktopWindowManager _desktopWindowManager;
         private TimeTopSetting _setting;
         private bool _isInitializing = true;
 
@@ -132,9 +135,10 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _useFullScreen = false;
 
-        public WindowPageViewModel(ISettingsService? settingsService = null)
+        public WindowPageViewModel(ISettingsService settingsService, IDesktopWindowManager desktopWindowManager)
         {
-            _settingsService = settingsService ?? SettingsService.Instance;
+            _settingsService = settingsService;
+            _desktopWindowManager = desktopWindowManager;
             _setting = _settingsService.GetTimeTopSetting();
 
             SelectedTopmostMode = _setting.Window.TopmostMode.ToString();
@@ -161,7 +165,7 @@ namespace ReTime_Testing.ViewModels
             _setting.ProgressBar.Position = PositionToConfigString(position);
             _settingsService.SaveTimeTopSetting(_setting);
 
-            DesktopWindowManager.Instance.SetPosition(position);
+            _desktopWindowManager.SetPosition(position);
         }
 
         partial void OnUseFullScreenChanged(bool value)
@@ -170,7 +174,7 @@ namespace ReTime_Testing.ViewModels
             _setting.Window.UseFullScreen = value;
             _settingsService.SaveTimeTopSetting(_setting);
 
-            DesktopWindowManager.Instance.RefreshPosition();
+            _desktopWindowManager.RefreshPosition();
         }
 
         private static ProgressBarPosition ParsePosition(string value)
@@ -201,17 +205,18 @@ namespace ReTime_Testing.ViewModels
         private static readonly List<int> _hours = Enumerable.Range(0, 24).ToList();
         private static readonly List<int> _minutes = Enumerable.Range(0, 60).ToList();
 
-        // 导航标签常量
         private const string TAG_BASIC = "Basic";
         private const string TAG_APPEARANCE = "Appearance";
         private const string TAG_TIME = "Time";
         private const string TAG_WINDOW = "Window";
         private const string TAG_ABOUT = "About";
 
-        private readonly GlobalTimeTopDesktopService _service;
-        private readonly MutexManager _mutexManager;
+        private readonly IGlobalTimeTopDesktopService _service;
+        private readonly IMutexManager _mutexManager;
+        private readonly ISettingsService _settingsService;
+        private readonly IDesktopWindowManager _desktopWindowManager;
         private ITimeService? _timeService;
-        private ScheduleManager? _scheduleManager;
+        private IScheduleManager? _scheduleManager;
         private ITimeCalibrationService? _timeCalibrationService;
         private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
@@ -322,13 +327,16 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private double _lastRttMs = 0;
 
-        public TimeTopSettingViewModel()
+        public TimeTopSettingViewModel(
+            IGlobalTimeTopDesktopService globalService,
+            IMutexManager mutexManager,
+            ISettingsService settingsService,
+            IDesktopWindowManager desktopWindowManager)
         {
-            _service = GlobalTimeTopDesktopService.Instance;
-            _mutexManager = MutexManager.Instance;
-
-            // 订阅 Service 的调度状态变更事件
-            _service.OnScheduleStateChanged += OnScheduleStateChanged;
+            _service = globalService;
+            _mutexManager = mutexManager;
+            _settingsService = settingsService;
+            _desktopWindowManager = desktopWindowManager;
 
             // 初始化互斥锁状态
             UpdateMutexStatus();
@@ -353,7 +361,8 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         private void InitializeNewServices()
         {
-            // 从 App.xaml.cs 获取服务实例
+            if (_timeService != null) return;
+
             var app = System.Windows.Application.Current as App;
             if (app != null)
             {
@@ -481,23 +490,13 @@ namespace ReTime_Testing.ViewModels
         {
             CurrentPage = tag switch
             {
-                TAG_BASIC => _basicPage ??= new BasicPageViewModel(),
-                TAG_APPEARANCE => _appearancePage ??= new AppearancePageViewModel(),
-                TAG_TIME => _timePage ??= new TimePageViewModel(timeService: _timeService, timeCalibrationService: _timeCalibrationService),
-                TAG_WINDOW => _windowPage ??= new WindowPageViewModel(),
+                TAG_BASIC => _basicPage ??= new BasicPageViewModel(_settingsService),
+                TAG_APPEARANCE => _appearancePage ??= new AppearancePageViewModel(_settingsService, _desktopWindowManager),
+                TAG_TIME => _timePage ??= new TimePageViewModel(_settingsService, _timeService, _timeCalibrationService),
+                TAG_WINDOW => _windowPage ??= new WindowPageViewModel(_settingsService, _desktopWindowManager),
                 TAG_ABOUT => _aboutPage ??= new AboutPageViewModel(),
-                _ => _basicPage ??= new BasicPageViewModel()
+                _ => _basicPage ??= new BasicPageViewModel(_settingsService)
             };
-        }
-
-        /// <summary>
-        /// 调度状态变更回调
-        /// </summary>
-        private void OnScheduleStateChanged(double progress, string status)
-        {
-            ScheduleProgress = progress;
-            ScheduleStatus = status;
-            IsScheduleRunning = _service.IsScheduleRunning;
         }
 
         partial void OnProgressValueChanged(double value)
@@ -536,38 +535,6 @@ namespace ReTime_Testing.ViewModels
         }
 
         /// <summary>
-        /// 开始调度（调试功能，已废弃）
-        /// </summary>
-        [Obsolete("请使用 ScheduleManager 替代", false)]
-        [RelayCommand]
-        private void StartSchedule()
-        {
-            bool started = _service.StartSchedule(StartHour, StartMinute, 0, EndHour, EndMinute, 0);
-
-            if (started)
-            {
-                IsStateControlsEnabled = false;
-                IsScheduleRunning = true;
-            }
-            else
-            {
-                ScheduleStatus = "错误：启动失败";
-            }
-        }
-
-        /// <summary>
-        /// 停止调度（调试功能，已废弃）
-        /// </summary>
-        [Obsolete("请使用 ScheduleManager 替代", false)]
-        [RelayCommand]
-        private void StopSchedule()
-        {
-            _service.StopSchedule();
-            IsStateControlsEnabled = true;
-            IsScheduleRunning = false;
-        }
-
-        /// <summary>
         /// 清理资源
         /// </summary>
         public void Cleanup()
@@ -582,7 +549,7 @@ namespace ReTime_Testing.ViewModels
             // 取消订阅 Service 事件
             if (_service != null)
             {
-                _service.OnScheduleStateChanged -= OnScheduleStateChanged;
+                _service.OnStateChanged = null;
             }
 
             // 释放缓存的 PageViewModel 资源
@@ -887,8 +854,7 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         private void UpdatePositionStatus()
         {
-            var manager = DesktopWindowManager.Instance;
-            CurrentPosition = manager.CurrentPosition;
+            CurrentPosition = _desktopWindowManager.CurrentPosition;
             PositionText = GetPositionText(CurrentPosition);
         }
 
@@ -915,7 +881,7 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Top);
+                _desktopWindowManager.SetPosition(ProgressBarPosition.Top);
                 SavePositionConfig(ProgressBarPosition.Top);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到顶部");
@@ -934,7 +900,7 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Bottom);
+                _desktopWindowManager.SetPosition(ProgressBarPosition.Bottom);
                 SavePositionConfig(ProgressBarPosition.Bottom);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到底部");
@@ -953,7 +919,7 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Left);
+                _desktopWindowManager.SetPosition(ProgressBarPosition.Left);
                 SavePositionConfig(ProgressBarPosition.Left);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到左侧");
@@ -972,7 +938,7 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                DesktopWindowManager.Instance.SetPosition(ProgressBarPosition.Right);
+                _desktopWindowManager.SetPosition(ProgressBarPosition.Right);
                 SavePositionConfig(ProgressBarPosition.Right);
                 UpdatePositionStatus();
                 Logger.Info("TimeTopSettingViewModel", "进度条位置已切换到右侧");
@@ -986,10 +952,9 @@ namespace ReTime_Testing.ViewModels
         /// <summary>
         /// 保存位置配置到文件
         /// </summary>
-        private static void SavePositionConfig(ProgressBarPosition position)
+        private void SavePositionConfig(ProgressBarPosition position)
         {
-            var configManager = Services.ConfigurationManager.Instance;
-            var setting = configManager.LoadTimeTopSetting();
+            var setting = _settingsService.GetTimeTopSetting();
             setting.ProgressBar.Position = position switch
             {
                 ProgressBarPosition.Bottom => "bottom",
@@ -997,7 +962,7 @@ namespace ReTime_Testing.ViewModels
                 ProgressBarPosition.Right => "right",
                 _ => "top"
             };
-            configManager.SaveTimeTopSetting(setting);
+            _settingsService.SaveTimeTopSetting(setting);
         }
 
         // ==================== 时间服务调试命令 ====================
@@ -1167,10 +1132,9 @@ namespace ReTime_Testing.ViewModels
                     var selectedServer = NtpServerDefaults.Servers[SelectedNtpServerIndex];
 
                     // 更新配置并应用到校准服务
-                    var configManager = ConfigurationManager.Instance;
-                    var timeTopSetting = configManager.LoadTimeTopSetting();
+                    var timeTopSetting = _settingsService.GetTimeTopSetting();
                     timeTopSetting.Calibration.Cloud.SelectedServerAddress = selectedServer;
-                    configManager.SaveTimeTopSetting(timeTopSetting);
+                    _settingsService.SaveTimeTopSetting(timeTopSetting);
 
                     // 通过 ApplyConfig 统一应用配置（内部会配置NTP服务器）
                     _timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
@@ -1306,7 +1270,7 @@ namespace ReTime_Testing.ViewModels
             Logger.Info("TimeTopSettingViewModel", $"  - 下个时间点: {NextTimePoint}");
 
             Logger.Info("TimeTopSettingViewModel", "调度管理器状态:");
-            Logger.Info("TimeTopSettingViewModel", $"  - 状态: {(IsScheduleRunning ? "运行中" : "已停止")}");
+            Logger.Info("TimeTopSettingViewModel", $"  - 状态: {(_scheduleManager?.IsRunning == true ? "运行中" : "已停止")}");
 
             Logger.Info("TimeTopSettingViewModel", "云校准服务状态:");
             if (_timeCalibrationService != null)

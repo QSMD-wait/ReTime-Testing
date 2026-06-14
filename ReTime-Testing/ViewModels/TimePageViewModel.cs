@@ -89,9 +89,9 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         new CalibrationSourceOption { DisplayName = "云端NTP", Source = CalibrationSource.Cloud }
     };
 
-    public TimePageViewModel(ISettingsService? settingsService = null, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
+    public TimePageViewModel(ISettingsService settingsService, ITimeService? timeService = null, ITimeCalibrationService? timeCalibrationService = null)
     {
-        _settingsService = settingsService ?? SettingsService.Instance;
+        _settingsService = settingsService;
         _timeService = timeService;
         _timeCalibrationService = timeCalibrationService;
         _setting = _settingsService.GetTimeTopSetting();

@@ -12,16 +12,18 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class DesktopWindowManager : IDesktopWindowManager
     {
-        private static readonly Lazy<DesktopWindowManager> _instance =
-            new Lazy<DesktopWindowManager>(() => new DesktopWindowManager());
-
-        public static DesktopWindowManager Instance => _instance.Value;
+        private readonly ISettingsService _settingsService;
 
         private Window? _currentWindow;
         private ProgressBarPosition _currentPosition;
 
-        private DesktopWindowManager()
+        /// <summary>
+        /// 构造函数（支持 DI 注入）
+        /// </summary>
+        /// <param name="settingsService">设置服务</param>
+        public DesktopWindowManager(ISettingsService settingsService)
         {
+            _settingsService = settingsService;
             _currentPosition = ProgressBarPosition.Top;
         }
 
@@ -32,13 +34,11 @@ namespace ReTime_Testing.Services
         {
             if (_currentPosition == position && _currentWindow != null && _currentWindow.IsLoaded)
             {
-                return; // 位置未改变且窗口已加载，无需切换
+                return;
             }
 
-            // 关闭当前窗口
             CloseCurrentWindow();
 
-            // 创建新窗口
             _currentWindow = CreateWindow(position);
 
             if (_currentWindow != null)
@@ -46,7 +46,6 @@ namespace ReTime_Testing.Services
                 _currentWindow.Show();
                 _currentPosition = position;
 
-                // 根据配置应用层级维持模式
                 ApplyTopmostMode();
             }
         }
@@ -58,23 +57,23 @@ namespace ReTime_Testing.Services
         {
             if (_currentWindow == null) return;
 
-            var config = SettingsService.Instance.GetTimeTopSetting();
+            var config = _settingsService.GetTimeTopSetting();
             TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
         /// <summary>
-        /// 从配置重新应用层级维持模式（供 SettingsService 热重载调用）
+        /// 从配置重新应用层级维持模式（供热重载调用）
         /// </summary>
         public void ApplyTopmostModeFromConfig()
         {
             if (_currentWindow == null || !_currentWindow.IsLoaded) return;
 
-            var config = SettingsService.Instance.GetTimeTopSetting();
+            var config = _settingsService.GetTimeTopSetting();
             TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
         /// <summary>
-        /// 刷新当前位置（重新应用窗口定位，用于全屏模式变更后）
+        /// 刷新当前位置
         /// </summary>
         public void RefreshPosition()
         {
@@ -85,7 +84,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 刷新文字覆盖配置（用于文字效果等样式变更后热重载）
+        /// 刷新文字覆盖配置
         /// </summary>
         public void RefreshTextOverlay()
         {
@@ -112,7 +111,6 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void CloseCurrentWindow()
         {
-            // 清理层级维持服务
             TopmostService.Instance.Cleanup();
 
             if (_currentWindow != null)

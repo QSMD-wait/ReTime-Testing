@@ -8,7 +8,7 @@ namespace ReTime_Testing.ViewModels
 {
     public partial class TimeTopDesktopViewModel : ObservableObject
     {
-        private readonly GlobalTimeTopDesktopService _service;
+        private readonly IGlobalTimeTopDesktopService _service;
         private readonly ISettingsService? _settingsService;
 
         [ObservableProperty]
@@ -44,12 +44,14 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _enableShadow = true;
 
-        public TimeTopDesktopViewModel(ISettingsService? settingsService = null)
+        public TimeTopDesktopViewModel(
+            IGlobalTimeTopDesktopService globalService,
+            ISettingsService? settingsService = null)
         {
             try
             {
-                _settingsService = settingsService ?? SettingsService.Instance;
-                _service = GlobalTimeTopDesktopService.Instance;
+                _service = globalService;
+                _settingsService = settingsService;
                 _service.OnStateChanged = OnStateChanged;
                 
                 var setting = _settingsService?.GetTimeTopSetting();

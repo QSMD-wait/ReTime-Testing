@@ -1,7 +1,9 @@
 using System;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
+using ReTime_Testing.Services;
 
 namespace ReTime_Testing.Models
 {
@@ -55,8 +57,10 @@ namespace ReTime_Testing.Helpers
         /// </summary>
         public static void SetWindowPosition(Window window, ProgressBarPosition position)
         {
-            var setting = Services.SettingsService.Instance.GetTimeTopSetting();
-            SetWindowPosition(window, position, setting.Window.UseFullScreen);
+            var app = Application.Current as App;
+            var settingsService = app?.Services.GetService(typeof(ISettingsService)) as ISettingsService;
+            var setting = settingsService?.GetTimeTopSetting();
+            SetWindowPosition(window, position, setting?.Window.UseFullScreen ?? false);
         }
 
         public static void SetWindowPosition(Window window, ProgressBarPosition position, bool useFullScreen)

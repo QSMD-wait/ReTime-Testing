@@ -15,14 +15,6 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TimeScheduleManager : ITimeScheduleManager
     {
-        private static readonly Lazy<TimeScheduleManager> _instance =
-            new Lazy<TimeScheduleManager>(() => new TimeScheduleManager());
-
-        /// <summary>
-        /// 获取全局唯一实例
-        /// </summary>
-        public static TimeScheduleManager Instance => _instance.Value;
-
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -49,30 +41,16 @@ namespace ReTime_Testing.Services
         /// </summary>
         public event Action<string>? OnScheduleDeleted;
 
-        private TimeScheduleManager()
-        {
-            InitializePaths();
-        }
-
         /// <summary>
-        /// 初始化路径
+        /// 构造函数（支持 DI 注入）
         /// </summary>
-        private void InitializePaths()
+        /// <param name="configManager">配置管理器</param>
+        public TimeScheduleManager(IConfigurationManager configManager)
         {
-            try
-            {
-                var configManager = ConfigurationManager.Instance;
-                _timeSchedulesDirectory = configManager.TimeSchedulesDirectory;
+            _timeSchedulesDirectory = configManager.TimeSchedulesDirectory;
 
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"路径初始化完成: TimeSchedulesDirectory={_timeSchedulesDirectory}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"路径初始化失败: {ex.Message}", ex);
-                throw;
-            }
+            Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
+                $"路径初始化完成: TimeSchedulesDirectory={_timeSchedulesDirectory}");
         }
 
         /// <summary>

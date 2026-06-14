@@ -27,4 +27,19 @@ public interface IDesktopWindowManager
     /// 关闭当前窗口
     /// </summary>
     void CloseCurrentWindow();
+
+    /// <summary>
+    /// 从配置重新应用层级维持模式
+    /// </summary>
+    void ApplyTopmostModeFromConfig();
+
+    /// <summary>
+    /// 刷新当前位置
+    /// </summary>
+    void RefreshPosition();
+
+    /// <summary>
+    /// 刷新文字覆盖配置
+    /// </summary>
+    void RefreshTextOverlay();
 }

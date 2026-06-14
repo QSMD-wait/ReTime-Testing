@@ -1,4 +1,6 @@
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels;
 
 namespace ReTime_Testing.Views.Settings
@@ -10,16 +12,22 @@ namespace ReTime_Testing.Views.Settings
         public Setting()
         {
             InitializeComponent();
-            _viewModel = new TimeTopSettingViewModel();
+
+            var app = System.Windows.Application.Current as App;
+            var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
+
+            _viewModel = new TimeTopSettingViewModel(
+                services.GetRequiredService<IGlobalTimeTopDesktopService>(),
+                services.GetRequiredService<IMutexManager>(),
+                services.GetRequiredService<ISettingsService>(),
+                services.GetRequiredService<IDesktopWindowManager>()
+            );
             DataContext = _viewModel;
 
-            // 注册窗口关闭事件
             Closing += Setting_Closing;
 
-            // 注册导航事件
             MainNavigation.SelectionChanged += MainNavigation_SelectionChanged;
 
-            // 默认选中第一个导航项（会触发 SelectionChanged → NavigateTo，无需额外调用 InitializeNavigation）
             MainNavigation.SelectedItem = MainNavigation.MenuItems[0];
         }
 
@@ -35,10 +43,7 @@ namespace ReTime_Testing.Views.Settings
 
         private void Setting_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            // 清理 ViewModel 资源
             _viewModel?.Cleanup();
-
-            // 取消导航事件订阅
             MainNavigation.SelectionChanged -= MainNavigation_SelectionChanged;
         }
     }

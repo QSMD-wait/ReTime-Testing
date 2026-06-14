@@ -36,12 +36,7 @@ namespace ReTime_Testing.Services
         {
             _serilogReady = true;
 
-            var serilog = SerilogLogService.Instance;
-            if (serilog == null)
-            {
-                System.Diagnostics.Debug.WriteLine("[Logger] OnSerilogReady: SerilogLogService.Instance 为 null，无法回放早期日志");
-                return;
-            }
+            if (SerilogLogService.Instance == null) return;
 
             FlushEarlyCache();
         }
@@ -55,14 +50,10 @@ namespace ReTime_Testing.Services
             if (serilog == null) return;
 
             var entries = _earlyCache.ToArray();
-            var total = entries.Length;
 
-            if (total == 0) return;
+            if (entries.Length == 0) return;
 
-            System.Diagnostics.Debug.WriteLine($"[Logger] FlushEarlyCache: 开始回放 {total} 条早期日志");
-
-            var successCount = 0;
-            var failCount = 0;
+            System.Diagnostics.Debug.WriteLine($"[Logger] 开始回放 {entries.Length} 条早期缓存日志");
 
             foreach (var entry in entries)
             {
@@ -78,18 +69,15 @@ namespace ReTime_Testing.Services
                         serilog.WriteWithTimestamp(entry.Level, entry.Module,
                             entry.Message ?? "", entry.Timestamp);
                     }
-                    successCount++;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    failCount++;
-                    System.Diagnostics.Debug.WriteLine($"[Logger] FlushEarlyCache: 回放失败 [{entry.Level}][{entry.Module}] {entry.Message} | 异常: {ex.Message}");
                 }
             }
 
             _earlyCache.Clear();
 
-            System.Diagnostics.Debug.WriteLine($"[Logger] FlushEarlyCache: 回放完成，成功 {successCount}/{total}，失败 {failCount}/{total}");
+            System.Diagnostics.Debug.WriteLine($"[Logger] 早期缓存日志回放完成，共 {entries.Length} 条");
         }
 
         /// <summary>
@@ -125,25 +113,7 @@ namespace ReTime_Testing.Services
                 return;
             }
 
-            // Serilog 尚未初始化：缓存 + Debug 输出
             _earlyCache.Enqueue(new CachedEntry(DateTimeOffset.Now, level, module, message, null));
-            FallbackWrite(level, module, message);
-        }
-
-        /// <summary>
-        /// 回退日志输出（Debug.WriteLine）
-        /// </summary>
-        private static void FallbackWrite(LogLevel level, string module, string message)
-        {
-            var now = DateTime.Now;
-            var logMessage = $"[{now:yyyy-MM-dd HH:mm:ss}][{level}][{module}] {message}";
-
-            System.Diagnostics.Debug.WriteLine(logMessage);
-
-            if (level == LogLevel.ERR)
-            {
-                System.Diagnostics.Trace.TraceError(logMessage);
-            }
         }
 
         /// <summary>
@@ -197,12 +167,7 @@ namespace ReTime_Testing.Services
                 return;
             }
 
-            // Serilog 尚未初始化：缓存 + Debug 输出
             _earlyCache.Enqueue(new CachedEntry(DateTimeOffset.Now, LogLevel.ERR, module, message, exception));
-            var fullMessage = message + "\n异常类型: " + exception.GetType().Name +
-                "\n异常信息: " + exception.Message +
-                "\n堆栈跟踪: " + exception.StackTrace;
-            FallbackWrite(LogLevel.ERR, module, fullMessage);
         }
     }
 }

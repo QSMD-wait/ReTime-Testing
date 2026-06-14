@@ -11,17 +11,10 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class MutexManager : IMutexManager
     {
-        private static readonly Lazy<MutexManager> _instance = new Lazy<MutexManager>(() => new MutexManager());
-
         private Mutex? _mutex;
         private MutexConfig _config;
         private bool _disposed = false;
         private bool _isAcquired = false;
-
-        /// <summary>
-        /// 获取 MutexManager 单例实例
-        /// </summary>
-        public static MutexManager Instance => _instance.Value;
 
         /// <summary>
         /// 当前配置
@@ -35,20 +28,18 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 互斥锁冲突事件
-        /// 当检测到已有实例运行时触发
         /// </summary>
         public event EventHandler<MutexConflictEventArgs>? OnConflictDetected;
 
         /// <summary>
         /// 互斥锁获取成功事件
-        /// 当成功获取互斥锁时触发
         /// </summary>
         public event EventHandler? OnMutexAcquired;
 
         /// <summary>
-        /// 私有构造函数（单例模式）
+        /// 构造函数（支持 DI 注入）
         /// </summary>
-        private MutexManager()
+        public MutexManager()
         {
             _config = MutexConfig.GetDefault();
         }

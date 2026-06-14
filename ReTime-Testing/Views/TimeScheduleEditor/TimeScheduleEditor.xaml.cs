@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Extensions.DependencyInjection;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -297,7 +298,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        private readonly TimeScheduleManager _scheduleManager;
+        private readonly ITimeScheduleManager _scheduleManager;
+        private readonly ISettingsService _settingsService;
 
         // 是否有未保存的更改
         private bool _hasUnsavedChanges = false;
@@ -367,7 +369,10 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         {
             InitializeComponent();
 
-            _scheduleManager = TimeScheduleManager.Instance;
+            var app = System.Windows.Application.Current as App;
+            var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
+            _scheduleManager = services.GetRequiredService<ITimeScheduleManager>();
+            _settingsService = services.GetRequiredService<ISettingsService>();
 
             // 加载计划表列表
             RefreshScheduleList();
@@ -432,7 +437,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             Schedules.Clear();
 
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().Schedule.SelectedId;
+            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.SelectedId;
 
             foreach (var info in scheduleList)
             {
@@ -888,7 +893,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         private System.Collections.Generic.List<ScheduleListItem> BuildScheduleListItems()
         {
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = ConfigurationManager.Instance.LoadTimeTopSetting().Schedule.SelectedId;
+            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.SelectedId;
 
             var items = new System.Collections.Generic.List<ScheduleListItem>();
             foreach (var info in scheduleList)
@@ -978,9 +983,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             // 用户点击加载
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
-                var setting = ConfigurationManager.Instance.LoadTimeTopSetting();
+                var setting = _settingsService.GetTimeTopSetting();
                 setting.Schedule.SelectedId = selectedItem.Id;
-                ConfigurationManager.Instance.SaveTimeTopSetting(setting);
+                _settingsService.SaveTimeTopSetting(setting);
 
                 // 热重载执行计划
                 await HotReloadScheduleAsync(selectedItem.Id);

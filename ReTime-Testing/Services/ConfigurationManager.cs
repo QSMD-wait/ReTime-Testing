@@ -4,21 +4,13 @@ using System.IO;
 namespace ReTime_Testing.Services
 {
     /// <summary>
-    /// 配置管理器（单例）
+    /// 配置管理器
     /// 职责：路径注册中心——管理应用所有文件和目录的路径
-    /// 配置的读取、保存、缓存、校验、通知由 SettingsService 负责
+    /// 配置的读取、保存、缓存、校验、通知由 ISettingsService 负责
     /// JSON 文件 I/O 由 JsonConfigProvider 负责
     /// </summary>
     public class ConfigurationManager : IConfigurationManager
     {
-        private static readonly Lazy<ConfigurationManager> _instance =
-            new Lazy<ConfigurationManager>(() => new ConfigurationManager());
-
-        /// <summary>
-        /// 获取全局唯一实例
-        /// </summary>
-        public static ConfigurationManager Instance => _instance.Value;
-
         /// <summary>
         /// 获取应用根目录
         /// </summary>
@@ -55,15 +47,9 @@ namespace ReTime_Testing.Services
         public string LogsDirectory { get; private set; } = string.Empty;
 
         /// <summary>
-        /// 全局配置变更事件（委托给 SettingsService）
+        /// 构造函数（支持 DI 注入）
         /// </summary>
-        public event Action<GlobalSetting>? OnGlobalSettingChanged
-        {
-            add => SettingsService.Instance.OnGlobalSettingChanged += value;
-            remove => SettingsService.Instance.OnGlobalSettingChanged -= value;
-        }
-
-        private ConfigurationManager()
+        public ConfigurationManager()
         {
             InitializePaths();
         }
@@ -98,16 +84,15 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 初始化目录结构（启动时调用）
+        /// 仅创建目录，不创建默认配置文件（由 SettingsService 按需创建）
         /// </summary>
         public void InitializeDirectories()
         {
             try
             {
                 EnsureDirectoryExists(DataDirectory);
-                EnsureGlobalSettingExists();
                 EnsureDirectoryExists(ConfigsDirectory);
                 EnsureDirectoryExists(TimeSchedulesDirectory);
-                EnsureTimeTopSettingExists();
                 EnsureDirectoryExists(LogsDirectory);
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
@@ -133,72 +118,5 @@ namespace ReTime_Testing.Services
                     $"目录已创建: {path}");
             }
         }
-
-        /// <summary>
-        /// 确保全局配置文件存在
-        /// </summary>
-        private void EnsureGlobalSettingExists()
-        {
-            if (!File.Exists(GlobalSettingFilePath))
-            {
-                var defaultSetting = new GlobalSetting();
-                SettingsService.Instance.SaveGlobalSetting(defaultSetting);
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
-                    $"全局配置文件已创建: {GlobalSettingFilePath}");
-            }
-        }
-
-        /// <summary>
-        /// 确保TimeTop设置文件存在
-        /// </summary>
-        private void EnsureTimeTopSettingExists()
-        {
-            if (!File.Exists(TimeTopSettingFilePath))
-            {
-                var defaultSetting = new TimeTopSetting();
-                SettingsService.Instance.SaveTimeTopSetting(defaultSetting);
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
-                    "TimeTop设置文件已创建");
-            }
-        }
-
-        #region 兼容性委托方法（委托给 SettingsService）
-
-        /// <summary>
-        /// 加载全局配置（委托给 SettingsService）
-        /// </summary>
-        public GlobalSetting LoadGlobalSetting() => SettingsService.Instance.GetGlobalSetting();
-
-        /// <summary>
-        /// 保存全局配置（委托给 SettingsService）
-        /// </summary>
-        public void SaveGlobalSetting(GlobalSetting setting) => SettingsService.Instance.SaveGlobalSetting(setting);
-
-        /// <summary>
-        /// 重置全局配置为默认值（委托给 SettingsService）
-        /// </summary>
-        public void ResetGlobalSetting() => SettingsService.Instance.ResetGlobalSetting();
-
-        /// <summary>
-        /// 刷新全局配置缓存（委托给 SettingsService）
-        /// </summary>
-        public void RefreshGlobalSettingCache() => SettingsService.Instance.RefreshGlobalSettingCache();
-
-        /// <summary>
-        /// 获取缓存的全局配置（委托给 SettingsService）
-        /// </summary>
-        public GlobalSetting GetCachedGlobalSetting() => SettingsService.Instance.GetGlobalSetting();
-
-        /// <summary>
-        /// 加载TimeTop设置（委托给 SettingsService）
-        /// </summary>
-        public TimeTopSetting LoadTimeTopSetting() => SettingsService.Instance.GetTimeTopSetting();
-
-        /// <summary>
-        /// 保存TimeTop设置（委托给 SettingsService）
-        /// </summary>
-        public void SaveTimeTopSetting(TimeTopSetting setting) => SettingsService.Instance.SaveTimeTopSetting(setting);
-
-        #endregion
     }
 }

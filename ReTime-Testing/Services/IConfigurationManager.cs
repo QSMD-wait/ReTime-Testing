@@ -48,39 +48,4 @@ public interface IConfigurationManager
     /// 初始化目录结构（启动时调用）
     /// </summary>
     void InitializeDirectories();
-
-    /// <summary>
-    /// 加载全局配置（委托给 SettingsService）
-    /// </summary>
-    GlobalSetting LoadGlobalSetting();
-
-    /// <summary>
-    /// 保存全局配置（委托给 SettingsService）
-    /// </summary>
-    void SaveGlobalSetting(GlobalSetting setting);
-
-    /// <summary>
-    /// 重置全局配置为默认值（委托给 SettingsService）
-    /// </summary>
-    void ResetGlobalSetting();
-
-    /// <summary>
-    /// 刷新全局配置缓存（委托给 SettingsService）
-    /// </summary>
-    void RefreshGlobalSettingCache();
-
-    /// <summary>
-    /// 获取缓存的全局配置（委托给 SettingsService）
-    /// </summary>
-    GlobalSetting GetCachedGlobalSetting();
-
-    /// <summary>
-    /// 加载TimeTop设置（委托给 SettingsService）
-    /// </summary>
-    TimeTopSetting LoadTimeTopSetting();
-
-    /// <summary>
-    /// 保存TimeTop设置（委托给 SettingsService）
-    /// </summary>
-    void SaveTimeTopSetting(TimeTopSetting setting);
 }

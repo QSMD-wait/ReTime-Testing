@@ -9,6 +9,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class ProgressStateManager : IProgressStateManager
     {
+        private readonly ISettingsService? _settingsService;
         private bool _isBatchUpdating = false;
         private bool _pendingNotify = false;
 
@@ -16,6 +17,15 @@ namespace ReTime_Testing.Services
         /// 状态变更回调
         /// </summary>
         public Action<ProgressStateConfig>? OnStateChanged { get; set; }
+
+        /// <summary>
+        /// 构造函数（支持 DI 注入）
+        /// </summary>
+        /// <param name="settingsService">设置服务（可选，为 null 时使用默认样式）</param>
+        public ProgressStateManager(ISettingsService? settingsService = null)
+        {
+            _settingsService = settingsService;
+        }
 
         /// <summary>
         /// 预定义状态（向后兼容）
@@ -311,17 +321,18 @@ namespace ReTime_Testing.Services
             // 2. 尝试从配置文件读取样式配置
             try
             {
-                var settingsService = Services.SettingsService.Instance;
-                var timeTopSetting = settingsService.GetTimeTopSetting();
-                var stateName = stateType.ToString();
-                
-                if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.Enabled
-                    && timeTopSetting.StateStyles.Styles != null
-                    && timeTopSetting.StateStyles.Styles.TryGetValue(stateName, out var styleData)
-                    && styleData.Enabled)
+                if (_settingsService != null)
                 {
-                    // 合并配置文件样式到默认样式
-                    return MergeStyleConfig(defaultStyle, styleData);
+                    var timeTopSetting = _settingsService.GetTimeTopSetting();
+                    var stateName = stateType.ToString();
+                    
+                    if (timeTopSetting.StateStyles != null && timeTopSetting.StateStyles.Enabled
+                        && timeTopSetting.StateStyles.Styles != null
+                        && timeTopSetting.StateStyles.Styles.TryGetValue(stateName, out var styleData)
+                        && styleData.Enabled)
+                    {
+                        return MergeStyleConfig(defaultStyle, styleData);
+                    }
                 }
             }
             catch (Exception ex)
