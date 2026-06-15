@@ -99,7 +99,7 @@ public class ProgressStateManagerTests
     {
         // Arrange
         var eventRaised = false;
-        _manager.OnStateChanged = (config) => eventRaised = true;
+        _manager.OnStateChanged += (config) => eventRaised = true;
 
         // Act
         _manager.UpdateProgress(50.0);
@@ -322,7 +322,7 @@ public class ProgressStateManagerTests
     {
         // Arrange
         var callCount = 0;
-        _manager.OnStateChanged = (config) => callCount++;
+        _manager.OnStateChanged += (config) => callCount++;
 
         // Act
         _manager.BeginBatchUpdate();

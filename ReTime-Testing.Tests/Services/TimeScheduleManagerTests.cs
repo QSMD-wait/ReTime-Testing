@@ -2,6 +2,7 @@ using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using FluentAssertions;
 using System.IO;
+using Moq;
 
 namespace ReTime_Testing.Tests.Services;
 
@@ -19,13 +20,12 @@ public class TimeScheduleManagerTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), $"TimeScheduleTests_{Guid.NewGuid()}");
         Directory.CreateDirectory(_testDirectory);
 
-        // 创建测试用管理器
-        _manager = TimeScheduleManager.Instance;
-        
-        // 使用反射设置测试目录
-        var field = typeof(TimeScheduleManager).GetField("_timeSchedulesDirectory", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        field?.SetValue(_manager, _testDirectory);
+        // 创建 Mock IConfigurationManager
+        var mockConfig = new Mock<IConfigurationManager>();
+        mockConfig.Setup(c => c.TimeSchedulesDirectory).Returns(_testDirectory);
+
+        // 通过 DI 构造函数创建测试用管理器
+        _manager = new TimeScheduleManager(mockConfig.Object);
     }
 
     public void Dispose()

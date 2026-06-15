@@ -8,9 +8,9 @@ namespace ReTime_Testing.Services;
 public interface IProgressStateManager
 {
     /// <summary>
-    /// 状态变更回调
+    /// 状态变更事件（支持多订阅者）
     /// </summary>
-    Action<ProgressStateConfig>? OnStateChanged { get; set; }
+    event Action<ProgressStateConfig>? OnStateChanged;
 
     /// <summary>
     /// 当前配置

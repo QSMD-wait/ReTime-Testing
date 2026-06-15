@@ -546,11 +546,7 @@ namespace ReTime_Testing.ViewModels
                 _refreshTimer.Tick -= OnRefreshTimerTick;
             }
 
-            // 取消订阅 Service 事件
-            if (_service != null)
-            {
-                _service.OnStateChanged = null;
-            }
+            // 取消订阅 Service 事件（TimeTopSettingViewModel 未订阅 OnStateChanged）
 
             // 释放缓存的 PageViewModel 资源
             _timePage?.Dispose();

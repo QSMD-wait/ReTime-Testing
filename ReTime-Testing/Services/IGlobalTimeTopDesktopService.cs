@@ -15,9 +15,9 @@ public interface IGlobalTimeTopDesktopService
     IProgressStateManager StateManager { get; }
 
     /// <summary>
-    /// 状态变更回调（用于 ViewModel 更新 UI）
+    /// 状态变更事件（用于 ViewModel 更新 UI，支持多订阅者）
     /// </summary>
-    Action<ProgressStateConfig>? OnStateChanged { get; set; }
+    event Action<ProgressStateConfig>? OnStateChanged;
 
     /// <summary>
     /// 设置为加载状态

@@ -146,12 +146,12 @@ namespace ReTime_Testing.Services
         // ==================== 状态变更回调 ====================
         
         /// <summary>
-        /// 状态变更回调（用于 ViewModel 更新 UI）
+        /// 状态变更事件（支持多订阅者）
         /// </summary>
-        public Action<ProgressStateConfig>? OnStateChanged
+        public event Action<ProgressStateConfig>? OnStateChanged
         {
-            get => _stateManager.OnStateChanged;
-            set => _stateManager.OnStateChanged = value;
+            add => _stateManager.OnStateChanged += value;
+            remove => _stateManager.OnStateChanged -= value;
         }
         
         // ==================== 批量更新 ====================

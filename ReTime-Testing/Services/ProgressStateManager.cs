@@ -14,9 +14,9 @@ namespace ReTime_Testing.Services
         private bool _pendingNotify = false;
 
         /// <summary>
-        /// 状态变更回调
+        /// 状态变更事件（支持多订阅者）
         /// </summary>
-        public Action<ProgressStateConfig>? OnStateChanged { get; set; }
+        public event Action<ProgressStateConfig>? OnStateChanged;
 
         /// <summary>
         /// 构造函数（支持 DI 注入）

@@ -52,7 +52,7 @@ namespace ReTime_Testing.ViewModels
             {
                 _service = globalService;
                 _settingsService = settingsService;
-                _service.OnStateChanged = OnStateChanged;
+                _service.OnStateChanged += OnStateChanged;
                 
                 var setting = _settingsService?.GetTimeTopSetting();
                 if (setting != null)
@@ -140,7 +140,7 @@ namespace ReTime_Testing.ViewModels
             {
                 if (_service != null)
                 {
-                    _service.OnStateChanged = null;
+                    _service.OnStateChanged -= OnStateChanged;
                     Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "Service 回调已清理");
                 }
             }
