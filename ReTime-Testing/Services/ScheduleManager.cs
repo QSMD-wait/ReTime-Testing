@@ -7,7 +7,7 @@ namespace ReTime_Testing.Services;
 /// 调度管理器
 /// 负责执行计划的调度和状态管理
 /// </summary>
-public class ScheduleManager : IScheduleManager
+public class ScheduleManager : IScheduleManager, IDisposable
 {
     private readonly ITimeService _timeService;
     private readonly IProgressStateManager _stateManager;
@@ -507,11 +507,18 @@ public class ScheduleManager : IScheduleManager
         });
     }
 
+    private bool _disposed;
+
     /// <summary>
-    /// 析构函数，取消事件订阅
+    /// 释放资源，取消事件订阅
     /// </summary>
-    ~ScheduleManager()
+    public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
+        Stop();
+
         if (_timeService != null)
         {
             _timeService.TimeJumped -= OnTimeJumped;

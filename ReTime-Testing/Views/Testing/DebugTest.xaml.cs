@@ -16,12 +16,7 @@ namespace ReTime_Testing.Views.Testing
                 var app = System.Windows.Application.Current as App;
                 var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
 
-                DataContext = new TimeTopSettingViewModel(
-                    services.GetRequiredService<IGlobalTimeTopDesktopService>(),
-                    services.GetRequiredService<IMutexManager>(),
-                    services.GetRequiredService<ISettingsService>(),
-                    services.GetRequiredService<IDesktopWindowManager>()
-                );
+                DataContext = ActivatorUtilities.CreateInstance<TimeTopSettingViewModel>(services);
             }
         }
 

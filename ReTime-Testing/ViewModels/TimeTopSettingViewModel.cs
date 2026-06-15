@@ -215,9 +215,9 @@ namespace ReTime_Testing.ViewModels
         private readonly IMutexManager _mutexManager;
         private readonly ISettingsService _settingsService;
         private readonly IDesktopWindowManager _desktopWindowManager;
-        private ITimeService? _timeService;
-        private IScheduleManager? _scheduleManager;
-        private ITimeCalibrationService? _timeCalibrationService;
+        private readonly ITimeService? _timeService;
+        private readonly IScheduleManager? _scheduleManager;
+        private readonly ITimeCalibrationService? _timeCalibrationService;
         private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
         // 导航属性
@@ -331,12 +331,18 @@ namespace ReTime_Testing.ViewModels
             IGlobalTimeTopDesktopService globalService,
             IMutexManager mutexManager,
             ISettingsService settingsService,
-            IDesktopWindowManager desktopWindowManager)
+            IDesktopWindowManager desktopWindowManager,
+            ITimeService? timeService = null,
+            IScheduleManager? scheduleManager = null,
+            ITimeCalibrationService? timeCalibrationService = null)
         {
             _service = globalService;
             _mutexManager = mutexManager;
             _settingsService = settingsService;
             _desktopWindowManager = desktopWindowManager;
+            _timeService = timeService;
+            _scheduleManager = scheduleManager;
+            _timeCalibrationService = timeCalibrationService;
 
             // 初始化互斥锁状态
             UpdateMutexStatus();
@@ -344,7 +350,6 @@ namespace ReTime_Testing.ViewModels
             // 初始化进度条位置
             UpdatePositionStatus();
 
-            // 延迟初始化新服务引用（在窗口加载后）
             _refreshTimer = new System.Windows.Threading.DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(1)
@@ -352,30 +357,7 @@ namespace ReTime_Testing.ViewModels
             _refreshTimer.Tick += OnRefreshTimerTick;
             _refreshTimer.Start();
 
-            // 立即执行一次刷新
             RefreshDebugInfo();
-        }
-
-        /// <summary>
-        /// 初始化新服务
-        /// </summary>
-        private void InitializeNewServices()
-        {
-            if (_timeService != null) return;
-
-            var app = System.Windows.Application.Current as App;
-            if (app != null)
-            {
-                _timeService = app.TimeService;
-                _scheduleManager = app.ScheduleManager;
-                _timeCalibrationService = app.TimeCalibrationService;
-
-                Logger.Info("TimeTopSettingViewModel", $"新服务引用已初始化: TimeService={_timeService != null}, ScheduleManager={_scheduleManager != null}, TimeCalibrationService={_timeCalibrationService != null}");
-            }
-            else
-            {
-                Logger.Warn("TimeTopSettingViewModel", "无法获取 App 实例");
-            }
         }
 
         /// <summary>
@@ -393,12 +375,6 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
-                // 如果服务尚未初始化，尝试初始化
-                if (_timeService == null || _scheduleManager == null || _timeCalibrationService == null)
-                {
-                    InitializeNewServices();
-                }
-
                 // 时间服务信息
                 if (_timeService != null)
                 {
@@ -539,27 +515,18 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         public void Cleanup()
         {
-            // 停止刷新定时器
             if (_refreshTimer != null)
             {
                 _refreshTimer.Stop();
                 _refreshTimer.Tick -= OnRefreshTimerTick;
             }
 
-            // 取消订阅 Service 事件（TimeTopSettingViewModel 未订阅 OnStateChanged）
-
-            // 释放缓存的 PageViewModel 资源
             _timePage?.Dispose();
             _timePage = null;
             _basicPage = null;
             _appearancePage = null;
             _windowPage = null;
             _aboutPage = null;
-
-            // 清理服务引用
-            _timeService = null;
-            _scheduleManager = null;
-            _timeCalibrationService = null;
         }
 
         /// <summary>

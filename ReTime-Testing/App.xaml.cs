@@ -555,7 +555,9 @@ namespace ReTime_Testing
             {
                 _trayIconService.OpenSettingRequested -= OpenSetting;
                 _trayIconService.OpenDebugRequested -= OpenDebugTest;
+                _trayIconService.OpenTimeScheduleEditorRequested -= OpenTimeScheduleEditor;
                 _trayIconService.AboutRequested -= OpenMainWindow;
+                _trayIconService.RestartRequested -= RestartApplication;
                 _trayIconService.ExitRequested -= ExitApplication;
             }
 

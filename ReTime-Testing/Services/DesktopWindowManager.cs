@@ -13,17 +13,15 @@ namespace ReTime_Testing.Services
     public class DesktopWindowManager : IDesktopWindowManager
     {
         private readonly ISettingsService _settingsService;
+        private readonly ITopmostService _topmostService;
 
         private Window? _currentWindow;
         private ProgressBarPosition _currentPosition;
 
-        /// <summary>
-        /// 构造函数（支持 DI 注入）
-        /// </summary>
-        /// <param name="settingsService">设置服务</param>
-        public DesktopWindowManager(ISettingsService settingsService)
+        public DesktopWindowManager(ISettingsService settingsService, ITopmostService topmostService)
         {
             _settingsService = settingsService;
+            _topmostService = topmostService;
             _currentPosition = ProgressBarPosition.Top;
         }
 
@@ -58,7 +56,7 @@ namespace ReTime_Testing.Services
             if (_currentWindow == null) return;
 
             var config = _settingsService.GetTimeTopSetting();
-            TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
+            _topmostService.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
         /// <summary>
@@ -69,7 +67,7 @@ namespace ReTime_Testing.Services
             if (_currentWindow == null || !_currentWindow.IsLoaded) return;
 
             var config = _settingsService.GetTimeTopSetting();
-            TopmostService.Instance.Apply(_currentWindow, config.Window.TopmostMode);
+            _topmostService.Apply(_currentWindow, config.Window.TopmostMode);
         }
 
         /// <summary>
@@ -111,7 +109,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void CloseCurrentWindow()
         {
-            TopmostService.Instance.Cleanup();
+            _topmostService.Cleanup();
 
             if (_currentWindow != null)
             {

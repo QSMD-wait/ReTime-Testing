@@ -10,12 +10,8 @@ namespace ReTime_Testing.Services
     /// 窗口层级维持服务
     /// 根据配置模式维护进度条窗口的置顶状态
     /// </summary>
-    public class TopmostService
+    public class TopmostService : ITopmostService
     {
-        private static readonly Lazy<TopmostService> _instance =
-            new Lazy<TopmostService>(() => new TopmostService());
-
-        public static TopmostService Instance => _instance.Value;
 
         private Window? _targetWindow;
         private TopmostMode _currentMode = TopmostMode.OnDeactivated;
@@ -45,8 +41,6 @@ namespace ReTime_Testing.Services
         private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
 
         private delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
-
-        private TopmostService() { }
 
         /// <summary>
         /// 应用层级维持模式到指定窗口
