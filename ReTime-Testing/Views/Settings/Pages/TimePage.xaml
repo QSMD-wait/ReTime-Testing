@@ -4,161 +4,122 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
-             xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="600">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
-        <StackPanel>
 
-            <!-- 当前时间显示（Hero Card） -->
-            <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
-                    CornerRadius="8"
-                    BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
-                    BorderThickness="1"
-                    Padding="24,20"
-                    Margin="0,0,0,16">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding CurrentTime}"
-                               FontSize="56"
-                               FontWeight="Bold"
-                               FontFamily="Consolas, Courier New, monospace"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
-                    <TextBlock Text="{Binding CurrentDate}"
-                               FontSize="14"
-                               Margin="0,6,0,0"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                </StackPanel>
-            </Border>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <FrameworkElement.Resources>
+            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+        </FrameworkElement.Resources>
 
-            <!-- 时间校准总开关 -->
-            <controls:SettingsCard Title="启用时间校准"
-                                    Description="启用后定期从选定来源获取时间，校准绝对时钟，确保进度条走时准确"
-                                    Icon="{x:Static ui:FluentSystemIcons.Clock_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch"
+                                 Spacing="{StaticResource SettingsCardSpacing}">
+
+                <!-- 当前时间显示（Hero Card） -->
+                <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
+                        CornerRadius="8"
+                        BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+                        BorderThickness="1"
+                        Padding="24,20">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding CurrentTime}"
+                                   FontSize="56"
+                                   FontWeight="Bold"
+                                   FontFamily="Consolas, Courier New, monospace"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
+                        <TextBlock Text="{Binding CurrentDate}"
+                                   FontSize="14"
+                                   Margin="0,6,0,0"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 时间校准总开关 -->
+                <ui:SettingsCard Header="启用时间校准"
+                                 Description="启用后定期从选定来源获取时间，校准绝对时钟，确保进度条走时准确">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ClockToolbox_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 校准源选择 -->
-            <controls:SettingsCard Title="校准源"
-                                    Description="选择时间校准的来源"
-                                    Icon="{x:Static ui:FluentSystemIcons.Globe_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <!-- 校准源选择 -->
+                <ui:SettingsCard Header="校准源"
+                                 Description="选择时间校准的来源">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Server_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox ItemsSource="{Binding CalibrationSources}"
                               SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
                               DisplayMemberPath="DisplayName"
                               MinWidth="180"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 立即校准按钮 -->
-            <controls:SettingsCard Title="手动校准"
-                                    Description="立即从选定校准源获取时间进行一次校准"
-                                    Icon="{x:Static ui:FluentSystemIcons.ArrowSync_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <!-- 立即校准按钮 -->
+                <ui:SettingsCard Header="手动校准"
+                                 Description="立即从选定校准源获取时间进行一次校准">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowSync_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <Button Content="{Binding CalibrateButtonText}"
                             Command="{Binding CalibrateNowCommand}"
                             IsEnabled="{Binding IsCalibrationEnabled}"
                             MinWidth="100"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 校准状态（可展开） -->
-            <controls:SettingsCard Title="校准状态"
-                                    Description="{Binding CalibrationStatus}"
-                                    Icon="{x:Static ui:FluentSystemIcons.Info_20_Filled}"
-                                    IsExpandable="True"
-                                    Margin="0">
-                <controls:SettingsCard.ExpandContent>
-                    <StackPanel>
-                        <!-- 状态信息子卡片 -->
-                        <Border Style="{DynamicResource SubCardStyle}">
-                            <StackPanel>
-                                <!-- 运行状态 -->
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="运行状态"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding CalibrationStatus}"
-                                               Grid.Column="1"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                                <!-- 上次校准 -->
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="上次校准"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding LastCalibrationTime}"
-                                               Grid.Column="1"
-                                               FontWeight="SemiBold"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                                <!-- 详细信息 -->
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="详细信息"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding CalibrationInfo}"
-                                               Grid.Column="1"
-                                               TextWrapping="Wrap"
-                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </controls:SettingsCard.ExpandContent>
-            </controls:SettingsCard>
+                <!-- 校准状态（可展开） -->
+                <ui:SettingsExpander Header="校准状态"
+                                     Description="{Binding CalibrationStatus}">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="运行状态">
+                            <TextBlock Text="{Binding CalibrationStatus}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="上次校准">
+                            <TextBlock Text="{Binding LastCalibrationTime}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="详细信息"
+                                         ContentAlignment="Left">
+                            <TextBlock Text="{Binding CalibrationInfo}"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                       VerticalAlignment="Center"/>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
 
-            <!-- NTP服务器选择（仅云端源可见） -->
-            <controls:SettingsCard Title="NTP服务器"
-                                    Description="选择用于时间同步的NTP服务器"
-                                    Icon="{x:Static ui:FluentSystemIcons.Cloud_20_Filled}"
-                                    Margin="0"
-                                    Visibility="{Binding IsCloudSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <controls:SettingsCard.ControlContent>
+                <!-- NTP服务器选择（仅云端源可见） -->
+                <ui:SettingsCard Header="NTP服务器"
+                                 Description="选择用于时间同步的NTP服务器"
+                                 Visibility="{Binding IsCloudSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Globe_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox ItemsSource="{Binding NtpServers}"
                               SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
                               DisplayMemberPath="DisplayName"
                               MinWidth="180"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 说明信息（可展开） -->
-            <controls:SettingsCard Title="关于云端校准"
-                                    Description="NTP协议、RTT补偿与校准策略说明"
-                                    Icon="{x:Static ui:FluentSystemIcons.QuestionCircle_20_Filled}"
-                                    IsExpandable="True"
-                                    Margin="0">
-                <controls:SettingsCard.ExpandContent>
-                    <StackPanel>
-                        <!-- NTP协议子卡片 -->
-                        <Border Style="{DynamicResource SubCardStyle}">
+                <!-- 说明信息（可展开） -->
+                <ui:SettingsExpander Header="关于云端校准"
+                                     Description="NTP协议、RTT补偿与校准策略说明">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.QuestionCircle_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard ContentAlignment="Left">
                             <StackPanel>
                                 <TextBlock Text="NTP协议"
                                            FontSize="13"
@@ -169,9 +130,8 @@
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                             </StackPanel>
-                        </Border>
-                        <!-- 校准策略子卡片 -->
-                        <Border Style="{DynamicResource SubCardStyle}">
+                        </ui:SettingsCard>
+                        <ui:SettingsCard ContentAlignment="Left">
                             <StackPanel>
                                 <TextBlock Text="校准策略"
                                            FontSize="13"
@@ -187,11 +147,11 @@
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </controls:SettingsCard.ExpandContent>
-            </controls:SettingsCard>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
 
-        </StackPanel>
+            </ikw:SimpleStackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

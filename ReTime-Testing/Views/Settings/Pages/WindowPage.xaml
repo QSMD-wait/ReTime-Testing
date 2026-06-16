@@ -4,20 +4,26 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
-             xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
-        <StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <FrameworkElement.Resources>
+            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+        </FrameworkElement.Resources>
 
-            <!-- 进度条位置 -->
-            <controls:SettingsCard Title="进度条位置"
-                                    Description="选择进度条在屏幕上的显示位置"
-                                    Icon="{x:Static ui:FluentSystemIcons.ArrowMove_24_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch"
+                                 Spacing="{StaticResource SettingsCardSpacing}">
+
+                <ui:SettingsCard Header="进度条位置"
+                                 Description="选择进度条在屏幕上的显示位置">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.PositionForward_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox SelectedValue="{Binding SelectedPosition, Mode=TwoWay}"
                               SelectedValuePath="Tag"
                               MinWidth="160">
@@ -26,15 +32,13 @@
                         <ComboBoxItem Content="左侧" Tag="left"/>
                         <ComboBoxItem Content="右侧" Tag="right"/>
                     </ComboBox>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 窗口置顶模式 -->
-            <controls:SettingsCard Title="窗口置顶维持模式"
-                                    Description="选择窗口层级维持模式，保持置顶状态"
-                                    Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <ui:SettingsCard Header="窗口置顶维持模式"
+                                 Description="选择窗口层级维持模式，保持置顶状态">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Pin_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox SelectedValue="{Binding SelectedTopmostMode, Mode=TwoWay}"
                               SelectedValuePath="Tag"
                               MinWidth="160">
@@ -42,19 +46,17 @@
                         <ComboBoxItem Content="窗口层级变化时" Tag="OnDeactivated"/>
                         <ComboBoxItem Content="定时轮询（500ms）" Tag="Polling"/>
                     </ComboBox>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 使用实际屏幕尺寸 -->
-            <controls:SettingsCard Title="使用实际屏幕尺寸"
-                                    Description="使用实际屏幕尺寸定位窗口，忽略系统工作区范围（进度条将覆盖任务栏及类似功能区域）"
-                                    Icon="{x:Static ui:FluentSystemIcons.ResizeLarge_24_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <ui:SettingsCard Header="使用实际屏幕尺寸"
+                                 Description="使用实际屏幕尺寸定位窗口，忽略系统工作区范围（进度条将覆盖任务栏及类似功能区域）">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.FullScreenMaximize_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ui:ToggleSwitch IsOn="{Binding UseFullScreen, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-        </StackPanel>
+            </ikw:SimpleStackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReTime_Testing.Views.Testing"
-        xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         mc:Ignorable="d"
         Title="调试测试"
@@ -30,43 +29,44 @@
                            FontWeight="SemiBold"
                            Margin="0,0,0,16"/>
 
-                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Home}"
-                                       Title="不明所以的设置"
-                                       Description="看我干什么？我又不是什么丑八怪！"
-                                        Margin="0">
-                    <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="True" OffContent="听到没有" OnContent="不许看！" MinWidth="0"/>
-                    </controls:SettingsCard.ControlContent>
-                </controls:SettingsCard>
+                <ui:SettingsCard Header="不明所以的设置"
+                                 Description="看我干什么？我又不是什么丑八怪！">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.EmojiSmileSlight_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="True" OffContent="听到没有" OnContent="不许看！" MinWidth="0"/>
+                </ui:SettingsCard>
 
-                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Bug}"
-                                       Title="不明所以的设置2"
-                                       Description="阿巴阿巴阿巴阿巴阿巴阿巴"
-                                        Margin="0">
-                    <controls:SettingsCard.ControlContent>
-                         <ui:ToggleSwitch IsOn="False" OffContent="你说开就开？" OnContent="你给我关上！" MinWidth="0"/>
-                    </controls:SettingsCard.ControlContent>
-                </controls:SettingsCard>
+                <ui:SettingsCard Header="不明所以的设置2"
+                                 Description="阿巴阿巴阿巴阿巴阿巴阿巴">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.EmojiMeh_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="False" OffContent="你说开就开？" OnContent="你给我关上！" MinWidth="0"/>
+                </ui:SettingsCard>
 
-                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Cloud}"
-                                       Title="云端不会校准"
-                                       Description="不会自动从云端同步时间校准，点了也没用"
-                                        Margin="0">
-                    <controls:SettingsCard.ControlContent>
-                        <Button Content="不立即同步" Style="{StaticResource AccentButtonStyle}"/>
-                    </controls:SettingsCard.ControlContent>
-                </controls:SettingsCard>
+                <ui:SettingsCard Header="云端不会校准"
+                                 Description="不会自动从云端同步时间校准，点了也没用">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.CloudOff_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <Button Content="不立即同步" Style="{StaticResource AccentButtonStyle}"/>
+                </ui:SettingsCard>
 
-                <controls:SettingsCard Icon="{x:Static ui:SegoeFluentIcons.Settings}"
-                                       Title="低级设置"
-                                       Description="点击展开查看更少配置选项"
-                                       IsExpandable="True"
-                                       Margin="0">
-                    <controls:SettingsCard.ExpandContent>
-                        <StackPanel Margin="0,4,0,0">
+                <ui:SettingsExpander Header="低级设置"
+                                     Description="点击展开查看更少配置选项">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Settings_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard ContentAlignment="Left">
                             <CheckBox Content="启用实验性功能（没有）" Margin="0,0,0,8"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard ContentAlignment="Left">
                             <CheckBox Content="显示详细日志（也没有）" Margin="0,0,0,8"/>
-                            <TextBlock Text="日志级别（更没有，再说，我还没写日志的文件打印，你也看不到！！）" FontSize="12" Opacity="0.75" Margin="0,0,0,4"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="日志级别"
+                                         Description="更没有，再说，我还没写日志的文件打印，你也看不到！！">
                             <ComboBox SelectedIndex="0" Width="200" HorizontalAlignment="Left">
                                 <ComboBoxItem Content="BUG满天飞"/>
                                 <ComboBoxItem Content="修不好"/>
@@ -74,9 +74,9 @@
                                 <ComboBoxItem Content="有点问题"/>
                                 <ComboBoxItem Content="额~ 我走以后~ 活下去  ——"/>
                             </ComboBox>
-                        </StackPanel>
-                    </controls:SettingsCard.ExpandContent>
-                </controls:SettingsCard>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
 
                 <!-- 状态切换 -->
                 <TextBlock Text="状态控制"

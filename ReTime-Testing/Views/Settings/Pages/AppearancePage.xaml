@@ -4,29 +4,34 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
-             xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
-        <StackPanel>
 
-            <!-- 阴影效果开关 -->
-            <controls:SettingsCard Title="进度条阴影效果"
-                                    Description="控制进度条是否显示阴影效果（开启可能影响性能）"
-                                    Icon="{x:Static ui:FluentSystemIcons.SquareShadow_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <FrameworkElement.Resources>
+            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+        </FrameworkElement.Resources>
+
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch"
+                                 Spacing="{StaticResource SettingsCardSpacing}">
+
+                <ui:SettingsCard Header="进度条阴影效果"
+                                 Description="控制进度条是否显示阴影效果（开启可能影响性能）">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Sparkle_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ui:ToggleSwitch IsOn="{Binding EnableShadow, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-            <!-- 文字效果 -->
-            <controls:SettingsCard Title="字体效果"
-                                    Description="选择进度条文字的字体效果样式（描边可能造成文字边缘模糊）"
-                                    Icon="{x:Static ui:FluentSystemIcons.TextFont_20_Filled}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <ui:SettingsCard Header="字体效果"
+                                 Description="选择进度条文字的字体效果样式（描边可能造成文字边缘模糊）">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextFont_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox SelectedValue="{Binding SelectedTextEffect, Mode=TwoWay}"
                               SelectedValuePath="Tag"
                               MinWidth="120">
@@ -34,9 +39,9 @@
                         <ComboBoxItem Content="阴影" Tag="shadow"/>
                         <ComboBoxItem Content="描边" Tag="outline"/>
                     </ComboBox>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-        </StackPanel>
+            </ikw:SimpleStackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

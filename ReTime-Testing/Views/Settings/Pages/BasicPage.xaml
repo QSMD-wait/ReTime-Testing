@@ -4,53 +4,60 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ReTime_Testing.Views.Settings.Pages"
-             xmlns:controls="clr-namespace:ReTime_Testing.Views.Controls"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,0,16,16">
-        <StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <FrameworkElement.Resources>
+            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+            <Style x:Key="SettingsSectionHeaderTextBlockStyle"
+                   BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+                   TargetType="TextBlock">
+                <Style.Setters>
+                    <Setter Property="Margin" Value="1,30,0,6" />
+                </Style.Setters>
+            </Style>
+        </FrameworkElement.Resources>
 
-            <!-- 自启动开关 -->
-            <controls:SettingsCard Title="开机自启"
-                                    Description="在系统启动时自动运行应用"
-                                    Icon="{x:Static ui:SegoeFluentIcons.EaseOfAccess}"
-                                    IsExpandable="True"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch"
+                                 Spacing="{StaticResource SettingsCardSpacing}">
+
+                <ui:SettingsExpander Header="开机自启"
+                                     Description="在系统启动时自动运行应用">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowRepeatAll_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
                     <ui:ToggleSwitch IsOn="{Binding IsAutoStartEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
-                </controls:SettingsCard.ControlContent>
-                <controls:SettingsCard.ExpandContent>
-                    <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="自启动工作方式" FontSize="12"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                   Margin="0,0,0,4"/>
-                        <ComboBox SelectedValue="{Binding SelectedAutoStartMethod}"
-                                  SelectedValuePath="Tag"
-                                  MinWidth="160">
-                            <ComboBoxItem Content="注册表" Tag="registry"/>
-                            <ComboBoxItem Content="启动文件夹" Tag="startupFolder"/>
-                        </ComboBox>
-                    </StackPanel>
-                </controls:SettingsCard.ExpandContent>
-            </controls:SettingsCard>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="自启动工作方式">
+                            <ComboBox SelectedValue="{Binding SelectedAutoStartMethod}"
+                                      SelectedValuePath="Tag"
+                                      MinWidth="160">
+                                <ComboBoxItem Content="注册表" Tag="registry"/>
+                                <ComboBoxItem Content="启动文件夹" Tag="startupFolder"/>
+                            </ComboBox>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
 
-            <!-- 主题选择 -->
-            <controls:SettingsCard Title="应用主题"
-                                    Description="选择应用的明暗主题"
-                                    Icon="{x:Static ui:SegoeFluentIcons.Color}"
-                                    Margin="0">
-                <controls:SettingsCard.ControlContent>
+                <ui:SettingsCard Header="应用主题"
+                                 Description="选择应用的明暗主题">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.DarkTheme_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
                     <ComboBox SelectedValue="{Binding SelectedTheme}"
                               SelectedValuePath="Tag"
                               MinWidth="120">
                         <ComboBoxItem Content="明亮" Tag="light"/>
                         <ComboBoxItem Content="暗黑" Tag="dark"/>
                     </ComboBox>
-                </controls:SettingsCard.ControlContent>
-            </controls:SettingsCard>
+                </ui:SettingsCard>
 
-        </StackPanel>
+            </ikw:SimpleStackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>
