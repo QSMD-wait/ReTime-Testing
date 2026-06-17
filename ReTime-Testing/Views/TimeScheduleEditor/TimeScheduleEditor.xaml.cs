@@ -301,6 +301,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         private readonly ITimeScheduleManager _scheduleManager;
         private readonly ISettingsService _settingsService;
 
+        private bool _isWindowClosing = false;
+        private ContentDialog? _activeDialog = null;
+
         // 是否有未保存的更改
         private bool _hasUnsavedChanges = false;
         public bool HasUnsavedChanges
@@ -392,10 +395,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private async void OnWindowClosing(object? sender, CancelEventArgs e)
         {
+            _isWindowClosing = true;
+
+            if (_activeDialog != null)
+            {
+                _activeDialog.Hide();
+                _activeDialog = null;
+            }
+
             if (!HasUnsavedChanges)
                 return;
 
             e.Cancel = true; // 阻止默认关闭
+            _isWindowClosing = false; // 重置，因为取消了关闭
 
             var dialog = new ContentDialog
             {
@@ -408,25 +420,25 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 IsShadowEnabled = false
             };
 
+            _activeDialog = dialog;
             var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            if (_isWindowClosing) return;
 
             if (result == ContentDialogResult.Primary)
             {
-                // 验证并保存（使用统一的验证方法）
                 if (ValidateAndSave())
                 {
                     HasUnsavedChanges = false;
                     this.Close();
                 }
-                // 验证失败，保持窗口打开
             }
             else if (result == ContentDialogResult.Secondary)
             {
-                // 不保存，直接关闭
                 HasUnsavedChanges = false;
                 this.Close();
             }
-            // 取消：什么都不做，保持窗口打开
         }
 
         /// <summary>
@@ -881,6 +893,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private async void OnReloadButtonClick(object sender, RoutedEventArgs e)
         {
+            if (_isWindowClosing) return;
+
             var items = BuildScheduleListItems();
             var listView = CreateScheduleListView(items);
             var dialog = CreateSelectScheduleDialog(listView);
@@ -972,23 +986,26 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             System.Windows.Controls.ListView listView,
             System.Collections.Generic.List<ScheduleListItem> items)
         {
+            _activeDialog = dialog;
             var result = await dialog.ShowAsync();
+            _activeDialog = null;
 
-            // 处理结果 - None 是点击加载（默认按钮），Primary 是点击取消
+            if (_isWindowClosing) return;
+
             if (result == ContentDialogResult.Primary)
             {
                 return;
             }
 
-            // 用户点击加载
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
                 var setting = _settingsService.GetTimeTopSetting();
                 setting.Schedule.SelectedId = selectedItem.Id;
                 _settingsService.SaveTimeTopSetting(setting);
 
-                // 热重载执行计划
                 await HotReloadScheduleAsync(selectedItem.Id);
+
+                if (_isWindowClosing) return;
 
                 var confirmDialog = new ContentDialog
                 {
@@ -998,7 +1015,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     DefaultButton = ContentDialogButton.Close,
                     IsShadowEnabled = false
                 };
+                _activeDialog = confirmDialog;
                 await confirmDialog.ShowAsync();
+                _activeDialog = null;
             }
             else if (result == ContentDialogResult.None && listView.SelectedItem == null && listView.Items.Count > 0)
             {
@@ -1010,7 +1029,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     DefaultButton = ContentDialogButton.Close,
                     IsShadowEnabled = false
                 };
+                _activeDialog = warnDialog;
                 await warnDialog.ShowAsync();
+                _activeDialog = null;
             }
         }
 
@@ -1080,6 +1101,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         /// </summary>
         private async void ShowValidationErrorDialog(string message)
         {
+            if (_isWindowClosing) return;
+
             var errorDialog = new ContentDialog
             {
                 Title = "切换失败",
@@ -1088,7 +1111,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 DefaultButton = ContentDialogButton.Close,
                 IsShadowEnabled = false
             };
+            _activeDialog = errorDialog;
             await errorDialog.ShowAsync();
+            _activeDialog = null;
         }
 
         /// <summary>
