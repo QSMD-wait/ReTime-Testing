@@ -182,27 +182,6 @@ namespace ReTime_Testing
                 timeCalibrationService.Start();
                 Logger.Info(GetType().FullName ?? "App", "时间校准服务已启动");
 
-                // 首次校准
-                if (timeTopSetting.Calibration.Enabled)
-                {
-                    try
-                    {
-                        var success = await timeCalibrationService.CalibrateAsync();
-                        if (success)
-                        {
-                            Logger.Info(GetType().FullName ?? "App", "首次校准成功");
-                        }
-                        else
-                        {
-                            Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
-                    }
-                }
-
                 // 初始化全局服务
                 var globalService = Services.GetRequiredService<IGlobalTimeTopDesktopService>();
 
@@ -231,11 +210,40 @@ namespace ReTime_Testing
                 desktopWindowManager.SetPosition(initialPosition);
 
                 Logger.Info(GetType().FullName ?? "App", "应用程序启动成功");
+
+                // 首次校准（非阻塞：UI已就绪，校准在后台执行，不阻塞启动流程）
+                if (timeTopSetting.Calibration.Enabled)
+                {
+                    _ = PerformFirstCalibrationAsync(timeCalibrationService);
+                }
             }
             catch (Exception ex)
             {
                 Logger.Error(GetType().FullName ?? "App", "启动应用程序时发生异常", ex);
                 Shutdown();
+            }
+        }
+
+        /// <summary>
+        /// 首次校准（后台执行，不阻塞UI初始化）
+        /// </summary>
+        private async Task PerformFirstCalibrationAsync(ITimeCalibrationService timeCalibrationService)
+        {
+            try
+            {
+                var success = await timeCalibrationService.CalibrateAsync();
+                if (success)
+                {
+                    Logger.Info(GetType().FullName ?? "App", "首次校准成功");
+                }
+                else
+                {
+                    Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
             }
         }
 

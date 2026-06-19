@@ -36,19 +36,26 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// </summary>
     private void InitializeTimeProvider()
     {
-        var selectedServers = new List<string>();
+        var orderedServers = new List<string>();
         if (_selectedNtpServerIndex >= 0 && _selectedNtpServerIndex < _ntpServers.Count)
         {
-            selectedServers.Add(_ntpServers[_selectedNtpServerIndex]);
+            orderedServers.Add(_ntpServers[_selectedNtpServerIndex]);
+            foreach (var server in _ntpServers)
+            {
+                if (server != _ntpServers[_selectedNtpServerIndex])
+                {
+                    orderedServers.Add(server);
+                }
+            }
         }
         else
         {
-            selectedServers.AddRange(_ntpServers);
+            orderedServers.AddRange(_ntpServers);
         }
-        _currentTimeProvider = new NtpTimeProvider(selectedServers.ToArray());
+        _currentTimeProvider = new NtpTimeProvider(orderedServers.ToArray());
 
         Logger.Info("CloudCalibrationService",
-            $"NTP时间提供者已初始化: 提供者={_currentTimeProvider.Name}, 服务器={string.Join(", ", selectedServers)}");
+            $"NTP时间提供者已初始化: 提供者={_currentTimeProvider.Name}, 服务器={string.Join(", ", orderedServers)}");
     }
 
     /// <summary>

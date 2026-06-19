@@ -24,11 +24,13 @@ public class NtpTimeProvider : ITimeProvider
 
     public async Task<TimeProviderResult?> GetTimeAsync(TimeSpan timeout)
     {
+        var perServerTimeout = TimeSpan.FromTicks(timeout.Ticks / Math.Max(1, _serverAddresses.Length));
+
         foreach (var serverAddress in _serverAddresses)
         {
             try
             {
-                var result = await GetNtpTimeWithRttAsync(serverAddress, timeout);
+                var result = await GetNtpTimeWithRttAsync(serverAddress, perServerTimeout);
                 if (result != null)
                 {
                     Logger.Debug("NtpTimeProvider",
@@ -44,17 +46,18 @@ public class NtpTimeProvider : ITimeProvider
         }
 
         Logger.Error("NtpTimeProvider", "所有NTP服务器都失败");
+
         return null;
     }
 
     /// <summary>
     /// 获取NTP时间并计算RTT
+    /// 使用 CancellationTokenSource 实现真正的异步超时（Socket.ReceiveTimeout 仅对同步 Receive 有效）
     /// </summary>
     private async Task<TimeProviderResult?> GetNtpTimeWithRttAsync(string serverAddress, TimeSpan timeout)
     {
         using var udpClient = new UdpClient();
-        udpClient.Client.ReceiveTimeout = (int)timeout.TotalMilliseconds;
-        udpClient.Client.SendTimeout = (int)timeout.TotalMilliseconds;
+        using var cts = new CancellationTokenSource(timeout);
 
         try
         {
@@ -62,36 +65,54 @@ public class NtpTimeProvider : ITimeProvider
             // LI = 0, VN = 3, Mode = 3 (Client)
             ntpData[0] = 0x1B;
 
-            var endPoint = new IPEndPoint(Dns.GetHostEntry(serverAddress).AddressList[0], NtpPort);
+            var dnsResult = await Dns.GetHostEntryAsync(serverAddress).ConfigureAwait(false);
+            if (dnsResult.AddressList.Length == 0)
+            {
+                Logger.Warn("NtpTimeProvider", $"DNS解析无结果: {serverAddress}");
+                return null;
+            }
 
-            // 记录请求发送时间
+            var endPoint = new IPEndPoint(dnsResult.AddressList[0], NtpPort);
+
             var sendTimestamp = Stopwatch.GetTimestamp();
 
-            await udpClient.SendAsync(ntpData, ntpData.Length, endPoint);
+            await udpClient.SendAsync(ntpData, ntpData.Length, endPoint).ConfigureAwait(false);
 
-            var receiveResult = await udpClient.ReceiveAsync();
+            var receiveTask = udpClient.ReceiveAsync();
+            var completedTask = await Task.WhenAny(receiveTask, Task.Delay(timeout, cts.Token)).ConfigureAwait(false);
 
-            // 记录响应接收时间
+            if (completedTask != receiveTask)
+            {
+                Logger.Warn("NtpTimeProvider", $"NTP请求超时: 服务器={serverAddress}, 超时={timeout.TotalMilliseconds:F0}ms");
+                return null;
+            }
+
+            var receiveResult = receiveTask.Result;
+
             var receiveTimestamp = Stopwatch.GetTimestamp();
 
             var responseBytes = receiveResult.Buffer;
 
             if (responseBytes.Length >= NtpPacketSize)
             {
-                // 解析NTP时间戳（使用完整精度，包含fraction部分）
                 var transmitTimestampSeconds = ExtractTimestampSeconds(responseBytes, 40);
                 var transmitTimestampFraction = ExtractTimestampFraction(responseBytes, 40);
 
                 var ntpEpoch = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
                 var utcTime = ntpEpoch.AddSeconds(transmitTimestampSeconds + transmitTimestampFraction);
 
-                // 计算RTT
                 var rttTicks = receiveTimestamp - sendTimestamp;
                 var rtt = TimeSpan.FromTicks(rttTicks);
 
                 return new TimeProviderResult(utcTime, rtt);
             }
 
+            return null;
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Warn("NtpTimeProvider", $"NTP请求已取消: 服务器={serverAddress}");
             return null;
         }
         finally
