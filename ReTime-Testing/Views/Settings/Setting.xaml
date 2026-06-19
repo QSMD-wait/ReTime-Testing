@@ -59,7 +59,7 @@
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="基本" Tag="Basic">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Home}"/>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Home_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
@@ -71,13 +71,13 @@
 
                 <ui:NavigationViewItem Content="时间" Tag="Time">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Clock_24_Filled}"/>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Clock_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem Content="窗口" Tag="Window">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Filled}"/>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
@@ -86,7 +86,7 @@
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="关于 ReTime - Testing" Tag="About">
                     <ui:NavigationViewItem.Icon>
-                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
@@ -96,8 +96,8 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
                                Text="{Binding SelectedItem.Content, ElementName=MainNavigation}"
-                               FontSize="24" FontWeight="Normal"
-                               Margin="16,16,0,8"/>
+                               FontSize="28" FontWeight="SemiBold"
+                               Margin="16,16,0,4"/>
                     <ContentControl Content="{Binding CurrentPage}"/>
                 </DockPanel>
             </ui:NavigationView.Content>

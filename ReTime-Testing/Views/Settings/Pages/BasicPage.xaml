@@ -12,13 +12,6 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
         <FrameworkElement.Resources>
             <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
-            <Style x:Key="SettingsSectionHeaderTextBlockStyle"
-                   BasedOn="{StaticResource BodyStrongTextBlockStyle}"
-                   TargetType="TextBlock">
-                <Style.Setters>
-                    <Setter Property="Margin" Value="1,30,0,6" />
-                </Style.Setters>
-            </Style>
         </FrameworkElement.Resources>
 
         <Grid>
