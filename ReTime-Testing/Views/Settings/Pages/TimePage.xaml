@@ -8,9 +8,6 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="600">
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-    </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
         <FrameworkElement.Resources>
@@ -52,104 +49,25 @@
                     <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                 </ui:SettingsCard>
 
-                <!-- 校准源选择 -->
-                <ui:SettingsCard Header="校准源"
-                                 Description="选择时间校准的来源">
-                    <ui:SettingsCard.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Server_24_Regular}" />
-                    </ui:SettingsCard.HeaderIcon>
-                    <ComboBox ItemsSource="{Binding CalibrationSources}"
-                              SelectedItem="{Binding SelectedSource, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"
-                              MinWidth="180"/>
-                </ui:SettingsCard>
-
-                <!-- 立即校准按钮 -->
-                <ui:SettingsCard Header="手动校准"
-                                 Description="立即从选定校准源获取时间进行一次校准"
-                                 IsClickEnabled="True"
-                                 ActionIcon="{x:Static ui:FluentSystemIcons.ArrowSync_24_Regular}"
-                                 IsActionIconVisible="True">
-                    <ui:SettingsCard.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowSync_24_Regular}" />
-                    </ui:SettingsCard.HeaderIcon>
-                    <Button Content="{Binding CalibrateButtonText}"
-                            Command="{Binding CalibrateNowCommand}"
-                            IsEnabled="{Binding IsCalibrationEnabled}"
-                            MinWidth="100"/>
-                </ui:SettingsCard>
-
-                <!-- 校准状态（可展开） -->
-                <ui:SettingsExpander Header="校准状态"
-                                     Description="{Binding CalibrationStatus}">
+                <!-- 云端时间校准 -->
+                <ui:SettingsExpander Header="启用云端时间校准"
+                                     Description="启用后使用NTP协议从云端服务器获取时间，关闭则使用系统时间">
                     <ui:SettingsExpander.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}" />
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Cloud_24_Regular}" />
                     </ui:SettingsExpander.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding IsCloudCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                     <ui:SettingsExpander.Items>
-                        <ui:SettingsCard Header="运行状态">
-                            <TextBlock Text="{Binding CalibrationStatus}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <ui:SettingsCard Header="云端时间校准源">
+                            <ComboBox ItemsSource="{Binding NtpServers}"
+                                      SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
+                                      DisplayMemberPath="DisplayName"
+                                      MinWidth="180"/>
                         </ui:SettingsCard>
-                        <ui:SettingsCard Header="上次校准">
-                            <TextBlock Text="{Binding LastCalibrationTime}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </ui:SettingsCard>
-                        <ui:SettingsCard Header="详细信息"
-                                         ContentAlignment="Left">
-                            <TextBlock Text="{Binding CalibrationInfo}"
-                                       TextWrapping="Wrap"
-                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                       VerticalAlignment="Center"/>
-                        </ui:SettingsCard>
-                    </ui:SettingsExpander.Items>
-                </ui:SettingsExpander>
-
-                <!-- NTP服务器选择（仅云端源可见） -->
-                <ui:SettingsCard Header="NTP服务器"
-                                 Description="选择用于时间同步的NTP服务器"
-                                 Visibility="{Binding IsCloudSourceSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <ui:SettingsCard.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Globe_24_Regular}" />
-                    </ui:SettingsCard.HeaderIcon>
-                    <ComboBox ItemsSource="{Binding NtpServers}"
-                              SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
-                              DisplayMemberPath="DisplayName"
-                              MinWidth="180"/>
-                </ui:SettingsCard>
-
-                <!-- 说明信息（可展开） -->
-                <ui:SettingsExpander Header="关于云端校准"
-                                     Description="NTP协议、RTT补偿与校准策略说明">
-                    <ui:SettingsExpander.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.QuestionCircle_24_Regular}" />
-                    </ui:SettingsExpander.HeaderIcon>
-                    <ui:SettingsExpander.Items>
-                        <ui:SettingsCard ContentAlignment="Left">
-                            <StackPanel>
-                                <TextBlock Text="NTP协议"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           Margin="0,0,0,4"/>
-                                <TextBlock Text="NTP（网络时间协议）通过UDP 123端口与时间服务器通信，精度可达毫秒级。系统会自动补偿网络延迟（RTT/2），并将UTC时间转换为北京时间（UTC+8）。"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                            </StackPanel>
-                        </ui:SettingsCard>
-                        <ui:SettingsCard ContentAlignment="Left">
-                            <StackPanel>
-                                <TextBlock Text="校准策略"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           Margin="0,0,0,4"/>
-                                <TextBlock Text="微调校准：偏差 ≤ 30 秒时，仅调整时钟偏移量，不触发调度状态重算，进度条平滑过渡。"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                           Margin="0,0,0,4"/>
-                                <TextBlock Text="跳跃校准：偏差 > 30 秒时，重置时钟基准并触发调度状态重新计算，确保进度条状态正确。"
-                                           FontSize="12"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                            </StackPanel>
+                        <ui:SettingsCard Header="{Binding SyncInfoText}">
+                            <Button Content="立即同步"
+                                    Command="{Binding CalibrateNowCommand}"
+                                    IsEnabled="{Binding IsCloudCalibrationEnabled}"
+                                    MinWidth="80"/>
                         </ui:SettingsCard>
                     </ui:SettingsExpander.Items>
                 </ui:SettingsExpander>
