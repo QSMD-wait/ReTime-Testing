@@ -213,6 +213,12 @@ namespace ReTime_Testing.Models
         public double BackoffMultiplier { get; set; } = 2.0;
 
         /// <summary>
+        /// 用户时间偏移量（秒），正=向前（快）、负=向后（慢）
+        /// </summary>
+        [JsonPropertyName("userOffsetSeconds")]
+        public double UserOffsetSeconds { get; set; } = 0;
+
+        /// <summary>
         /// 云端校准专用配置（Source=Cloud时生效）
         /// </summary>
         [JsonPropertyName("cloud")]

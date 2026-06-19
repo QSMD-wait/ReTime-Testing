@@ -45,6 +45,9 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _syncInfoText = "立即同步云端时间";
 
+    [ObservableProperty]
+    private double _userOffsetSeconds = 0;
+
     public List<NtpServerOption> NtpServers { get; } = new()
     {
         new NtpServerOption { DisplayName = "阿里云公共NTP", Address = NtpServerDefaults.Servers[0] },
@@ -132,6 +135,8 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
             var rtt = _timeCalibrationService.LastRttMs;
             SyncInfoText = $"上次同步: {time:yyyy-MM-dd HH:mm:ss} · RTT {rtt:F0}ms";
         }
+
+        UserOffsetSeconds = _setting.Calibration.UserOffsetSeconds;
     }
 
     private void SyncSettingsToService()
@@ -165,6 +170,35 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         _setting.Calibration.Cloud.SelectedServerAddress = value.Address;
         SaveSettings();
         SyncSettingsToService();
+    }
+
+    private bool _isClampingOffset;
+
+    partial void OnUserOffsetSecondsChanged(double value)
+    {
+        if (_isInitializing || _isClampingOffset) return;
+
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            _isClampingOffset = true;
+            UserOffsetSeconds = 0;
+            _isClampingOffset = false;
+            return;
+        }
+
+        var clamped = Math.Clamp(value, -86400, 86400);
+        if (clamped != value)
+        {
+            _isClampingOffset = true;
+            UserOffsetSeconds = clamped;
+            _isClampingOffset = false;
+            return;
+        }
+
+        _setting.Calibration.UserOffsetSeconds = clamped;
+        SaveSettings();
+
+        _timeService?.ApplyUserOffset(TimeSpan.FromSeconds(clamped));
     }
 
     private void SaveSettings()

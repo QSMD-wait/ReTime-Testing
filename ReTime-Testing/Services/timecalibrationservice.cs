@@ -233,7 +233,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
 
             if (calibratedTime.HasValue)
             {
-                var localTime = _timeService.GetCurrentTime();
+                var localTime = _timeService.GetCurrentTime() - _timeService.CurrentUserOffset;
                 var offset = calibratedTime.Value - localTime;
                 var absOffset = offset.Duration();
 

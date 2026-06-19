@@ -142,6 +142,15 @@ namespace ReTime_Testing
                 timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
                 Logger.Info(GetType().FullName ?? "App", "时间校准服务已初始化");
 
+                // 恢复用户时间偏移
+                var userOffsetSeconds = timeTopSetting.Calibration.UserOffsetSeconds;
+                if (double.IsNaN(userOffsetSeconds) || double.IsInfinity(userOffsetSeconds))
+                    userOffsetSeconds = 0;
+                if (userOffsetSeconds != 0)
+                {
+                    timeService.ApplyUserOffset(TimeSpan.FromSeconds(userOffsetSeconds));
+                }
+
                 // 初始化调度管理器
                 var scheduleManager = Services.GetRequiredService<IScheduleManager>();
                 var planGenerator = new ExecutionPlanGenerator();

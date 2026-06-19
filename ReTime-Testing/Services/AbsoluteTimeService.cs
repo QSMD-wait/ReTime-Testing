@@ -13,6 +13,7 @@ public class AbsoluteTimeService : ITimeService, IDisposable
     private readonly object _lock = new();
     private DateTime _baseTime;
     private long _baseTick;
+    private TimeSpan _userOffset;
     private bool _isCloudSynchronized;
     private bool _disposed;
 
@@ -25,6 +26,11 @@ public class AbsoluteTimeService : ITimeService, IDisposable
     /// 是否云端同步
     /// </summary>
     public bool IsCloudSynchronized => _isCloudSynchronized;
+
+    /// <summary>
+    /// 当前用户时间偏移量
+    /// </summary>
+    public TimeSpan CurrentUserOffset => _userOffset;
 
     /// <summary>
     /// 构造函数
@@ -47,7 +53,7 @@ public class AbsoluteTimeService : ITimeService, IDisposable
         {
             var elapsedTicks = Stopwatch.GetTimestamp() - _baseTick;
             var elapsed = TimeSpan.FromTicks(elapsedTicks);
-            return _baseTime + elapsed;
+            return _baseTime + elapsed + _userOffset;
         }
     }
 
@@ -96,6 +102,23 @@ public class AbsoluteTimeService : ITimeService, IDisposable
         }
 
         Logger.Debug("AbsoluteTimeService", $"微调偏移: 偏移量={offset.TotalSeconds:F2}秒");
+    }
+
+    /// <summary>
+    /// 应用用户时间偏移量（持久化偏移，与校准偏移独立）
+    /// </summary>
+    /// <param name="offset">用户偏移量</param>
+    public void ApplyUserOffset(TimeSpan offset)
+    {
+        var clampedSeconds = Math.Clamp(offset.TotalSeconds, -86400, 86400);
+        var clampedOffset = TimeSpan.FromSeconds(clampedSeconds);
+
+        lock (_lock)
+        {
+            _userOffset = clampedOffset;
+        }
+
+        Logger.Debug("AbsoluteTimeService", $"用户偏移: 偏移量={clampedOffset.TotalSeconds:F2}秒");
     }
 
     /// <summary>

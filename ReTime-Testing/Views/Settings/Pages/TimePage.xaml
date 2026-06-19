@@ -72,6 +72,27 @@
                     </ui:SettingsExpander.Items>
                 </ui:SettingsExpander>
 
+                <!-- 时间偏移 -->
+                <ui:SettingsCard Header="时间偏移"
+                                 Description="在标准时间上叠加持续偏移量，正值向前、负值向后">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Timer_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:NumberBox Value="{Binding UserOffsetSeconds, Mode=TwoWay}"
+                                      SpinButtonPlacementMode="Compact"
+                                      Minimum="-86400"
+                                      Maximum="86400"
+                                      SmallChange="1"
+                                      LargeChange="10"
+                                      MinWidth="120"/>
+                        <TextBlock Text="秒(s)"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </ui:SettingsCard>
+
             </ikw:SimpleStackPanel>
         </Grid>
     </ScrollViewer>

@@ -31,6 +31,17 @@ public interface ITimeService
     void ApplyOffset(TimeSpan offset);
 
     /// <summary>
+    /// 应用用户时间偏移量（持久化偏移，与校准偏移独立）
+    /// </summary>
+    /// <param name="offset">用户偏移量</param>
+    void ApplyUserOffset(TimeSpan offset);
+
+    /// <summary>
+    /// 当前用户时间偏移量
+    /// </summary>
+    TimeSpan CurrentUserOffset { get; }
+
+    /// <summary>
     /// 时间跳跃事件
     /// 当时间发生校准或跳跃时触发
     /// </summary>
