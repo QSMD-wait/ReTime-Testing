@@ -93,13 +93,7 @@
 
             <!-- 内容区域 -->
             <ui:NavigationView.Content>
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="{Binding SelectedItem.Content, ElementName=MainNavigation}"
-                               FontSize="28" FontWeight="SemiBold"
-                               Margin="16,16,0,4"/>
-                    <ContentControl Content="{Binding CurrentPage}"/>
-                </DockPanel>
+                <ContentControl Content="{Binding CurrentPage}"/>
             </ui:NavigationView.Content>
 
         </ui:NavigationView>

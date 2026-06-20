@@ -19,6 +19,8 @@
                                  HorizontalAlignment="Stretch"
                                  Spacing="{StaticResource SettingsCardSpacing}">
 
+                <TextBlock Text="基本" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+
                 <ui:SettingsExpander Header="开机自启"
                                      Description="在系统启动时自动运行应用">
                     <ui:SettingsExpander.HeaderIcon>

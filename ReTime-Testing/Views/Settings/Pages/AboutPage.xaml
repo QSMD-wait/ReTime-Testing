@@ -4,13 +4,24 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
-    <Grid>
-        <TextBlock Text="关于 ReTime - Testing - 开发中"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
-    </Grid>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch">
+
+                <TextBlock Text="关于" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+
+                <TextBlock Text="ReTime - Testing - 开发中"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </ikw:SimpleStackPanel>
+        </Grid>
+    </ScrollViewer>
 </pages:SettingsPageBase>

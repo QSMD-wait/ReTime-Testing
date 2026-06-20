@@ -19,6 +19,8 @@
                                  HorizontalAlignment="Stretch"
                                  Spacing="{StaticResource SettingsCardSpacing}">
 
+                <TextBlock Text="窗口" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+
                 <ui:SettingsCard Header="进度条位置"
                                  Description="选择进度条在屏幕上的显示位置">
                     <ui:SettingsCard.HeaderIcon>

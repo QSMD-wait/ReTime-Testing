@@ -19,6 +19,8 @@
                                  HorizontalAlignment="Stretch"
                                  Spacing="{StaticResource SettingsCardSpacing}">
 
+                <TextBlock Text="时间" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+
                 <!-- 当前时间显示（Hero Card） -->
                 <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
                         CornerRadius="8"
