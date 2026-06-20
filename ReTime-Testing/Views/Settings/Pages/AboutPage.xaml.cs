@@ -1,12 +1,9 @@
-using System.Windows.Controls;
+namespace ReTime_Testing.Views.Settings.Pages;
 
-namespace ReTime_Testing.Views.Settings.Pages
+public partial class AboutPage : SettingsPageBase
 {
-    public partial class AboutPage : UserControl
+    public AboutPage()
     {
-        public AboutPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

@@ -211,4 +211,18 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         _timer?.Stop();
         _timer?.Tick -= Timer_Tick;
     }
+
+    public void ResumeTimer()
+    {
+        if (_timer != null && !_timer.IsEnabled)
+        {
+            _timer.Start();
+            UpdateTime();
+        }
+    }
+
+    public void PauseTimer()
+    {
+        _timer?.Stop();
+    }
 }

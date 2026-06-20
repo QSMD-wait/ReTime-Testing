@@ -1,24 +1,27 @@
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ReTime_Testing.Views.Settings.Pages;
 
-/// <summary>
-/// TimePage.xaml 的交互逻辑
-/// </summary>
-public partial class TimePage : UserControl
+public partial class TimePage : SettingsPageBase
 {
     public TimePage()
     {
         InitializeComponent();
-        Unloaded += TimePage_Unloaded;
     }
 
-    private void TimePage_Unloaded(object sender, RoutedEventArgs e)
+    protected override void OnPageNavigatedTo(SettingsNavigationContext context)
     {
         if (DataContext is ViewModels.TimePageViewModel viewModel)
         {
-            viewModel.Dispose();
+            viewModel.ResumeTimer();
+        }
+    }
+
+    protected override void OnPageNavigatedFrom(SettingsNavigationContext context)
+    {
+        if (DataContext is ViewModels.TimePageViewModel viewModel)
+        {
+            viewModel.PauseTimer();
         }
     }
 }
