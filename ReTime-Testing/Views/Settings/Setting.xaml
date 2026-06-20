@@ -12,6 +12,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:WindowHelper.SystemBackdropType="Mica"
         ui:TitleBar.Height="36"
+        ui:TitleBar.IsIconVisible="False"
         Width="1100"
         Height="600"
         MinWidth="600"
@@ -52,6 +53,7 @@
                            IsBackButtonVisible="Collapsed"
                            IsSettingsVisible="False"
                            PaneDisplayMode="Auto"
+                           CompactModeThresholdWidth="599"
                            OpenPaneLength="280"
                            CompactPaneLength="48">
 
