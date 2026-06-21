@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="ReTime-Testing.Core/ReTime-Testing.Core.csproj" />
+  <Project Path="ReTime-Testing.Infrastructure/ReTime-Testing.Infrastructure.csproj" />
   <Project Path="ReTime-Testing/ReTime-Testing.csproj" />
   <Project Path="ReTime-Testing.Tests/ReTime-Testing.Tests.csproj" />
 </Solution>

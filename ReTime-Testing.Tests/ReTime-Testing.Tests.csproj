@@ -32,6 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ReTime-Testing.Core\ReTime-Testing.Core.csproj" />
+    <ProjectReference Include="..\ReTime-Testing.Infrastructure\ReTime-Testing.Infrastructure.csproj" />
     <ProjectReference Include="..\ReTime-Testing\ReTime-Testing.csproj" />
   </ItemGroup>
 
