@@ -1,48 +1,6 @@
 namespace ReTime_Testing.Models;
 
 /// <summary>
-/// 时间跳跃原因
-/// </summary>
-public enum TimeJumpReason
-{
-    /// <summary>
-    /// 云端校准导致的跳跃
-    /// </summary>
-    CloudCalibration,
-
-    /// <summary>
-    /// 系统休眠唤醒后的时间跳跃
-    /// </summary>
-    SystemResume,
-
-    /// <summary>
-    /// 手动触发校准
-    /// </summary>
-    ManualCalibration,
-
-    /// <summary>
-    /// 系统时间校准导致的跳跃
-    /// </summary>
-    SystemCalibration
-}
-
-/// <summary>
-/// 时间跳跃严重程度
-/// </summary>
-public enum TimeJumpSeverity
-{
-    /// <summary>
-    /// 微调（偏差较小，不需要重新计算调度状态）
-    /// </summary>
-    Minor,
-
-    /// <summary>
-    /// 重大跳跃（偏差较大，需要重新计算调度状态）
-    /// </summary>
-    Major
-}
-
-/// <summary>
 /// 时间跳跃事件参数
 /// </summary>
 public class TimeJumpedEventArgs : EventArgs
