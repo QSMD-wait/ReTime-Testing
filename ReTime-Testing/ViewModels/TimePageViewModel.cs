@@ -172,33 +172,31 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
         SyncSettingsToService();
     }
 
-    private bool _isClampingOffset;
-
     partial void OnUserOffsetSecondsChanged(double value)
     {
-        if (_isInitializing || _isClampingOffset) return;
+        if (_isInitializing) return;
+
+        var finalValue = value;
 
         if (double.IsNaN(value) || double.IsInfinity(value))
         {
-            _isClampingOffset = true;
-            UserOffsetSeconds = 0;
-            _isClampingOffset = false;
-            return;
+            finalValue = 0;
         }
-
-        var clamped = Math.Clamp(value, -86400, 86400);
-        if (clamped != value)
+        else
         {
-            _isClampingOffset = true;
-            UserOffsetSeconds = clamped;
-            _isClampingOffset = false;
+            finalValue = Math.Clamp(value, -86400, 86400);
+        }
+
+        if (finalValue != value)
+        {
+            UserOffsetSeconds = finalValue;
             return;
         }
 
-        _setting.Calibration.UserOffsetSeconds = clamped;
+        _setting.Calibration.UserOffsetSeconds = finalValue;
         SaveSettings();
 
-        _timeService?.ApplyUserOffset(TimeSpan.FromSeconds(clamped));
+        _timeService?.ApplyUserOffset(TimeSpan.FromSeconds(finalValue));
     }
 
     private void SaveSettings()
