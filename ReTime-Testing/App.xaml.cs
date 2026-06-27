@@ -162,27 +162,40 @@ namespace ReTime_Testing
                 }
                 else
                 {
-                    var selectedSchedule = timeScheduleManager.LoadSchedule(timeTopSetting.Schedule.SelectedId);
-                    if (selectedSchedule == null)
+                    var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
+                    var effectiveScheduleId = scheduleGroupManager.GetEffectiveScheduleId();
+
+                    if (effectiveScheduleId == null)
                     {
-                        selectedSchedule = timeScheduleManager.LoadSchedule("Default");
+                        Logger.Info(GetType().FullName ?? "App", "今日无生效计划表，保持空闲状态");
                     }
-
-                    if (selectedSchedule != null)
+                    else
                     {
-                        var currentTime = timeService.GetCurrentTime();
-                        var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
+                        var selectedSchedule = timeScheduleManager.LoadSchedule(effectiveScheduleId);
 
-                        if (executionPlan == null)
+                        if (selectedSchedule == null)
                         {
-                            Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
-                            ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
+                            Logger.Error(GetType().FullName ?? "App",
+                                $"生效计划表不存在: {effectiveScheduleId}，保持空闲状态");
+                            ShowValidationErrorDialog(
+                                $"计划表 \"{effectiveScheduleId}\" 不存在。\n\n请检查计划表组配置或计划表文件是否完整。");
                         }
                         else
                         {
-                            Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
-                            scheduleManager.Initialize(executionPlan);
-                            Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+                            var currentTime = timeService.GetCurrentTime();
+                            var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
+
+                            if (executionPlan == null)
+                            {
+                                Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
+                                ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
+                            }
+                            else
+                            {
+                                Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
+                                scheduleManager.Initialize(executionPlan);
+                                Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
+                            }
                         }
                     }
                 }

@@ -449,7 +449,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             Schedules.Clear();
 
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.SelectedId;
+            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
             foreach (var info in scheduleList)
             {
@@ -907,7 +907,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         private System.Collections.Generic.List<ScheduleListItem> BuildScheduleListItems()
         {
             var scheduleList = _scheduleManager.GetScheduleList();
-            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.SelectedId;
+            var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
             var items = new System.Collections.Generic.List<ScheduleListItem>();
             foreach (var info in scheduleList)
@@ -1000,7 +1000,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
                 var setting = _settingsService.GetTimeTopSetting();
-                setting.Schedule.SelectedId = selectedItem.Id;
+                setting.Schedule.Override.ScheduleId = selectedItem.Id;
+                setting.Schedule.Override.Enabled = true;
                 _settingsService.SaveTimeTopSetting(setting);
 
                 await HotReloadScheduleAsync(selectedItem.Id);

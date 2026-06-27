@@ -70,16 +70,42 @@ namespace ReTime_Testing.Models
     public class ScheduleConfig
     {
         /// <summary>
-        /// 当前激活的时间计划表ID
-        /// </summary>
-        [JsonPropertyName("selectedId")]
-        public string SelectedId { get; set; } = "Default";
-
-        /// <summary>
         /// 是否启用时间计划控制进度条
         /// </summary>
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// 当前激活的计划表组ID，null 表示未启用组轮换
+        /// </summary>
+        [JsonPropertyName("activeGroupId")]
+        public string? ActiveGroupId { get; set; }
+
+        /// <summary>
+        /// 手动覆盖配置
+        /// </summary>
+        [JsonPropertyName("override")]
+        public ScheduleOverrideConfig Override { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 计划表手动覆盖配置
+    /// 启用后将忽略组轮换，直接使用指定的计划表
+    /// </summary>
+    public class ScheduleOverrideConfig
+    {
+        /// <summary>
+        /// 是否启用手动覆盖（覆盖组轮换）
+        /// </summary>
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; } = false;
+
+        /// <summary>
+        /// 手动指定的计划表ID
+        /// override.enabled=true 时生效；无组轮换时作为默认计划表
+        /// </summary>
+        [JsonPropertyName("scheduleId")]
+        public string ScheduleId { get; set; } = "Default";
     }
 
     /// <summary>

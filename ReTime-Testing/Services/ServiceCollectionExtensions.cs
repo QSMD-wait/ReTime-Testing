@@ -29,6 +29,7 @@ namespace ReTime_Testing.Services
             services.AddSingleton<IGlobalTimeTopDesktopService, GlobalTimeTopDesktopService>();
             services.AddSingleton<IScheduleManager, ScheduleManager>();
             services.AddSingleton<ITimeScheduleManager, TimeScheduleManager>();
+            services.AddSingleton<IScheduleGroupManager, ScheduleGroupManager>();
 
             // ===== UI 服务 =====
             services.AddSingleton<IThemeService, ThemeService>();

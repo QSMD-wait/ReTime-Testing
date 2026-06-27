@@ -35,6 +35,11 @@ public interface IConfigurationManager
     string TimeSchedulesDirectory { get; }
 
     /// <summary>
+    /// 获取计划表组配置目录路径
+    /// </summary>
+    string ScheduleGroupsDirectory { get; }
+
+    /// <summary>
     /// 获取TimeTop设置文件路径
     /// </summary>
     string TimeTopSettingFilePath { get; }

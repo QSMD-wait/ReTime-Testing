@@ -280,8 +280,9 @@ namespace ReTime_Testing.Services
                 target.Version = defaults.Version;
 
             target.Schedule ??= new ScheduleConfig();
-            if (string.IsNullOrEmpty(target.Schedule.SelectedId))
-                target.Schedule.SelectedId = defaults.Schedule.SelectedId;
+            target.Schedule.Override ??= new ScheduleOverrideConfig();
+            if (string.IsNullOrEmpty(target.Schedule.Override.ScheduleId))
+                target.Schedule.Override.ScheduleId = defaults.Schedule.Override.ScheduleId;
 
             target.ProgressBar ??= new ProgressBarConfig();
             target.ProgressBar.Height = Math.Max(1, target.ProgressBar.Height);

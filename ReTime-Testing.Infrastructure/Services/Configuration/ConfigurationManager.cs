@@ -37,6 +37,11 @@ namespace ReTime_Testing.Services
         public string TimeSchedulesDirectory { get; private set; } = string.Empty;
 
         /// <summary>
+        /// 获取计划表组配置目录路径
+        /// </summary>
+        public string ScheduleGroupsDirectory { get; private set; } = string.Empty;
+
+        /// <summary>
         /// 获取TimeTop设置文件路径
         /// </summary>
         public string TimeTopSettingFilePath { get; private set; } = string.Empty;
@@ -68,6 +73,7 @@ namespace ReTime_Testing.Services
                 GlobalSettingFilePath = Path.Combine(DataDirectory, "Setting.json");
                 ConfigsDirectory = Path.Combine(DataDirectory, "Config");
                 TimeSchedulesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeSchedules");
+                ScheduleGroupsDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "ScheduleGroups");
                 TimeTopSettingFilePath = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeTopSetting.json");
                 LogsDirectory = Path.Combine(DataDirectory, "Logs");
 
@@ -93,6 +99,7 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(DataDirectory);
                 EnsureDirectoryExists(ConfigsDirectory);
                 EnsureDirectoryExists(TimeSchedulesDirectory);
+                EnsureDirectoryExists(ScheduleGroupsDirectory);
                 EnsureDirectoryExists(LogsDirectory);
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
