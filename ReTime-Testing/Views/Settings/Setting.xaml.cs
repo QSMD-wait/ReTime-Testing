@@ -101,7 +101,7 @@ public partial class Setting : Window
 
         if (result == iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
         {
-            System.Diagnostics.Process.Start(Environment.ProcessPath ?? System.Reflection.Assembly.GetEntryAssembly()?.Location ?? string.Empty);
+            System.Diagnostics.Process.Start(Environment.ProcessPath ?? string.Empty);
             System.Windows.Application.Current.Shutdown();
         }
     }
