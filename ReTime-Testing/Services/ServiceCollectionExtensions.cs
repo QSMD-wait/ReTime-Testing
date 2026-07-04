@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ReTime_Testing.ViewModels;
+using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 namespace ReTime_Testing.Services
 {
@@ -43,6 +44,7 @@ namespace ReTime_Testing.Services
             services.AddTransient<TimeTopDesktopViewModel>();
             services.AddTransient<TimeTopSettingViewModel>();
             services.AddTransient<TimePageViewModel>();
+            services.AddTransient<TimeScheduleEditorViewModel>();
 
             return services;
         }

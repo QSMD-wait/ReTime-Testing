@@ -3,7 +3,7 @@ using System.Windows.Media;
 using System.Globalization;
 using iNKORE.UI.WPF.Modern.Controls;
 using ReTime_Testing.Models;
-using ReTime_Testing.Views.TimeScheduleEditor;
+using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 namespace ReTime_Testing.Services;
 

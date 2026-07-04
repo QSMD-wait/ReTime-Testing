@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:editor="clr-namespace:ReTime_Testing.Views.TimeScheduleEditor"
+        xmlns:editorvm="clr-namespace:ReTime_Testing.ViewModels.TimeScheduleEditor"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
@@ -60,12 +60,12 @@
 
                         <!-- 左侧操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
-                            <ui:AppBarButton Label="添加" ToolTip="新建计划表" Click="OnAddScheduleClick">
+                            <ui:AppBarButton Label="添加" ToolTip="新建计划表" Command="{Binding AddScheduleCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表" Click="OnCopyScheduleClick">
+                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表" Command="{Binding CopyScheduleCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}"/>
                                 </ui:AppBarButton.Icon>
@@ -120,34 +120,34 @@
 
                         <!-- 右侧操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
-                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段" Click="OnAddTimeSegmentClick">
+                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段" Command="{Binding AddTimeSegmentCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点" Click="OnAddTimePointClick">
+                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点" Command="{Binding AddTimePointCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                             <ui:AppBarSeparator/>
-                            <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Click="OnDeleteScheduleItemClick">
+                            <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Command="{Binding DeleteScheduleItemCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="刷新" ToolTip="重新排序" Click="OnRefreshOrderClick">
+                            <ui:AppBarButton Label="刷新" ToolTip="重新排序" Command="{Binding RefreshOrderCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
                             <ui:AppBarSeparator/>
-                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息（暂未开放）" Click="OnEditScheduleInfoClick" IsEnabled="False">
+                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息（暂未开放）" Command="{Binding EditScheduleInfoCommand}" IsEnabled="False">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
-                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表" Click="OnDeleteScheduleClick">
+                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表" Command="{Binding DeleteScheduleCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
                                 </ui:AppBarButton.Icon>
@@ -352,7 +352,7 @@
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"/>
                 </ui:AppBarButton.Icon>
             </ui:AppBarButton>
-            <ui:AppBarButton Label="保存" Click="OnSaveButtonClick" RenderTransformOrigin="-0.822,0.675">
+            <ui:AppBarButton Label="保存" Command="{Binding SaveCommand}" RenderTransformOrigin="-0.822,0.675">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Save}"/>
                 </ui:AppBarButton.Icon>
@@ -360,10 +360,10 @@
         </ui:CommandBar>
 
         <!-- 保存时验证失败的 InfoBar -->
-        <ui:InfoBar x:Name="SaveValidationInfoBar"
-                    Grid.Column="0" Grid.ColumnSpan="2"
+        <ui:InfoBar Grid.Column="0" Grid.ColumnSpan="2"
                     Title="验证失败"
-                    IsOpen="False"
+                    IsOpen="{Binding IsValidationInfoBarOpen}"
+                    Message="{Binding ValidationInfoBarMessage}"
                     Severity="Error"
                     VerticalAlignment="Bottom"
                     HorizontalAlignment="Right"
