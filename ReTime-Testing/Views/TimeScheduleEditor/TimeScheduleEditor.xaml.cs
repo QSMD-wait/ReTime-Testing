@@ -79,21 +79,6 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             }
         }
 
-        private void OnTimeTextChanged(object sender, TextChangedEventArgs e)
-        {
-            _viewModel.ValidateAllItems();
-        }
-
-        private void OnItemNameLostFocus(object sender, RoutedEventArgs e)
-        {
-            _viewModel.MarkNameChanged();
-        }
-
-        private void OnStyleValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            _viewModel.MarkStyleChanged();
-        }
-
         private async void OnReloadButtonClick(object sender, RoutedEventArgs e)
         {
             if (_isWindowClosing) return;

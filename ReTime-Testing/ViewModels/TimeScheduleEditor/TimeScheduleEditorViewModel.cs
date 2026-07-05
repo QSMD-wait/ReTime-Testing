@@ -20,6 +20,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private readonly ITimeService? _timeService;
     private readonly IScheduleManager? _scheduleRunManager;
 
+    private ScheduleItemListItem? _previousSelectedItem;
+
     private TimeSchedule? _currentSchedule;
 
     [ObservableProperty]
@@ -75,8 +77,26 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     partial void OnSelectedScheduleItemChanged(ScheduleItemListItem? value)
     {
+        if (_previousSelectedItem != null)
+        {
+            _previousSelectedItem.ItemChanged -= OnScheduleItemChanged;
+        }
+
+        if (value != null)
+        {
+            value.ItemChanged += OnScheduleItemChanged;
+        }
+
+        _previousSelectedItem = value;
+
         OnPropertyChanged(nameof(IsSegmentSelected));
         OnPropertyChanged(nameof(IsTimePointSelected));
+    }
+
+    private void OnScheduleItemChanged(ScheduleItemListItem item)
+    {
+        HasUnsavedChanges = true;
+        ValidateAllItems();
     }
 
     #region 计划表操作命令
@@ -671,23 +691,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         setting.Schedule.Override.ScheduleId = selectedItem.Id;
         setting.Schedule.Override.Enabled = true;
         _settingsService.SaveTimeTopSetting(setting);
-    }
-
-    public void MarkStyleChanged()
-    {
-        if (SelectedScheduleItem != null)
-        {
-            SelectedScheduleItem.HasCustomStyle = true;
-            HasUnsavedChanges = true;
-        }
-    }
-
-    public void MarkNameChanged()
-    {
-        if (SelectedScheduleItem != null)
-        {
-            HasUnsavedChanges = true;
-        }
     }
 
     #endregion

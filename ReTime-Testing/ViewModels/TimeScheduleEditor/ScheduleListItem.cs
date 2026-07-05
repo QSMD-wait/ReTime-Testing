@@ -8,7 +8,9 @@ namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 public partial class ScheduleListItem : ObservableObject
 {
     public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
+
+    [ObservableProperty]
+    private string _name = "";
 
     [ObservableProperty]
     private bool _isActivated;

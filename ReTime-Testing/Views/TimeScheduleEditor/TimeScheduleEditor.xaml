@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:editorvm="clr-namespace:ReTime_Testing.ViewModels.TimeScheduleEditor"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
@@ -212,16 +211,14 @@
                                         <StackPanel Margin="0,16,0,0">
                                             <TextBlock Text="名称" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     LostFocus="OnItemNameLostFocus"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                         </StackPanel>
 
                                         <!-- 时间段专用：开始时间+结束时间 -->
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="开始时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
                                                        FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
                                                        Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -230,8 +227,7 @@
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="结束时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.EndTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.EndTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <TextBlock Text="{Binding SelectedScheduleItem.EndTimeError}"
                                                        FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
                                                        Visibility="{Binding SelectedScheduleItem.HasEndTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -241,8 +237,7 @@
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="时间" FontSize="12" Margin="0,0,0,4"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     TextChanged="OnTimeTextChanged"/>
+                                            <TextBox Text="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
                                                        FontSize="11" Foreground="#C42B1C" Margin="0,2,0,0"
                                                        Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -283,8 +278,7 @@
                                                 <TextBlock Text="R" VerticalAlignment="Center"/>
                                                 <Slider Grid.Column="1" Grid.Row="0" Margin="4,0,8,0"
                                                         Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundR, Mode=TwoWay}"
-                                                        ValueChanged="OnStyleValueChanged"/>
+                                                        Value="{Binding SelectedScheduleItem.ForegroundR, Mode=TwoWay}"/>
                                                 <TextBlock Grid.Column="2" Grid.Row="0"
                                                            Text="{Binding SelectedScheduleItem.ForegroundR, StringFormat={}{0:0}}"
                                                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
@@ -293,8 +287,7 @@
                                                 <TextBlock Text="G" Grid.Row="1" VerticalAlignment="Center"/>
                                                 <Slider Grid.Column="1" Grid.Row="1" Margin="4,0,8,0"
                                                         Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundG, Mode=TwoWay}"
-                                                        ValueChanged="OnStyleValueChanged"/>
+                                                        Value="{Binding SelectedScheduleItem.ForegroundG, Mode=TwoWay}"/>
                                                 <TextBlock Grid.Column="2" Grid.Row="1"
                                                            Text="{Binding SelectedScheduleItem.ForegroundG, StringFormat={}{0:0}}"
                                                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
@@ -303,8 +296,7 @@
                                                 <TextBlock Text="B" Grid.Row="2" VerticalAlignment="Center"/>
                                                 <Slider Grid.Column="1" Grid.Row="2" Margin="4,0,8,0"
                                                         Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundB, Mode=TwoWay}"
-                                                        ValueChanged="OnStyleValueChanged"/>
+                                                        Value="{Binding SelectedScheduleItem.ForegroundB, Mode=TwoWay}"/>
                                                 <TextBlock Grid.Column="2" Grid.Row="2"
                                                            Text="{Binding SelectedScheduleItem.ForegroundB, StringFormat={}{0:0}}"
                                                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
@@ -313,8 +305,7 @@
                                                 <TextBlock Text="透明度" Grid.Row="3" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                 <Slider Grid.Column="1" Grid.Row="3" Margin="4,0,8,0"
                                                         Minimum="0" Maximum="100"
-                                                        Value="{Binding SelectedScheduleItem.Opacity, Mode=TwoWay}"
-                                                        ValueChanged="OnStyleValueChanged"/>
+                                                        Value="{Binding SelectedScheduleItem.Opacity, Mode=TwoWay}"/>
                                                 <TextBlock Grid.Column="2" Grid.Row="3"
                                                            Text="{Binding SelectedScheduleItem.Opacity, StringFormat={}{0:0}%}"
                                                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
@@ -328,8 +319,7 @@
                                                     </Border>
                                                     <TextBox Width="90"
                                                              Text="{Binding SelectedScheduleItem.HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             VerticalAlignment="Center"
-                                                             LostFocus="OnItemNameLostFocus"/>
+                                                             VerticalAlignment="Center"/>
                                                 </StackPanel>
                                                 </Grid>
                                             </StackPanel>

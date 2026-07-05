@@ -16,8 +16,6 @@ public partial class ScheduleItemListItem : ObservableObject
     [ObservableProperty]
     private string _name = "";
 
-    public bool HasChanges { get; private set; }
-
     [ObservableProperty]
     private string _startTime = "";
 
@@ -26,7 +24,9 @@ public partial class ScheduleItemListItem : ObservableObject
 
     public string TypeIcon { get; set; } = "\uE787";
     public ScheduleItemType ItemType { get; set; }
-    public ProgressStateType ToState { get; set; }
+
+    [ObservableProperty]
+    private ProgressStateType _toState;
 
     [ObservableProperty]
     private string _startTimeError = "";
@@ -62,9 +62,6 @@ public partial class ScheduleItemListItem : ObservableObject
     [ObservableProperty]
     private bool _hasCustomStyle = false;
 
-    /// <summary>
-    /// 背景色是否为原始数据（非默认值零），用于避免序列化污染
-    /// </summary>
     public bool HasBackgroundColor { get; set; }
 
     public Color PreviewColor => Color.FromArgb((byte)(Opacity * 2.55), ForegroundR, ForegroundG, ForegroundB);
@@ -92,33 +89,44 @@ public partial class ScheduleItemListItem : ObservableObject
         }
     }
 
-    partial void OnNameChanged(string value)
-    {
-        HasChanges = true;
-    }
+    public event Action<ScheduleItemListItem>? ItemChanged;
+
+    partial void OnNameChanged(string value) => ItemChanged?.Invoke(this);
+
+    partial void OnStartTimeChanged(string value) => ItemChanged?.Invoke(this);
+
+    partial void OnEndTimeChanged(string value) => ItemChanged?.Invoke(this);
+
+    partial void OnToStateChanged(ProgressStateType value) => ItemChanged?.Invoke(this);
 
     partial void OnForegroundRChanged(byte value)
     {
         OnPropertyChanged(nameof(PreviewColor));
         OnPropertyChanged(nameof(HexColor));
+        ItemChanged?.Invoke(this);
     }
 
     partial void OnForegroundGChanged(byte value)
     {
         OnPropertyChanged(nameof(PreviewColor));
         OnPropertyChanged(nameof(HexColor));
+        ItemChanged?.Invoke(this);
     }
 
     partial void OnForegroundBChanged(byte value)
     {
         OnPropertyChanged(nameof(PreviewColor));
         OnPropertyChanged(nameof(HexColor));
+        ItemChanged?.Invoke(this);
     }
 
     partial void OnOpacityChanged(double value)
     {
         OnPropertyChanged(nameof(PreviewColor));
+        ItemChanged?.Invoke(this);
     }
+
+    partial void OnHasCustomStyleChanged(bool value) => ItemChanged?.Invoke(this);
 
     partial void OnStartTimeErrorChanged(string value)
     {
@@ -133,15 +141,18 @@ public partial class ScheduleItemListItem : ObservableObject
     partial void OnBackgroundRChanged(byte value)
     {
         HasBackgroundColor = true;
+        ItemChanged?.Invoke(this);
     }
 
     partial void OnBackgroundGChanged(byte value)
     {
         HasBackgroundColor = true;
+        ItemChanged?.Invoke(this);
     }
 
     partial void OnBackgroundBChanged(byte value)
     {
         HasBackgroundColor = true;
+        ItemChanged?.Invoke(this);
     }
 }
