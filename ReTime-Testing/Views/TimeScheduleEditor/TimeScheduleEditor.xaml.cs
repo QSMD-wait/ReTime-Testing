@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using iNKORE.UI.WPF.Modern.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
@@ -29,6 +31,34 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             this.DataContext = _viewModel;
 
             this.Closing += OnWindowClosing;
+        }
+
+        private void OnScheduleListPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is System.Windows.Controls.ListView listView)
+            {
+                var point = e.GetPosition(listView);
+                var hitResult = VisualTreeHelper.HitTest(listView, point);
+                if (hitResult != null)
+                {
+                    var listViewItem = FindAncestor<System.Windows.Controls.ListViewItem>(hitResult.VisualHit);
+                    if (listViewItem != null)
+                    {
+                        listViewItem.IsSelected = true;
+                    }
+                }
+            }
+        }
+
+        private static T? FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T result)
+                    return result;
+                current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+            }
+            return null;
         }
 
         private async void OnWindowClosing(object? sender, CancelEventArgs e)

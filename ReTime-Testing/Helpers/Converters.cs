@@ -6,6 +6,40 @@ using System.Windows.Media.Effects;
 
 namespace ReTime_Testing.Helpers
 {
+    public class BindingProxy : Freezable
+    {
+        public static readonly DependencyProperty DataProperty =
+            DependencyProperty.Register(nameof(Data), typeof(object), typeof(BindingProxy), new UIPropertyMetadata(null));
+
+        public object Data
+        {
+            get => GetValue(DataProperty);
+            set => SetValue(DataProperty, value);
+        }
+
+        protected override Freezable CreateInstanceCore() => new BindingProxy();
+    }
+
+    /// <summary>
+    /// 将 true 转换为 Collapsed，false 转换为 Visible
+    /// </summary>
+    public class InverseBoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b)
+                return b ? Visibility.Collapsed : Visibility.Visible;
+            return Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is Visibility v)
+                return v != Visibility.Visible;
+            return false;
+        }
+    }
+
     /// <summary>
     /// 将 null 转换为 Visible，非 null 转换为 Collapsed
     /// </summary>

@@ -44,6 +44,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     public bool IsSegmentSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.Segment;
     public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.TimePoint;
+    public bool HasScheduleItems => ScheduleItems.Count > 0;
 
     public Array ToStateOptions => Enum.GetValues(typeof(ProgressStateType));
 
@@ -73,6 +74,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             _currentSchedule = null;
         }
         LoadScheduleItems();
+        OnPropertyChanged(nameof(HasScheduleItems));
     }
 
     partial void OnSelectedScheduleItemChanged(ScheduleItemListItem? value)
@@ -142,11 +144,21 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         if (_scheduleManager.DeleteSchedule(SelectedSchedule.Id))
         {
             RefreshScheduleList();
-            if (Schedules.Count > 0)
-            {
-                SelectedSchedule = Schedules[0];
-            }
+            SelectedSchedule = null;
         }
+    }
+
+    [RelayCommand]
+    private void ActivateSchedule(string? scheduleId)
+    {
+        if (string.IsNullOrEmpty(scheduleId)) return;
+
+        var setting = _settingsService.GetTimeTopSetting();
+        setting.Schedule.Override.ScheduleId = scheduleId;
+        setting.Schedule.Override.Enabled = true;
+        _settingsService.SaveTimeTopSetting(setting);
+
+        UpdateScheduleListActivation(scheduleId);
     }
 
     [RelayCommand]
@@ -177,6 +189,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         ScheduleItems.Add(newSegment);
         HasUnsavedChanges = true;
         SelectedScheduleItem = newSegment;
+        OnPropertyChanged(nameof(HasScheduleItems));
     }
 
     [RelayCommand]
@@ -198,6 +211,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         ScheduleItems.Add(newTimePoint);
         HasUnsavedChanges = true;
         SelectedScheduleItem = newTimePoint;
+        OnPropertyChanged(nameof(HasScheduleItems));
     }
 
     [RelayCommand]
@@ -208,6 +222,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         ScheduleItems.Remove(SelectedScheduleItem);
         SelectedScheduleItem = null;
         HasUnsavedChanges = true;
+        OnPropertyChanged(nameof(HasScheduleItems));
     }
 
     [RelayCommand]
@@ -261,20 +276,20 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var scheduleList = _scheduleManager.GetScheduleList();
         var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
-        foreach (var info in scheduleList)
+        var sortedList = scheduleList
+            .OrderBy(i => i.CreatedAt ?? DateTime.MaxValue)
+            .ToList();
+
+        foreach (var info in sortedList)
         {
             Schedules.Add(new ScheduleListItem
             {
                 Id = info.Id,
                 Name = info.Name,
-                IsActivated = info.Id == currentSelectedId
+                IsActivated = info.Id == currentSelectedId,
+                CreatedAt = info.CreatedAt,
+                UpdatedAt = info.UpdatedAt
             });
-        }
-
-        if (Schedules.Count > 0 && SelectedSchedule == null)
-        {
-            var active = Schedules.FirstOrDefault(s => s.IsActivated) ?? Schedules[0];
-            SelectedSchedule = active;
         }
     }
 
@@ -312,6 +327,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
 
         ValidateAllItems();
+        OnPropertyChanged(nameof(HasScheduleItems));
     }
 
     #endregion

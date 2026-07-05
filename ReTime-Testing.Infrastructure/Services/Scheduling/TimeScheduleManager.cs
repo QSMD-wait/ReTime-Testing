@@ -343,6 +343,7 @@ namespace ReTime_Testing.Services
                 {
                     Id = s.Id,
                     Name = s.Settings?.Metadata?.Name ?? s.Id,
+                    CreatedAt = TryParseDateTime(s.Settings?.Metadata?.CreatedAt),
                     UpdatedAt = TryParseDateTime(s.Settings?.Metadata?.UpdatedAt)
                 }).ToList();
             }

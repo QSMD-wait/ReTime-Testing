@@ -1,3 +1,4 @@
+using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
@@ -14,4 +15,8 @@ public partial class ScheduleListItem : ObservableObject
 
     [ObservableProperty]
     private bool _isActivated;
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 }

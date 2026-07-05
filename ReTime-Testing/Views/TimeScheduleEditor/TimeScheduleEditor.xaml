@@ -16,8 +16,11 @@
         MinHeight="500">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <localconv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
         <localconv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <localconv:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
+        <localconv:BindingProxy x:Key="ViewModelProxy" Data="{Binding}"/>
     </Window.Resources>
 
     <Grid>
@@ -72,31 +75,60 @@
                         </ui:CommandBar>
 
                         <!-- 计划表列表 -->
-                        <ListView Grid.Row="1" Margin="4" ItemsSource="{Binding Schedules}"
+                        <ListView x:Name="ScheduleListView" Grid.Row="1" Margin="4" ItemsSource="{Binding Schedules}"
                                   SelectedItem="{Binding SelectedSchedule, Mode=TwoWay}"
-                                  IsEnabled="True" SelectionMode="Single">
+                                  IsEnabled="True" SelectionMode="Single"
+                                  PreviewMouseRightButtonDown="OnScheduleListPreviewMouseRightButtonDown">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu>
+                                                <MenuItem Header="复制"
+                                                          Command="{Binding Data.CopyScheduleCommand, Source={StaticResource ViewModelProxy}}"/>
+                                                <MenuItem Header="设为活跃"
+                                                          Command="{Binding Data.ActivateScheduleCommand, Source={StaticResource ViewModelProxy}}"
+                                                          CommandParameter="{Binding Id}"/>
+                                                <Separator/>
+                                                <MenuItem Header="删除"
+                                                          Command="{Binding Data.DeleteScheduleCommand, Source={StaticResource ViewModelProxy}}"/>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid HorizontalAlignment="Stretch" Margin="4">
+                                    <Grid HorizontalAlignment="Stretch" Margin="8,6">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        
-                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" Grid.Column="0"/>
-                                        
-                                        <!-- 活跃状态指示器 -->
-                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Timer_48_Regular}" Grid.Column="1" HorizontalAlignment="Right"
-                                                      ToolTip="此时间计划表处于活跃状态"
-                                                      FontSize="16"
-                                                      Margin="0,0,4,0"
-                                                      Foreground="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
-                                                      Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                        <TextBlock Text="{Binding Name}" Grid.Row="0" Grid.Column="0"
+                                                   FontSize="14" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding UpdatedAt, Converter={StaticResource NotNullToVisibilityConverter}}">
+                                            <Run Text="更新于 "/><Run Text="{Binding UpdatedAt, StringFormat={}{0:yyyy/MM/dd HH:mm}, Mode=OneWay}"/>
+                                        </TextBlock>
+
+                                        <Border Grid.Row="0" Grid.Column="1"
+                                                Width="8" Height="8" CornerRadius="4"
+                                                Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Margin="4,0,0,0"
+                                                ToolTip="此计划表处于活跃状态"
+                                                Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -112,48 +144,69 @@
 
                     <!-- 2. 右侧：时间段+时间点（无Tab） -->
                     <Grid Grid.Column="2" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
 
-                        <!-- 右侧操作按钮 -->
-                        <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
-                            <ui:AppBarButton Label="时间段" ToolTip="添加时间段" Command="{Binding AddTimeSegmentCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarButton Label="时间点" ToolTip="添加时间点" Command="{Binding AddTimePointCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarSeparator/>
-                            <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Command="{Binding DeleteScheduleItemCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarButton Label="刷新" ToolTip="重新排序" Command="{Binding RefreshOrderCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Refresh}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarSeparator/>
-                            <ui:AppBarButton Label="计划表信息" ToolTip="编辑计划表基本信息（暂未开放）" Command="{Binding EditScheduleInfoCommand}" IsEnabled="False">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                            <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表" Command="{Binding DeleteScheduleCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
-                        </ui:CommandBar>
+                        <!-- 空状态：未选中计划表时显示 -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding SelectedSchedule, Converter={StaticResource NullToVisibilityConverter}}">
+                            <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Document_24_Regular}"
+                                         FontSize="48"
+                                         HorizontalAlignment="Center"
+                                         Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                            <TextBlock Text="请选择一个计划表"
+                                       FontSize="16"
+                                       Margin="0,16,0,4"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                            <TextBlock Text="从左侧列表选择或新建一个计划表以开始编辑"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                        </StackPanel>
 
-                        <!-- 右侧：列表+属性编辑（无Tab） -->
+                        <!-- 编辑内容：选中计划表时显示 -->
+                        <Grid Visibility="{Binding SelectedSchedule, Converter={StaticResource NotNullToVisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 右侧操作按钮 -->
+                            <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
+                                <ui:AppBarButton Label="时间段" ToolTip="添加时间段" Command="{Binding AddTimeSegmentCommand}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarButton Label="时间点" ToolTip="添加时间点" Command="{Binding AddTimePointCommand}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarSeparator/>
+                                <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Command="{Binding DeleteScheduleItemCommand}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarButton Label="排序" ToolTip="按时间重新排序" Command="{Binding RefreshOrderCommand}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Sort}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarSeparator/>
+                                <ui:AppBarButton Label="信息" ToolTip="编辑计划表基本信息（暂未开放）" Command="{Binding EditScheduleInfoCommand}" IsEnabled="False">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarButton Label="删除计划表" ToolTip="删除该计划表" Command="{Binding DeleteScheduleCommand}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                            </ui:CommandBar>
+
+                        <!-- 右侧：列表+属性编辑 -->
                         <Grid Grid.Row="1" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" MinWidth="200"/>
@@ -162,43 +215,134 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- 列表区域（时间段+时间点） -->
-                            <ListView Grid.Column="0" Margin="4" ItemsSource="{Binding ScheduleItems}"
-                                      SelectedItem="{Binding SelectedScheduleItem, Mode=TwoWay}"
-                                      IsEnabled="True" SelectionMode="Single">
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="8,4">
-                                            <ui:FontIcon Glyph="{Binding TypeIcon}" FontSize="14" Margin="0,0,8,0"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                            <TextBlock Text="{Binding Name}" Width="100" VerticalAlignment="Center"/>
-                                            <TextBlock VerticalAlignment="Center">
-                                                <Run Text="{Binding StartTime}"/>
-                                                <Run Text=" - "/>
-                                                <Run Text="{Binding EndTime}"/>
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                            <Grid Grid.Column="0">
+                                <!-- 列表空状态：无项目时显示 -->
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                                            Visibility="{Binding HasScheduleItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                    <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextBulletList_24_Regular}"
+                                                 FontSize="36"
+                                                 HorizontalAlignment="Center"
+                                                 Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                    <TextBlock Text="暂无时间项目"
+                                               FontSize="14"
+                                               Margin="0,12,0,4"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                    <TextBlock Text="点击上方按钮添加时间段或时间点"
+                                               FontSize="12"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                </StackPanel>
 
-                            <GridSplitter Grid.Column="1" Width="6"
+                                <!-- 列表 -->
+                                <ListView Margin="4" ItemsSource="{Binding ScheduleItems}"
+                                          SelectedItem="{Binding SelectedScheduleItem, Mode=TwoWay}"
+                                          SelectionMode="Single"
+                                          Visibility="{Binding HasScheduleItems, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid HorizontalAlignment="Stretch" Margin="8,6">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- 类型指示条 -->
+                                                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                                        Width="3" Margin="0,0,8,0"
+                                                        CornerRadius="1.5">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ItemType}" Value="TimePoint">
+                                                                    <Setter Property="Background" Value="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCautionBrushKey}}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+
+                                                <!-- 上行：名称 -->
+                                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                                           Text="{Binding Name}"
+                                                           FontSize="13" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"/>
+
+                                                <!-- 下行：时间范围 -->
+                                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <!-- 时间段显示 -->
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ItemType}" Value="TimePoint">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                        <Run Text="{Binding StartTime, Mode=OneWay}"/><Run Text=" – "/><Run Text="{Binding EndTime, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                    <!-- 时间点显示 -->
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ItemType}" Value="TimePoint">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                        <Run Text="时间: "/><Run Text="{Binding StartTime, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+
+                            <GridSplitter Grid.Column="1" Width="1"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                           Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
                             <!-- 属性编辑 -->
                             <Grid Grid.Column="2">
-                                <!-- 空状态占位：无选中项时显示 -->
-                                <TextBlock Text="请选择时间段或时间点进行编辑"
-                                           Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NullToVisibilityConverter}}"
-                                           FontSize="14"
-                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                                <!-- 空状态：无选中项时显示 -->
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                                            Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Compose_24_Regular}"
+                                                 FontSize="36"
+                                                 HorizontalAlignment="Center"
+                                                 Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                    <TextBlock Text="选择项目以编辑"
+                                               FontSize="14"
+                                               Margin="0,12,0,4"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                    <TextBlock Text="从左侧列表选择一个时间段或时间点"
+                                               FontSize="12"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                </StackPanel>
 
                                 <!-- 编辑面板：有选中项时显示 -->
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -327,6 +471,7 @@
                                     </StackPanel>
                                 </ScrollViewer>
                             </Grid>
+                        </Grid>
                         </Grid>
                     </Grid>
                 </Grid>
