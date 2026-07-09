@@ -106,7 +106,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     [RelayCommand]
     private void AddSchedule()
     {
-        var newId = $"schedule_{DateTime.Now:yyyyMMddHHmmss}";
+        var newId = $"schedule_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..4]}";
         var newName = "新计划表";
 
         var schedule = _scheduleManager.CreateNewSchedule(newId, newName);
@@ -124,7 +124,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     {
         if (SelectedSchedule == null) return;
 
-        var newId = $"schedule_{DateTime.Now:yyyyMMddHHmmss}";
+        var newId = $"schedule_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..4]}";
         var newSchedule = _scheduleManager.CopySchedule(SelectedSchedule.Id, newId);
 
         if (newSchedule != null)
@@ -179,7 +179,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         var newSegment = new ScheduleItemListItem
         {
-            Id = $"segment_{DateTime.Now:yyyyMMddHHmmss}",
+            Id = $"segment_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..4]}",
             Name = "新时间段",
             StartTime = startTime,
             EndTime = endTime,
@@ -201,7 +201,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         var newTimePoint = new ScheduleItemListItem
         {
-            Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}",
+            Id = $"tp_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..4]}",
             Name = "新时间点",
             StartTime = startTime,
             ItemType = ScheduleItemType.TimePoint,
@@ -472,6 +472,24 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     #region 保存
 
+    private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
+    {
+        if (item.HasCustomStyle)
+        {
+            segment.Styles ??= new StyleOverridesData();
+            segment.Styles.Enabled = true;
+            segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+            segment.Styles.BackgroundColor = item.HasBackgroundColor
+                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
+                : null;
+            segment.Styles.Opacity = item.Opacity / 100.0;
+        }
+        else
+        {
+            segment.Styles = null;
+        }
+    }
+
     public bool ValidateAndSave()
     {
         if (_currentSchedule == null) return false;
@@ -496,96 +514,39 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         var currentItemIds = ScheduleItems.Select(i => i.Id).ToHashSet();
 
-        _currentSchedule.Schedules?.RemoveAll(s => !currentItemIds.Contains(s.Id));
-        _currentSchedule.TimePoints?.RemoveAll(t => !currentItemIds.Contains(t.Id));
+        _currentSchedule.Schedules.RemoveAll(s => !currentItemIds.Contains(s.Id));
+        _currentSchedule.TimePoints.RemoveAll(t => !currentItemIds.Contains(t.Id));
 
         foreach (var item in ScheduleItems)
         {
             if (item.ItemType == ScheduleItemType.TimePoint)
             {
-                var existingPoint = _currentSchedule.TimePoints?.FirstOrDefault(t => t.Id == item.Id);
-                if (existingPoint != null)
-                {
-                    existingPoint.Name = item.Name;
-                    existingPoint.Time = item.StartTime;
-                    existingPoint.Type = TimePointType.StateChange;
-                    existingPoint.StateChange ??= new StateChangeData();
-                    existingPoint.StateChange.ToState = item.ToState;
+                var existingIndex = _currentSchedule.TimePoints.FindIndex(t => t.Id == item.Id);
+                var convertedPoint = ScheduleItemConverter.ToTimePoint(item);
 
-                    if (item.HasCustomStyle)
-                    {
-                        existingPoint.Type = TimePointType.StyleChange;
-                        existingPoint.StyleChange ??= new StyleChangeData();
-                        existingPoint.StyleChange.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-                        existingPoint.StyleChange.BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null;
-                        existingPoint.StyleChange.Opacity = item.Opacity / 100.0;
-                    }
-                    else
-                    {
-                        existingPoint.Type = TimePointType.StateChange;
-                        existingPoint.StyleChange = null;
-                    }
+                if (existingIndex >= 0)
+                {
+                    _currentSchedule.TimePoints[existingIndex] = convertedPoint;
                 }
                 else
                 {
-                    var newPoint = new CustomTimePoint
-                    {
-                        Id = item.Id,
-                        Name = item.Name,
-                        Time = item.StartTime,
-                        Type = TimePointType.StateChange,
-                        StateChange = new StateChangeData
-                        {
-                            ToState = item.ToState
-                        }
-                    };
-
-                    if (item.HasCustomStyle)
-                    {
-                        newPoint.Type = TimePointType.StyleChange;
-                        newPoint.StyleChange = new StyleChangeData
-                        {
-                            ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
-                            BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
-                            Opacity = item.Opacity / 100.0
-                        };
-                    }
-
-                    _currentSchedule.TimePoints?.Add(newPoint);
+                    _currentSchedule.TimePoints.Add(convertedPoint);
                 }
             }
             else
             {
-                var existingSegment = _currentSchedule.Schedules?.FirstOrDefault(s => s.Id == item.Id);
-                if (existingSegment != null)
+                var existingIndex = _currentSchedule.Schedules.FindIndex(s => s.Id == item.Id);
+                var convertedSegment = ScheduleItemConverter.ToScheduleItem(item);
+
+                if (existingIndex >= 0)
                 {
-                    existingSegment.Name = item.Name;
-                    existingSegment.StartTime = item.StartTime;
-                    existingSegment.EndTime = item.EndTime;
-                    if (item.HasCustomStyle)
-                    {
-                        existingSegment.Styles ??= new StyleOverridesData();
-                        existingSegment.Styles.Enabled = true;
-                        existingSegment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-                        existingSegment.Styles.BackgroundColor = item.HasBackgroundColor
-                            ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
-                            : null;
-                        existingSegment.Styles.Opacity = item.Opacity / 100.0;
-                    }
-                    else
-                    {
-                        existingSegment.Styles = null;
-                    }
+                    ApplySegmentStyles(convertedSegment, item);
+                    _currentSchedule.Schedules[existingIndex] = convertedSegment;
                 }
                 else
                 {
-                    _currentSchedule.Schedules?.Add(new TimeScheduleItem
-                    {
-                        Id = item.Id,
-                        Name = item.Name,
-                        StartTime = item.StartTime,
-                        EndTime = item.EndTime
-                    });
+                    ApplySegmentStyles(convertedSegment, item);
+                    _currentSchedule.Schedules.Add(convertedSegment);
                 }
             }
         }

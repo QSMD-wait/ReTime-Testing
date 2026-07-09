@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services
@@ -25,6 +26,8 @@ namespace ReTime_Testing.Services
 
         private readonly Dictionary<string, TimeSchedule> _scheduleCache = new();
         private string _timeSchedulesDirectory = string.Empty;
+
+        private static readonly Regex ScheduleIdPattern = new(@"^[a-zA-Z0-9_-]+$", RegexOptions.Compiled);
 
         /// <summary>
         /// 获取时间计划的目录路径
@@ -180,7 +183,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 根据指定ID的时间计划
+        /// 根据指定ID加载时间计划（返回深拷贝）
         /// </summary>
         public TimeSchedule? LoadSchedule(string id)
         {
@@ -189,18 +192,25 @@ namespace ReTime_Testing.Services
                 // 先从缓存中查找
                 if (_scheduleCache.TryGetValue(id, out var cachedSchedule))
                 {
-                    return cachedSchedule;
+                    return DeepClone(cachedSchedule);
                 }
 
                 // 从文件加载
-                var filePath = Path.Combine(_timeSchedulesDirectory, $"{id}.json");
+                var filePath = BuildScheduleFilePath(id);
                 
                 if (!File.Exists(filePath))
                 {
                     return null;
                 }
 
-                return LoadScheduleFromFile(filePath);
+                var schedule = LoadScheduleFromFile(filePath);
+                if (schedule != null)
+                {
+                    _scheduleCache[id] = schedule;
+                    return DeepClone(schedule);
+                }
+
+                return null;
             }
             catch (Exception ex)
             {
@@ -208,6 +218,15 @@ namespace ReTime_Testing.Services
                     $"加载时间计划失败: {id}, 错误: {ex.Message}", ex);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// 深拷贝时间计划对象
+        /// </summary>
+        private TimeSchedule DeepClone(TimeSchedule source)
+        {
+            var json = JsonSerializer.Serialize(source, _jsonOptions);
+            return JsonSerializer.Deserialize<TimeSchedule>(json, _jsonOptions) ?? source;
         }
 
         /// <summary>
@@ -222,14 +241,11 @@ namespace ReTime_Testing.Services
 
                 if (schedule != null)
                 {
-                    // 使用文件名作为ID，确保文件名与内部ID一致
                     schedule.Id = Path.GetFileNameWithoutExtension(filePath);
 
                     if (string.IsNullOrEmpty(schedule.Settings.Metadata.CreatedAt))
                     {
-                        // 添加创建时间戳作为当前时间
                         schedule.Settings.Metadata.CreatedAt = DateTime.UtcNow.ToString("o");
-                        SaveScheduleToFile(schedule, filePath);
                     }
                 }
 
@@ -244,7 +260,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 保存时间计划
+        /// 保存时间计划（先写文件再更新缓存，确保一致性）
         /// </summary>
         public void SaveSchedule(TimeSchedule schedule)
         {
@@ -258,12 +274,12 @@ namespace ReTime_Testing.Services
                 // 更新修改时间
                 schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
 
-                // 保存到文件
-                var filePath = Path.Combine(_timeSchedulesDirectory, $"{schedule.Id}.json");
+                // 先保存到文件
+                var filePath = BuildScheduleFilePath(schedule.Id);
                 SaveScheduleToFile(schedule, filePath);
 
-                // 更新缓存
-                _scheduleCache[schedule.Id] = schedule;
+                // 文件写入成功后再更新缓存
+                _scheduleCache[schedule.Id] = DeepClone(schedule);
 
                 // 触发事件
                 OnScheduleChanged?.Invoke(schedule);
@@ -280,14 +296,18 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 保存时间计划到文件
+        /// 保存时间计划到文件（原子写入：先写临时文件再替换）
         /// </summary>
         private void SaveScheduleToFile(TimeSchedule schedule, string filePath)
         {
             try
             {
                 string jsonContent = JsonSerializer.Serialize(schedule, _jsonOptions);
-                File.WriteAllText(filePath, jsonContent);
+                var tempFile = filePath + ".tmp";
+
+                File.WriteAllText(tempFile, jsonContent);
+                File.Copy(tempFile, filePath, overwrite: true);
+                File.Delete(tempFile);
             }
             catch (Exception ex)
             {
@@ -306,7 +326,7 @@ namespace ReTime_Testing.Services
         {
             try
             {
-                var filePath = Path.Combine(_timeSchedulesDirectory, $"{id}.json");
+                var filePath = BuildScheduleFilePath(id);
                 
                 if (File.Exists(filePath))
                 {
@@ -477,7 +497,7 @@ namespace ReTime_Testing.Services
                 return true;
             }
 
-            var filePath = Path.Combine(_timeSchedulesDirectory, $"{id}.json");
+            var filePath = BuildScheduleFilePath(id);
             return File.Exists(filePath);
         }
 
@@ -764,6 +784,34 @@ namespace ReTime_Testing.Services
             return int.TryParse(parts[0], out var hour) && hour >= 0 && hour < 24 &&
                    int.TryParse(parts[1], out var minute) && minute >= 0 && minute < 60 &&
                    int.TryParse(parts[2], out var second) && second >= 0 && second < 60;
+        }
+
+        /// <summary>
+        /// 验证计划表ID合法性，防止路径遍历攻击
+        /// </summary>
+        private static bool IsValidScheduleId(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return false;
+            return ScheduleIdPattern.IsMatch(id);
+        }
+
+        /// <summary>
+        /// 构建计划表文件路径（含安全验证）
+        /// </summary>
+        private string BuildScheduleFilePath(string id)
+        {
+            if (!IsValidScheduleId(id))
+                throw new ArgumentException($"计划表ID不合法: {id}，仅允许字母、数字、下划线和连字符");
+
+            var filePath = Path.Combine(_timeSchedulesDirectory, $"{id}.json");
+            var fullPath = Path.GetFullPath(filePath);
+            var normalizedBase = Path.GetFullPath(_timeSchedulesDirectory);
+
+            if (!fullPath.StartsWith(normalizedBase, StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException($"路径遍历攻击检测: {id}");
+
+            return filePath;
         }
 
         /// <summary>
