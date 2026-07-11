@@ -24,6 +24,10 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     private TimeSchedule? _currentSchedule;
 
+    private bool _isSwitchingSchedule = false;
+
+    public event Func<string, Task<bool>>? UnsavedChangesConfirmRequested;
+
     [ObservableProperty]
     private bool _hasUnsavedChanges = false;
 
@@ -64,6 +68,38 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     }
 
     partial void OnSelectedScheduleChanged(ScheduleListItem? value)
+    {
+        if (_isSwitchingSchedule) return;
+
+        if (HasUnsavedChanges && value?.Id != SelectedSchedule?.Id)
+        {
+            _ = ConfirmAndSwitchScheduleAsync(value);
+            return;
+        }
+
+        LoadScheduleForSelection(value);
+    }
+
+    private async Task ConfirmAndSwitchScheduleAsync(ScheduleListItem? newSelection)
+    {
+        if (UnsavedChangesConfirmRequested != null)
+        {
+            var shouldProceed = await UnsavedChangesConfirmRequested("切换计划表");
+            if (!shouldProceed)
+            {
+                _isSwitchingSchedule = true;
+                var currentId = _currentSchedule?.Id;
+                SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == currentId);
+                _isSwitchingSchedule = false;
+                return;
+            }
+        }
+
+        HasUnsavedChanges = false;
+        LoadScheduleForSelection(newSelection);
+    }
+
+    private void LoadScheduleForSelection(ScheduleListItem? value)
     {
         if (value != null)
         {
@@ -113,7 +149,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         if (schedule != null)
         {
             Logger.Info("TimeScheduleEditor", $"创建新计划表: {newId}");
-            HasUnsavedChanges = true;
             RefreshScheduleList();
             SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
         }
@@ -129,7 +164,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (newSchedule != null)
         {
-            HasUnsavedChanges = true;
             RefreshScheduleList();
             SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
         }
@@ -139,10 +173,19 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private void DeleteSchedule()
     {
         if (SelectedSchedule == null) return;
-        if (SelectedSchedule.Id == "Default") return;
 
-        if (_scheduleManager.DeleteSchedule(SelectedSchedule.Id))
+        var deletedId = SelectedSchedule.Id;
+
+        if (_scheduleManager.DeleteSchedule(deletedId))
         {
+            var setting = _settingsService.GetTimeTopSetting();
+            if (setting.Schedule.Override.ScheduleId == deletedId)
+            {
+                setting.Schedule.Override.ScheduleId = "";
+                setting.Schedule.Override.Enabled = false;
+                _settingsService.SaveTimeTopSetting(setting);
+            }
+
             RefreshScheduleList();
             SelectedSchedule = null;
         }
@@ -474,9 +517,10 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
     {
+        segment.Styles ??= new StyleOverridesData();
+
         if (item.HasCustomStyle)
         {
-            segment.Styles ??= new StyleOverridesData();
             segment.Styles.Enabled = true;
             segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
             segment.Styles.BackgroundColor = item.HasBackgroundColor
@@ -486,7 +530,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
         else
         {
-            segment.Styles = null;
+            segment.Styles.Enabled = false;
         }
     }
 

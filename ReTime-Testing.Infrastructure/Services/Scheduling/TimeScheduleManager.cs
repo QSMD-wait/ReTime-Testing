@@ -57,14 +57,14 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 初始化所有时间计划，
+        /// 初始化所有时间计划
         /// </summary>
         public void Initialize()
         {
             try
             {
                 EnsureDirectoryExists(_timeSchedulesDirectory);
-                EnsureDefaultScheduleExists();
+                EnsureInitialScheduleExists();
 
                 Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "初始化完成");
             }
@@ -90,24 +90,25 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 确保默认时间计划存在
+        /// 首次初始化：当计划表目录为空时创建默认计划表作为初始数据
         /// </summary>
-        private void EnsureDefaultScheduleExists()
+        private void EnsureInitialScheduleExists()
         {
-            var defaultFilePath = Path.Combine(_timeSchedulesDirectory, "Default.json");
-            
-            if (!File.Exists(defaultFilePath))
+            if (!Directory.Exists(_timeSchedulesDirectory)) return;
+
+            var existingFiles = Directory.GetFiles(_timeSchedulesDirectory, "*.json");
+            if (existingFiles.Length == 0)
             {
                 var defaultSchedule = CreateDefaultSchedule();
                 SaveSchedule(defaultSchedule);
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "默认时间计划已创建");
+                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "首次初始化：已创建默认计划表");
             }
         }
 
         /// <summary>
-        /// 创建默认时间计划
+        /// 创建默认时间计划（仅用于首次初始化）
         /// </summary>
-        public TimeSchedule CreateDefaultSchedule()
+        private TimeSchedule CreateDefaultSchedule()
         {
             var now = DateTime.UtcNow;
             

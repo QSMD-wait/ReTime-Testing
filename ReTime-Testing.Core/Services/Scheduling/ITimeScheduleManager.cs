@@ -29,11 +29,6 @@ public interface ITimeScheduleManager
     void Initialize();
 
     /// <summary>
-    /// 创建默认时间计划
-    /// </summary>
-    TimeSchedule CreateDefaultSchedule();
-
-    /// <summary>
     /// 加载所有时间计划
     /// </summary>
     List<TimeSchedule> LoadAllSchedules();

@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,7 +31,29 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             _viewModel = services.GetRequiredService<TimeScheduleEditorViewModel>();
             this.DataContext = _viewModel;
 
+            _viewModel.UnsavedChangesConfirmRequested += OnUnsavedChangesConfirmRequested;
             this.Closing += OnWindowClosing;
+        }
+
+        private async Task<bool> OnUnsavedChangesConfirmRequested(string action)
+        {
+            if (_isWindowClosing) return true;
+
+            var dialog = new ContentDialog
+            {
+                Title = "未保存的更改",
+                Content = $"当前计划表有未保存的更改，{action}将丢弃这些更改。是否继续？",
+                PrimaryButtonText = "丢弃更改",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+                IsShadowEnabled = false
+            };
+
+            _activeDialog = dialog;
+            var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            return result == ContentDialogResult.Primary;
         }
 
         private void OnScheduleListPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
