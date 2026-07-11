@@ -176,9 +176,9 @@ namespace ReTime_Testing
                         if (selectedSchedule == null)
                         {
                             Logger.Error(GetType().FullName ?? "App",
-                                $"生效计划表不存在: {effectiveScheduleId}，保持空闲状态");
+                                $"生效计划表无效或不存在: {effectiveScheduleId}，保持空闲状态");
                             ShowValidationErrorDialog(
-                                $"计划表 \"{effectiveScheduleId}\" 不存在。\n\n请检查计划表组配置或计划表文件是否完整。");
+                                $"计划表 \"{effectiveScheduleId}\" 无效或不存在。\n\n请检查计划表组配置或计划表文件是否完整。");
                         }
                         else
                         {
