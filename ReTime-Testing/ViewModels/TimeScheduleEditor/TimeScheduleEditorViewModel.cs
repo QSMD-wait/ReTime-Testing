@@ -362,11 +362,18 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     {
         if (_currentEditingState == null) return;
 
-        var sortedIds = _currentEditingState.Items
+        var validItems = _currentEditingState.Items
             .Where(i => TryParseTime(i.StartTime, out _))
             .OrderBy(i => TimeSpan.Parse(i.StartTime))
             .Select(i => i.Id)
-            .ToArray();
+            .ToList();
+
+        var invalidItems = _currentEditingState.Items
+            .Where(i => !TryParseTime(i.StartTime, out _))
+            .Select(i => i.Id)
+            .ToList();
+
+        var sortedIds = validItems.Concat(invalidItems).ToArray();
 
         var currentIds = _currentEditingState.Items.Select(i => i.Id).ToArray();
         if (currentIds.SequenceEqual(sortedIds)) return;
@@ -814,24 +821,28 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var scheduleList = _scheduleManager.GetScheduleList();
         var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
-        return scheduleList.Select(s => new ScheduleListItem
-        {
-            Id = s.Id,
-            Name = s.Name,
-            IsActivated = s.Id == currentSelectedId,
-            CreatedAt = s.CreatedAt,
-            UpdatedAt = s.UpdatedAt
-        }).ToList();
+        return scheduleList
+            .OrderBy(i => i.CreatedAt ?? DateTime.MaxValue)
+            .Select(s => new ScheduleListItem
+            {
+                Id = s.Id,
+                Name = s.Name,
+                IsActivated = s.Id == currentSelectedId,
+                CreatedAt = s.CreatedAt,
+                UpdatedAt = s.UpdatedAt
+            }).ToList();
     }
 
-    public async Task HotReloadScheduleAsync(string scheduleId)
+    public async Task<(bool Success, string? ErrorMessage)> HotReloadScheduleAsync(string scheduleId)
     {
-        if (_scheduleRunManager == null || _timeService == null) return;
+        if (_scheduleRunManager == null || _timeService == null)
+            return (false, "调度服务未初始化");
 
         try
         {
             var schedule = _scheduleManager.LoadSchedule(scheduleId);
-            if (schedule == null) return;
+            if (schedule == null)
+                return (false, $"计划表 \"{scheduleId}\" 不存在");
 
             var planGenerator = new ExecutionPlanGenerator();
             var now = _timeService.GetCurrentTime();
@@ -841,10 +852,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             _timeService.Calibrate(_timeService.GetCurrentTime(), TimeJumpReason.ManualCalibration, TimeJumpSeverity.Minor);
 
             Logger.Info("TimeScheduleEditor", $"热重载成功: {scheduleId}");
+            return (true, null);
         }
         catch (Exception ex)
         {
             Logger.Error("TimeScheduleEditor", $"热重载失败: {ex.Message}", ex);
+            return (false, ex.Message);
         }
     }
 

@@ -252,21 +252,38 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
                 _viewModel.ApplyScheduleSelection(selectedItem);
-                await _viewModel.HotReloadScheduleAsync(selectedItem.Id);
+                var (success, errorMessage) = await _viewModel.HotReloadScheduleAsync(selectedItem.Id);
 
                 if (_isWindowClosing) return;
 
-                var confirmDialog = new ContentDialog
+                if (success)
                 {
-                    Title = "切换成功",
-                    Content = $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n已重启调度并应用新的时间计划表",
-                    CloseButtonText = "确定",
-                    DefaultButton = ContentDialogButton.Close,
-                    IsShadowEnabled = false
-                };
-                _activeDialog = confirmDialog;
-                await confirmDialog.ShowAsync();
-                _activeDialog = null;
+                    var confirmDialog = new ContentDialog
+                    {
+                        Title = "切换成功",
+                        Content = $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n已重启调度并应用新的时间计划表",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+                    _activeDialog = confirmDialog;
+                    await confirmDialog.ShowAsync();
+                    _activeDialog = null;
+                }
+                else
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "切换失败",
+                        Content = $"切换到时间计划表 \"{selectedItem.Name}\" 失败\n\n错误：{errorMessage}",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+                    _activeDialog = errorDialog;
+                    await errorDialog.ShowAsync();
+                    _activeDialog = null;
+                }
             }
             else if (result == ContentDialogResult.None && listView.SelectedItem == null && listView.Items.Count > 0)
             {
