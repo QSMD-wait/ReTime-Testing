@@ -39,6 +39,7 @@ namespace ReTime_Testing.Services
             services.AddSingleton<IDesktopWindowManager, DesktopWindowManager>();
             services.AddSingleton<ITopmostService, TopmostService>();
             services.AddSingleton<IMutexManager, MutexManager>();
+            services.AddTransient<IToastService, EditorToastService>();
 
             // ===== ViewModel（Transient：每次请求新实例） =====
             services.AddTransient<TimeTopDesktopViewModel>();

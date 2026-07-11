@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ReTime_Testing.Models;
@@ -12,6 +13,8 @@ namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 /// <summary>
 /// 时间计划表编辑器 ViewModel
+/// 核心设计：每个计划表独立维护编辑状态（ScheduleEditingState），切换时驻留内存
+/// 自动保存：合法时 Debounce 自动保存，非法时终止自动保存
 /// </summary>
 public partial class TimeScheduleEditorViewModel : ObservableObject
 {
@@ -19,17 +22,23 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ITimeService? _timeService;
     private readonly IScheduleManager? _scheduleRunManager;
+    private readonly IToastService _toastService;
+
+    private readonly Dictionary<string, ScheduleEditingState> _editingStates = new();
+    private ScheduleEditingState? _currentEditingState;
 
     private ScheduleItemListItem? _previousSelectedItem;
 
-    private TimeSchedule? _currentSchedule;
-
     private bool _isSwitchingSchedule = false;
 
-    public event Func<string, Task<bool>>? UnsavedChangesConfirmRequested;
+    private readonly DispatcherTimer _autoSaveTimer;
+
+    public event Func<string, List<string>, Task<bool>>? ForceSaveConfirmRequested;
 
     [ObservableProperty]
-    private bool _hasUnsavedChanges = false;
+    private bool _hasUnpersistedChanges = false;
+
+    public bool HasAnyUnpersistedChanges => _editingStates.Values.Any(s => s.HasUnpersistedChanges);
 
     [ObservableProperty]
     private bool _isValidationInfoBarOpen = false;
@@ -43,75 +52,105 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     [ObservableProperty]
     private ScheduleItemListItem? _selectedScheduleItem;
 
+    [ObservableProperty]
+    private bool _canUndo = false;
+
+    [ObservableProperty]
+    private bool _canRedo = false;
+
     public ObservableCollection<ScheduleListItem> Schedules { get; } = new();
-    public ObservableCollection<ScheduleItemListItem> ScheduleItems { get; } = new();
+    public ObservableCollection<ScheduleItemListItem> ScheduleItems => _currentEditingState?.Items ?? _emptyItems;
+
+    private static readonly ObservableCollection<ScheduleItemListItem> _emptyItems = new();
 
     public bool IsSegmentSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.Segment;
     public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.TimePoint;
-    public bool HasScheduleItems => ScheduleItems.Count > 0;
+    public bool HasScheduleItems => _currentEditingState != null && _currentEditingState.Items.Count > 0;
 
     public Array ToStateOptions => Enum.GetValues(typeof(ProgressStateType));
 
     public TimeScheduleEditorViewModel(
         ITimeScheduleManager scheduleManager,
         ISettingsService settingsService,
+        IToastService toastService,
         ITimeService? timeService = null,
         IScheduleManager? scheduleRunManager = null)
     {
         _scheduleManager = scheduleManager;
         _settingsService = settingsService;
+        _toastService = toastService;
         _timeService = timeService;
         _scheduleRunManager = scheduleRunManager;
 
+        _autoSaveTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(500)
+        };
+        _autoSaveTimer.Tick += OnAutoSaveTimerTick;
+
         RefreshScheduleList();
-        HasUnsavedChanges = false;
     }
+
+    #region 计划表选择切换
 
     partial void OnSelectedScheduleChanged(ScheduleListItem? value)
     {
         if (_isSwitchingSchedule) return;
 
-        if (HasUnsavedChanges && value?.Id != SelectedSchedule?.Id)
-        {
-            _ = ConfirmAndSwitchScheduleAsync(value);
-            return;
-        }
-
         LoadScheduleForSelection(value);
-    }
-
-    private async Task ConfirmAndSwitchScheduleAsync(ScheduleListItem? newSelection)
-    {
-        if (UnsavedChangesConfirmRequested != null)
-        {
-            var shouldProceed = await UnsavedChangesConfirmRequested("切换计划表");
-            if (!shouldProceed)
-            {
-                _isSwitchingSchedule = true;
-                var currentId = _currentSchedule?.Id;
-                SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == currentId);
-                _isSwitchingSchedule = false;
-                return;
-            }
-        }
-
-        HasUnsavedChanges = false;
-        LoadScheduleForSelection(newSelection);
     }
 
     private void LoadScheduleForSelection(ScheduleListItem? value)
     {
+        _autoSaveTimer.Stop();
+
         if (value != null)
         {
-            _currentSchedule = _scheduleManager.LoadSchedule(value.Id);
+            if (!_editingStates.TryGetValue(value.Id, out var state))
+            {
+                var schedule = _scheduleManager.LoadSchedule(value.Id);
+                if (schedule == null)
+                {
+                    _currentEditingState = null;
+                    UpdateScheduleItemsBinding();
+                    return;
+                }
+
+                state = new ScheduleEditingState(value.Id);
+                state.LoadFromSchedule(schedule);
+                _editingStates[value.Id] = state;
+            }
+
+            _currentEditingState = state;
         }
         else
         {
-            _currentSchedule = null;
+            _currentEditingState = null;
         }
-        LoadScheduleItems();
+
+        UpdateScheduleItemsBinding();
+        SelectedScheduleItem = null;
+        UpdateUndoRedoState();
+        UpdateHasUnpersistedChanges();
+
+        if (_currentEditingState != null)
+        {
+            ValidateAllItems();
+            TryStartAutoSaveTimer();
+        }
+
         OnPropertyChanged(nameof(HasScheduleItems));
     }
+
+    private void UpdateScheduleItemsBinding()
+    {
+        OnPropertyChanged(nameof(ScheduleItems));
+        OnPropertyChanged(nameof(HasScheduleItems));
+    }
+
+    #endregion
+
+    #region 选中项变更
 
     partial void OnSelectedScheduleItemChanged(ScheduleItemListItem? value)
     {
@@ -133,9 +172,59 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     private void OnScheduleItemChanged(ScheduleItemListItem item)
     {
-        HasUnsavedChanges = true;
         ValidateAllItems();
+        UpdateHasUnpersistedChanges();
+
+        if (_currentEditingState != null && !_currentEditingState.HasValidationErrors)
+        {
+            TryStartAutoSaveTimer();
+        }
+        else
+        {
+            _autoSaveTimer.Stop();
+        }
     }
+
+    #endregion
+
+    #region 自动保存
+
+    private void TryStartAutoSaveTimer()
+    {
+        if (_currentEditingState == null || !_currentEditingState.HasUnpersistedChanges)
+        {
+            _autoSaveTimer.Stop();
+            return;
+        }
+
+        if (_currentEditingState.HasValidationErrors)
+        {
+            _autoSaveTimer.Stop();
+            return;
+        }
+
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Start();
+    }
+
+    private void OnAutoSaveTimerTick(object? sender, EventArgs e)
+    {
+        _autoSaveTimer.Stop();
+
+        if (_currentEditingState == null) return;
+
+        if (_currentEditingState.HasValidationErrors)
+        {
+            return;
+        }
+
+        if (PerformSave(force: false))
+        {
+            _toastService.Show("已自动保存", ToastType.Success, 2000);
+        }
+    }
+
+    #endregion
 
     #region 计划表操作命令
 
@@ -186,6 +275,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 _settingsService.SaveTimeTopSetting(setting);
             }
 
+            _editingStates.Remove(deletedId);
+
             RefreshScheduleList();
             SelectedSchedule = null;
         }
@@ -216,7 +307,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     [RelayCommand]
     private void AddTimeSegment()
     {
-        if (_currentSchedule == null) return;
+        if (_currentEditingState == null) return;
 
         ComputeDefaultTime(isTimePoint: false, out var startTime, out var endTime);
 
@@ -229,16 +320,15 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             ItemType = ScheduleItemType.Segment
         };
 
-        ScheduleItems.Add(newSegment);
-        HasUnsavedChanges = true;
+        _currentEditingState.ExecuteAction(new AddItemAction(newSegment));
         SelectedScheduleItem = newSegment;
-        OnPropertyChanged(nameof(HasScheduleItems));
+        OnScheduleItemsChanged();
     }
 
     [RelayCommand]
     private void AddTimePoint()
     {
-        if (_currentSchedule == null) return;
+        if (_currentEditingState == null) return;
 
         ComputeDefaultTime(isTimePoint: true, out var startTime, out _);
 
@@ -251,60 +341,227 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             ToState = ProgressStateType.Success
         };
 
-        ScheduleItems.Add(newTimePoint);
-        HasUnsavedChanges = true;
+        _currentEditingState.ExecuteAction(new AddItemAction(newTimePoint));
         SelectedScheduleItem = newTimePoint;
-        OnPropertyChanged(nameof(HasScheduleItems));
+        OnScheduleItemsChanged();
     }
 
     [RelayCommand]
     private void DeleteScheduleItem()
     {
-        if (_currentSchedule == null || SelectedScheduleItem == null) return;
+        if (_currentEditingState == null || SelectedScheduleItem == null) return;
 
-        ScheduleItems.Remove(SelectedScheduleItem);
+        var index = _currentEditingState.Items.IndexOf(SelectedScheduleItem);
+        _currentEditingState.ExecuteAction(new RemoveItemAction(SelectedScheduleItem, index));
         SelectedScheduleItem = null;
-        HasUnsavedChanges = true;
-        OnPropertyChanged(nameof(HasScheduleItems));
+        OnScheduleItemsChanged();
     }
 
     [RelayCommand]
     private void RefreshOrder()
     {
-        var sortedItems = ScheduleItems
+        if (_currentEditingState == null) return;
+
+        var sortedIds = _currentEditingState.Items
             .Where(i => TryParseTime(i.StartTime, out _))
             .OrderBy(i => TimeSpan.Parse(i.StartTime))
-            .ToList();
+            .Select(i => i.Id)
+            .ToArray();
 
-        bool needsReorder = false;
-        for (int i = 0; i < sortedItems.Count; i++)
-        {
-            if (ScheduleItems[i].Id != sortedItems[i].Id)
-            {
-                needsReorder = true;
-                break;
-            }
-        }
+        var currentIds = _currentEditingState.Items.Select(i => i.Id).ToArray();
+        if (currentIds.SequenceEqual(sortedIds)) return;
 
-        if (needsReorder)
-        {
-            ScheduleItems.Clear();
-            foreach (var item in sortedItems)
-            {
-                ScheduleItems.Add(item);
-            }
-            HasUnsavedChanges = true;
-        }
-
-        ValidateAllItems();
+        _currentEditingState.ExecuteAction(new SortAllAction(_currentEditingState.Items, sortedIds));
+        OnScheduleItemsChanged();
     }
 
     [RelayCommand]
     private void Save()
     {
-        if (ValidateAndSave())
+        if (_currentEditingState == null) return;
+
+        ValidateAllItems();
+
+        if (_currentEditingState.HasValidationErrors)
         {
-            HasUnsavedChanges = false;
+            var errors = CollectValidationErrors();
+            _ = ShowForceSaveDialogAsync(errors);
+            return;
+        }
+
+        if (PerformSave(force: false))
+        {
+            _toastService.Show("保存成功", ToastType.Success, 2000);
+        }
+    }
+
+    [RelayCommand]
+    public void ForceSave()
+    {
+        if (_currentEditingState == null) return;
+
+        if (PerformSave(force: true))
+        {
+            _toastService.Show("已强制保存", ToastType.Warning, 3000);
+        }
+    }
+
+    [RelayCommand]
+    private void Undo()
+    {
+        if (_currentEditingState == null) return;
+
+        _currentEditingState.Undo();
+        UpdateUndoRedoState();
+        UpdateHasUnpersistedChanges();
+        ValidateAllItems();
+        UpdateScheduleItemsBinding();
+    }
+
+    [RelayCommand]
+    private void Redo()
+    {
+        if (_currentEditingState == null) return;
+
+        _currentEditingState.Redo();
+        UpdateUndoRedoState();
+        UpdateHasUnpersistedChanges();
+        ValidateAllItems();
+        UpdateScheduleItemsBinding();
+    }
+
+    #endregion
+
+    #region 保存核心逻辑
+
+    private bool PerformSave(bool force)
+    {
+        if (_currentEditingState == null) return false;
+
+        if (!force)
+        {
+            ValidateAllItems();
+            if (_currentEditingState.HasValidationErrors)
+            {
+                return false;
+            }
+        }
+
+        try
+        {
+            var schedule = BuildScheduleFromState(_currentEditingState);
+            _scheduleManager.SaveSchedule(schedule);
+            _currentEditingState.MarkAsSaved();
+
+            UpdateHasUnpersistedChanges();
+            IsValidationInfoBarOpen = false;
+
+            Logger.Info("TimeScheduleEditor", $"计划表保存成功: {_currentEditingState.ScheduleId}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("TimeScheduleEditor", $"计划表保存失败: {_currentEditingState.ScheduleId}, 错误: {ex.Message}", ex);
+            ValidationInfoBarMessage = $"保存失败: {ex.Message}";
+            IsValidationInfoBarOpen = true;
+            return false;
+        }
+    }
+
+    private TimeSchedule BuildScheduleFromState(ScheduleEditingState state)
+    {
+        var schedule = _scheduleManager.LoadSchedule(state.ScheduleId) ?? new TimeSchedule
+        {
+            Id = state.ScheduleId,
+            Version = "1.0.0",
+            Settings = new TimeScheduleSettings
+            {
+                Metadata = new TimeScheduleMetadata()
+            }
+        };
+
+        schedule.Id = state.ScheduleId;
+        schedule.Schedules ??= new List<TimeScheduleItem>();
+        schedule.TimePoints ??= new List<CustomTimePoint>();
+
+        var currentItemIds = state.Items.Select(i => i.Id).ToHashSet();
+
+        schedule.Schedules.RemoveAll(s => !currentItemIds.Contains(s.Id));
+        schedule.TimePoints.RemoveAll(t => !currentItemIds.Contains(t.Id));
+
+        foreach (var item in state.Items)
+        {
+            if (item.ItemType == ScheduleItemType.TimePoint)
+            {
+                var existingIndex = schedule.TimePoints.FindIndex(t => t.Id == item.Id);
+                var convertedPoint = ScheduleItemConverter.ToTimePoint(item);
+
+                if (existingIndex >= 0)
+                {
+                    schedule.TimePoints[existingIndex] = convertedPoint;
+                }
+                else
+                {
+                    schedule.TimePoints.Add(convertedPoint);
+                }
+            }
+            else
+            {
+                var existingIndex = schedule.Schedules.FindIndex(s => s.Id == item.Id);
+                var convertedSegment = ScheduleItemConverter.ToScheduleItem(item);
+
+                ApplySegmentStyles(convertedSegment, item);
+
+                if (existingIndex >= 0)
+                {
+                    schedule.Schedules[existingIndex] = convertedSegment;
+                }
+                else
+                {
+                    schedule.Schedules.Add(convertedSegment);
+                }
+            }
+        }
+
+        return schedule;
+    }
+
+    private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
+    {
+        segment.Styles ??= new StyleOverridesData();
+
+        if (item.HasCustomStyle)
+        {
+            segment.Styles.Enabled = true;
+            segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+            segment.Styles.BackgroundColor = item.HasBackgroundColor
+                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
+                : null;
+            segment.Styles.Opacity = item.Opacity / 100.0;
+        }
+        else
+        {
+            segment.Styles.Enabled = false;
+        }
+    }
+
+    private async Task ShowForceSaveDialogAsync(List<string> errors)
+    {
+        if (ForceSaveConfirmRequested != null)
+        {
+            var shouldForce = await ForceSaveConfirmRequested("存在验证错误", errors);
+            if (shouldForce)
+            {
+                ForceSave();
+            }
+            else
+            {
+                _toastService.Show("请修正验证错误后再保存", ToastType.Warning, 3000);
+            }
+        }
+        else
+        {
+            _toastService.Show("存在验证错误，请修正后再保存", ToastType.Warning, 3000);
         }
     }
 
@@ -336,57 +593,24 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
     }
 
-    private void LoadScheduleItems()
-    {
-        ScheduleItems.Clear();
-
-        if (_currentSchedule == null) return;
-
-        var items = new List<ScheduleItemListItem>();
-
-        if (_currentSchedule.Schedules != null)
-        {
-            foreach (var item in _currentSchedule.Schedules)
-            {
-                items.Add(ScheduleItemConverter.ToListItem(item));
-            }
-        }
-
-        if (_currentSchedule.TimePoints != null)
-        {
-            foreach (var point in _currentSchedule.TimePoints)
-            {
-                items.Add(ScheduleItemConverter.ToListItem(point));
-            }
-        }
-
-        var sortedItems = items
-            .Where(i => TryParseTime(i.StartTime, out _))
-            .OrderBy(i => TimeSpan.Parse(i.StartTime))
-            .ToList();
-        foreach (var item in sortedItems)
-        {
-            ScheduleItems.Add(item);
-        }
-
-        ValidateAllItems();
-        OnPropertyChanged(nameof(HasScheduleItems));
-    }
-
     #endregion
 
     #region 验证
 
     public void ValidateAllItems()
     {
-        foreach (var item in ScheduleItems)
+        if (_currentEditingState == null) return;
+
+        var items = _currentEditingState.Items;
+
+        foreach (var item in items)
         {
             item.StartTimeError = "";
             item.EndTimeError = "";
         }
 
-        var segments = ScheduleItems.Where(i => i.ItemType == ScheduleItemType.Segment).ToList();
-        var timePoints = ScheduleItems.Where(i => i.ItemType == ScheduleItemType.TimePoint).ToList();
+        var segments = items.Where(i => i.ItemType == ScheduleItemType.Segment).ToList();
+        var timePoints = items.Where(i => i.ItemType == ScheduleItemType.TimePoint).ToList();
 
         foreach (var seg in segments)
         {
@@ -502,6 +726,21 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 }
             }
         }
+
+        _currentEditingState.ValidationErrors.Clear();
+        foreach (var item in items)
+        {
+            if (item.HasStartTimeError)
+                _currentEditingState.ValidationErrors.Add($"[{item.Name}] {item.StartTimeError}");
+            if (item.HasEndTimeError)
+                _currentEditingState.ValidationErrors.Add($"[{item.Name}] {item.EndTimeError}");
+        }
+    }
+
+    private List<string> CollectValidationErrors()
+    {
+        if (_currentEditingState == null) return new List<string>();
+        return _currentEditingState.ValidationErrors.ToList();
     }
 
     private bool TryParseTime(string timeString, out TimeSpan result)
@@ -513,111 +752,31 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     #endregion
 
-    #region 保存
+    #region 状态更新
 
-    private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
+    private void OnScheduleItemsChanged()
     {
-        segment.Styles ??= new StyleOverridesData();
+        UpdateHasUnpersistedChanges();
+        UpdateUndoRedoState();
+        ValidateAllItems();
+        OnPropertyChanged(nameof(HasScheduleItems));
 
-        if (item.HasCustomStyle)
+        if (_currentEditingState != null && !_currentEditingState.HasValidationErrors)
         {
-            segment.Styles.Enabled = true;
-            segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-            segment.Styles.BackgroundColor = item.HasBackgroundColor
-                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
-                : null;
-            segment.Styles.Opacity = item.Opacity / 100.0;
-        }
-        else
-        {
-            segment.Styles.Enabled = false;
+            TryStartAutoSaveTimer();
         }
     }
 
-    public bool ValidateAndSave()
+    private void UpdateHasUnpersistedChanges()
     {
-        if (_currentSchedule == null) return false;
+        HasUnpersistedChanges = _currentEditingState?.HasUnpersistedChanges ?? false;
+        OnPropertyChanged(nameof(HasAnyUnpersistedChanges));
+    }
 
-        ValidateAllItems();
-
-        bool hasErrors = ScheduleItems.Any(i => i.HasStartTimeError || i.HasEndTimeError);
-        if (hasErrors)
-        {
-            ValidationInfoBarMessage = "存在验证错误，请修正后再保存";
-            IsValidationInfoBarOpen = true;
-            return false;
-        }
-
-        if (SelectedSchedule != null && !string.IsNullOrEmpty(SelectedSchedule.Id))
-        {
-            _currentSchedule.Id = SelectedSchedule.Id;
-        }
-
-        _currentSchedule.Schedules ??= new List<TimeScheduleItem>();
-        _currentSchedule.TimePoints ??= new List<CustomTimePoint>();
-
-        var currentItemIds = ScheduleItems.Select(i => i.Id).ToHashSet();
-
-        _currentSchedule.Schedules.RemoveAll(s => !currentItemIds.Contains(s.Id));
-        _currentSchedule.TimePoints.RemoveAll(t => !currentItemIds.Contains(t.Id));
-
-        foreach (var item in ScheduleItems)
-        {
-            if (item.ItemType == ScheduleItemType.TimePoint)
-            {
-                var existingIndex = _currentSchedule.TimePoints.FindIndex(t => t.Id == item.Id);
-                var convertedPoint = ScheduleItemConverter.ToTimePoint(item);
-
-                if (existingIndex >= 0)
-                {
-                    _currentSchedule.TimePoints[existingIndex] = convertedPoint;
-                }
-                else
-                {
-                    _currentSchedule.TimePoints.Add(convertedPoint);
-                }
-            }
-            else
-            {
-                var existingIndex = _currentSchedule.Schedules.FindIndex(s => s.Id == item.Id);
-                var convertedSegment = ScheduleItemConverter.ToScheduleItem(item);
-
-                if (existingIndex >= 0)
-                {
-                    ApplySegmentStyles(convertedSegment, item);
-                    _currentSchedule.Schedules[existingIndex] = convertedSegment;
-                }
-                else
-                {
-                    ApplySegmentStyles(convertedSegment, item);
-                    _currentSchedule.Schedules.Add(convertedSegment);
-                }
-            }
-        }
-
-        var validator = new TimeScheduleValidator();
-        var result = validator.Validate(_currentSchedule);
-        if (!result.IsValid)
-        {
-            ValidationInfoBarMessage = string.Join("\n", result.Errors);
-            IsValidationInfoBarOpen = true;
-            return false;
-        }
-
-        try
-        {
-            _scheduleManager.SaveSchedule(_currentSchedule);
-            Logger.Info("TimeScheduleEditor", $"计划表保存成功: {_currentSchedule.Id}");
-            IsValidationInfoBarOpen = false;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error("TimeScheduleEditor", $"计划表保存失败: {_currentSchedule.Id}, 错误: {ex.Message}", ex);
-            ValidationInfoBarMessage = $"保存失败: {ex.Message}";
-            IsValidationInfoBarOpen = true;
-            return false;
-        }
+    private void UpdateUndoRedoState()
+    {
+        CanUndo = _currentEditingState?.CanUndo ?? false;
+        CanRedo = _currentEditingState?.CanRedo ?? false;
     }
 
     #endregion
@@ -655,48 +814,31 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var scheduleList = _scheduleManager.GetScheduleList();
         var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
-        var items = new List<ScheduleListItem>();
-        foreach (var info in scheduleList)
+        return scheduleList.Select(s => new ScheduleListItem
         {
-            items.Add(new ScheduleListItem
-            {
-                Id = info.Id,
-                Name = info.Name,
-                IsActivated = info.Id == currentSelectedId
-            });
-        }
-        return items;
+            Id = s.Id,
+            Name = s.Name,
+            IsActivated = s.Id == currentSelectedId,
+            CreatedAt = s.CreatedAt,
+            UpdatedAt = s.UpdatedAt
+        }).ToList();
     }
 
     public async Task HotReloadScheduleAsync(string scheduleId)
     {
+        if (_scheduleRunManager == null || _timeService == null) return;
+
         try
         {
-            if (_timeService == null || _scheduleRunManager == null)
-            {
-                Logger.Warn("TimeScheduleEditor", "时间服务或调度管理器未初始化");
-                return;
-            }
-
-            var newSchedule = _scheduleManager.LoadSchedule(scheduleId);
-            if (newSchedule == null)
-            {
-                Logger.Warn("TimeScheduleEditor", $"加载计划表失败: {scheduleId}");
-                return;
-            }
+            var schedule = _scheduleManager.LoadSchedule(scheduleId);
+            if (schedule == null) return;
 
             var planGenerator = new ExecutionPlanGenerator();
-            var currentTime = _timeService.GetCurrentTime();
-            var newPlan = planGenerator.GenerateSafe(newSchedule, DateTime.Today, currentTime);
-
-            if (newPlan == null)
-            {
-                Logger.Warn("TimeScheduleEditor", "时间计划配置无效");
-                return;
-            }
-
+            var now = _timeService.GetCurrentTime();
+            var newPlan = planGenerator.Generate(schedule, now.Date, now);
             _scheduleRunManager.RegenerateExecutionPlan(newPlan);
-            UpdateScheduleListActivation(scheduleId);
+
+            _timeService.Calibrate(_timeService.GetCurrentTime(), TimeJumpReason.ManualCalibration, TimeJumpSeverity.Minor);
 
             Logger.Info("TimeScheduleEditor", $"热重载成功: {scheduleId}");
         }
@@ -712,6 +854,168 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         setting.Schedule.Override.ScheduleId = selectedItem.Id;
         setting.Schedule.Override.Enabled = true;
         _settingsService.SaveTimeTopSetting(setting);
+    }
+
+    public bool TryAutoSaveBeforeLeave()
+    {
+        if (_currentEditingState == null) return true;
+
+        if (!_currentEditingState.HasUnpersistedChanges) return true;
+
+        ValidateAllItems();
+
+        if (!_currentEditingState.HasValidationErrors)
+        {
+            return PerformSave(force: false);
+        }
+
+        return false;
+    }
+
+    public bool TryAutoSaveAllBeforeLeave()
+    {
+        bool allSuccess = true;
+
+        foreach (var state in _editingStates.Values)
+        {
+            if (!state.HasUnpersistedChanges) continue;
+
+            var savedSchedule = _scheduleManager.LoadSchedule(state.ScheduleId);
+            if (savedSchedule == null) { allSuccess = false; continue; }
+
+            ValidateState(state);
+
+            if (!state.HasValidationErrors)
+            {
+                try
+                {
+                    var schedule = BuildScheduleFromState(state);
+                    _scheduleManager.SaveSchedule(schedule);
+                    state.MarkAsSaved();
+                }
+                catch
+                {
+                    allSuccess = false;
+                }
+            }
+            else
+            {
+                allSuccess = false;
+            }
+        }
+
+        UpdateHasUnpersistedChanges();
+        return allSuccess;
+    }
+
+    public void ForceSaveAll()
+    {
+        foreach (var state in _editingStates.Values)
+        {
+            if (!state.HasUnpersistedChanges) continue;
+
+            try
+            {
+                var schedule = BuildScheduleFromState(state);
+                _scheduleManager.SaveSchedule(schedule);
+                state.MarkAsSaved();
+            }
+            catch
+            {
+            }
+        }
+
+        UpdateHasUnpersistedChanges();
+    }
+
+    public void DiscardAllUnpersistedChanges()
+    {
+        var idsToDiscard = _editingStates.Keys.ToList();
+
+        foreach (var id in idsToDiscard)
+        {
+            var schedule = _scheduleManager.LoadSchedule(id);
+            if (schedule != null)
+            {
+                _editingStates[id].LoadFromSchedule(schedule);
+            }
+            else
+            {
+                _editingStates.Remove(id);
+            }
+        }
+
+        UpdateHasUnpersistedChanges();
+    }
+
+    public void DiscardUnpersistedChanges()
+    {
+        if (_currentEditingState == null) return;
+
+        var schedule = _scheduleManager.LoadSchedule(_currentEditingState.ScheduleId);
+        if (schedule != null)
+        {
+            _currentEditingState.LoadFromSchedule(schedule);
+        }
+
+        UpdateHasUnpersistedChanges();
+        UpdateUndoRedoState();
+        UpdateScheduleItemsBinding();
+    }
+
+    private void ValidateState(ScheduleEditingState state)
+    {
+        var items = state.Items;
+
+        foreach (var item in items)
+        {
+            item.StartTimeError = "";
+            item.EndTimeError = "";
+        }
+
+        var segments = items.Where(i => i.ItemType == ScheduleItemType.Segment).ToList();
+        var timePoints = items.Where(i => i.ItemType == ScheduleItemType.TimePoint).ToList();
+
+        foreach (var seg in segments)
+        {
+            if (string.IsNullOrEmpty(seg.StartTime))
+                seg.StartTimeError = "不能为空";
+            else if (!TimeFormatValidator.IsValidFormat(seg.StartTime))
+                seg.StartTimeError = "格式应为 HH:mm:ss";
+
+            if (string.IsNullOrEmpty(seg.EndTime))
+                seg.EndTimeError = "不能为空";
+            else if (!TimeFormatValidator.IsValidFormat(seg.EndTime))
+                seg.EndTimeError = "格式应为 HH:mm:ss";
+
+            if (string.IsNullOrEmpty(seg.StartTimeError) && string.IsNullOrEmpty(seg.EndTimeError)
+                && !string.IsNullOrEmpty(seg.StartTime) && !string.IsNullOrEmpty(seg.EndTime))
+            {
+                try
+                {
+                    if (TimeSpan.Parse(seg.EndTime) < TimeSpan.Parse(seg.StartTime))
+                        seg.EndTimeError = "结束时间不能早于开始时间";
+                }
+                catch { }
+            }
+        }
+
+        foreach (var tp in timePoints)
+        {
+            if (string.IsNullOrEmpty(tp.StartTime))
+                tp.StartTimeError = "不能为空";
+            else if (!TimeFormatValidator.IsValidFormat(tp.StartTime))
+                tp.StartTimeError = "格式应为 HH:mm:ss";
+        }
+
+        state.ValidationErrors.Clear();
+        foreach (var item in items)
+        {
+            if (item.HasStartTimeError)
+                state.ValidationErrors.Add($"[{item.Name}] {item.StartTimeError}");
+            if (item.HasEndTimeError)
+                state.ValidationErrors.Add($"[{item.Name}] {item.EndTimeError}");
+        }
     }
 
     #endregion

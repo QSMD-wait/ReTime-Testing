@@ -183,6 +183,17 @@
                                     </ui:AppBarButton.Icon>
                                 </ui:AppBarButton>
                                 <ui:AppBarSeparator/>
+                                <ui:AppBarButton Label="撤销" ToolTip="撤销" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndo}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Undo}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarButton Label="恢复" ToolTip="恢复" Command="{Binding RedoCommand}" IsEnabled="{Binding CanRedo}">
+                                    <ui:AppBarButton.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Redo}"/>
+                                    </ui:AppBarButton.Icon>
+                                </ui:AppBarButton>
+                                <ui:AppBarSeparator/>
                                 <ui:AppBarButton Label="删除" ToolTip="删除选中的项目" Command="{Binding DeleteScheduleItemCommand}">
                                     <ui:AppBarButton.Icon>
                                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}"/>
@@ -596,6 +607,14 @@
             </ui:AppBarButton>
         </ui:CommandBar>
 
+        <!-- Toast 通知容器 -->
+        <StackPanel x:Name="ToastContainer"
+                    Grid.Column="0" Grid.ColumnSpan="2"
+                    VerticalAlignment="Bottom"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,16,60"
+                    Orientation="Vertical"/>
+
         <!-- 保存时验证失败的 InfoBar -->
         <ui:InfoBar Grid.Column="0" Grid.ColumnSpan="2"
                     Title="验证失败"
@@ -603,8 +622,8 @@
                     Message="{Binding ValidationInfoBarMessage}"
                     Severity="Error"
                     VerticalAlignment="Bottom"
-                    HorizontalAlignment="Right"
-                    Margin="0,0,16,16"/>
+                    HorizontalAlignment="Left"
+                    Margin="16,0,0,16"/>
     </Grid>
 
 </Window>

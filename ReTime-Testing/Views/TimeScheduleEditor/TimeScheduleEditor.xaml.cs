@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,8 +7,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using iNKORE.UI.WPF.Modern.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 namespace ReTime_Testing.Views.TimeScheduleEditor
@@ -18,6 +21,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     public partial class TimeScheduleEditor : Window
     {
         private readonly TimeScheduleEditorViewModel _viewModel;
+        private readonly IToastService _toastService;
         private bool _isWindowClosing = false;
         private ContentDialog? _activeDialog = null;
 
@@ -29,22 +33,52 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
 
             _viewModel = services.GetRequiredService<TimeScheduleEditorViewModel>();
+            _toastService = services.GetRequiredService<IToastService>();
+
             this.DataContext = _viewModel;
 
-            _viewModel.UnsavedChangesConfirmRequested += OnUnsavedChangesConfirmRequested;
+            _viewModel.ForceSaveConfirmRequested += OnForceSaveConfirmRequested;
+            _toastService.ToastRequested += OnToastRequested;
+
             this.Closing += OnWindowClosing;
         }
 
-        private async Task<bool> OnUnsavedChangesConfirmRequested(string action)
+        private async Task<bool> OnForceSaveConfirmRequested(string title, List<string> errors)
         {
-            if (_isWindowClosing) return true;
+            if (_isWindowClosing) return false;
+
+            var errorText = string.Join("\n", errors.Take(5));
+            if (errors.Count > 5)
+            {
+                errorText += $"\n...还有 {errors.Count - 5} 个错误";
+            }
 
             var dialog = new ContentDialog
             {
-                Title = "未保存的更改",
-                Content = $"当前计划表有未保存的更改，{action}将丢弃这些更改。是否继续？",
-                PrimaryButtonText = "丢弃更改",
-                CloseButtonText = "取消",
+                Title = title,
+                Content = new StackPanel
+                {
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = "以下验证错误将被忽略：",
+                            Margin = new Thickness(0, 0, 0, 8)
+                        },
+                        new ScrollViewer
+                        {
+                            MaxHeight = 200,
+                            Content = new TextBlock
+                            {
+                                Text = errorText,
+                                TextWrapping = TextWrapping.Wrap,
+                                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C42B1C"))
+                            }
+                        }
+                    }
+                },
+                PrimaryButtonText = "强制保存",
+                CloseButtonText = "返回修改",
                 DefaultButton = ContentDialogButton.Close,
                 IsShadowEnabled = false
             };
@@ -54,6 +88,41 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             _activeDialog = null;
 
             return result == ContentDialogResult.Primary;
+        }
+
+        private void OnToastRequested(string message, ToastType type, int durationMs)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                var severity = type switch
+                {
+                    ToastType.Success => InfoBarSeverity.Success,
+                    ToastType.Warning => InfoBarSeverity.Warning,
+                    ToastType.Error => InfoBarSeverity.Error,
+                    _ => InfoBarSeverity.Informational
+                };
+
+                var toast = new InfoBar
+                {
+                    Message = message,
+                    Severity = severity,
+                    IsOpen = true,
+                    IsClosable = true,
+                    Margin = new Thickness(0, 0, 0, 4),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                };
+
+                ToastContainer.Children.Add(toast);
+
+                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(durationMs) };
+                timer.Tick += (s, e) =>
+                {
+                    timer.Stop();
+                    toast.IsOpen = false;
+                    ToastContainer.Children.Remove(toast);
+                };
+                timer.Start();
+            });
         }
 
         private void OnScheduleListPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -94,7 +163,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 _activeDialog = null;
             }
 
-            if (!_viewModel.HasUnsavedChanges)
+            if (!_viewModel.HasAnyUnpersistedChanges)
                 return;
 
             e.Cancel = true;
@@ -103,7 +172,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var dialog = new ContentDialog
             {
                 Title = "保存更改",
-                Content = "您有未保存的更改，是否保存？",
+                Content = "您有未持久化的更改，是否保存？",
                 PrimaryButtonText = "保存",
                 SecondaryButtonText = "不保存",
                 CloseButtonText = "取消",
@@ -119,15 +188,44 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             if (result == ContentDialogResult.Primary)
             {
-                if (_viewModel.ValidateAndSave())
+                if (_viewModel.TryAutoSaveAllBeforeLeave())
                 {
-                    _viewModel.HasUnsavedChanges = false;
                     this.Close();
+                }
+                else
+                {
+                    var forceDialog = new ContentDialog
+                    {
+                        Title = "验证错误",
+                        Content = "部分计划表存在验证错误，无法自动保存。\n是否强制保存所有更改？",
+                        PrimaryButtonText = "强制保存",
+                        SecondaryButtonText = "丢弃更改",
+                        CloseButtonText = "取消",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+
+                    _activeDialog = forceDialog;
+                    var forceResult = await forceDialog.ShowAsync();
+                    _activeDialog = null;
+
+                    if (_isWindowClosing) return;
+
+                    if (forceResult == ContentDialogResult.Primary)
+                    {
+                        _viewModel.ForceSaveAll();
+                        this.Close();
+                    }
+                    else if (forceResult == ContentDialogResult.Secondary)
+                    {
+                        _viewModel.DiscardAllUnpersistedChanges();
+                        this.Close();
+                    }
                 }
             }
             else if (result == ContentDialogResult.Secondary)
             {
-                _viewModel.HasUnsavedChanges = false;
+                _viewModel.DiscardAllUnpersistedChanges();
                 this.Close();
             }
         }
