@@ -37,12 +37,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     public bool HasAnyUnpersistedChanges => _editingStates.Values.Any(s => s.HasUnpersistedChanges);
 
     [ObservableProperty]
-    private bool _isValidationInfoBarOpen = false;
-
-    [ObservableProperty]
-    private string _validationInfoBarMessage = "";
-
-    [ObservableProperty]
     private ScheduleListItem? _selectedSchedule;
 
     [ObservableProperty]
@@ -214,7 +208,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: false))
         {
-            ToastRequested?.Invoke(new ToastMessage("已自动保存") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
         }
     }
 
@@ -392,7 +385,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: false))
         {
-            ToastRequested?.Invoke(new ToastMessage("保存成功") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
+            ToastRequested?.Invoke(new ToastMessage("保存成功", $"计划表 \"{_currentEditingState.ScheduleId}\" 已保存") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
         }
     }
 
@@ -403,7 +396,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: true))
         {
-            ToastRequested?.Invoke(new ToastMessage("已强制保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
+            ToastRequested?.Invoke(new ToastMessage("已强制保存", $"计划表 \"{_currentEditingState.ScheduleId}\" 已强制保存，可能存在验证错误") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
         }
     }
 
@@ -455,7 +448,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             _currentEditingState.MarkAsSaved();
 
             UpdateHasUnpersistedChanges();
-            IsValidationInfoBarOpen = false;
 
             Logger.Info("TimeScheduleEditor", $"计划表保存成功: {_currentEditingState.ScheduleId}");
             return true;
@@ -463,8 +455,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Error("TimeScheduleEditor", $"计划表保存失败: {_currentEditingState.ScheduleId}, 错误: {ex.Message}", ex);
-            ValidationInfoBarMessage = $"保存失败: {ex.Message}";
-            IsValidationInfoBarOpen = true;
+            ToastRequested?.Invoke(new ToastMessage("保存失败", ex.Message) { Severity = ToastSeverity.Error, Duration = TimeSpan.FromSeconds(8) });
             return false;
         }
     }
@@ -557,12 +548,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             }
             else
             {
-                ToastRequested?.Invoke(new ToastMessage("请修正验证错误后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
+                ToastRequested?.Invoke(new ToastMessage("保存已取消", "请修正验证错误后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
             }
         }
         else
         {
-            ToastRequested?.Invoke(new ToastMessage("存在验证错误，请修正后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
+            ToastRequested?.Invoke(new ToastMessage("无法保存", "存在验证错误，请修正后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
         }
     }
 

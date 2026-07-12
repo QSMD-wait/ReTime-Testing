@@ -611,17 +611,7 @@
         <!-- Toast 通知容器 -->
         <controls:ToastOverlay x:Name="ToastOverlayControl"
                                Grid.Column="0" Grid.ColumnSpan="2"
-                               Margin="0,0,16,60"/>
-
-        <!-- 保存时验证失败的 InfoBar -->
-        <ui:InfoBar Grid.Column="0" Grid.ColumnSpan="2"
-                    Title="验证失败"
-                    IsOpen="{Binding IsValidationInfoBarOpen}"
-                    Message="{Binding ValidationInfoBarMessage}"
-                    Severity="Error"
-                    VerticalAlignment="Bottom"
-                    HorizontalAlignment="Left"
-                    Margin="16,0,0,16"/>
+                               Margin="0,0,16,16"/>
     </Grid>
 
 </Window>
