@@ -51,7 +51,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     public ObservableCollection<ScheduleListItem> Schedules { get; } = new();
     public ObservableCollection<ScheduleItemListItem> ScheduleItems => _currentEditingState?.Items ?? _emptyItems;
 
-    private static readonly ObservableCollection<ScheduleItemListItem> _emptyItems = new();
+    private readonly ObservableCollection<ScheduleItemListItem> _emptyItems = new();
 
     public bool IsSegmentSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.Segment;
     public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.TimePoint;
@@ -751,6 +751,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         UpdateHasUnpersistedChanges();
         UpdateUndoRedoState();
         ValidateAllItems();
+        OnPropertyChanged(nameof(ScheduleItems));
         OnPropertyChanged(nameof(HasScheduleItems));
 
         if (_currentEditingState != null && !_currentEditingState.HasValidationErrors)

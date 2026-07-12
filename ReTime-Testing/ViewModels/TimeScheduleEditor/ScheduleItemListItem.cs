@@ -62,7 +62,8 @@ public partial class ScheduleItemListItem : ObservableObject
     [ObservableProperty]
     private bool _hasCustomStyle = false;
 
-    public bool HasBackgroundColor { get; set; }
+    [ObservableProperty]
+    private bool _hasBackgroundColor;
 
     public Color PreviewColor => Color.FromArgb((byte)(Opacity * 2.55), ForegroundR, ForegroundG, ForegroundB);
 
@@ -126,7 +127,16 @@ public partial class ScheduleItemListItem : ObservableObject
         ItemChanged?.Invoke(this);
     }
 
-    partial void OnHasCustomStyleChanged(bool value) => ItemChanged?.Invoke(this);
+    partial void OnHasCustomStyleChanged(bool value)
+    {
+        if (!value)
+        {
+            HasBackgroundColor = false;
+        }
+        ItemChanged?.Invoke(this);
+    }
+
+    partial void OnHasBackgroundColorChanged(bool value) => ItemChanged?.Invoke(this);
 
     partial void OnStartTimeErrorChanged(string value)
     {
