@@ -133,4 +133,29 @@ namespace ReTime_Testing.Helpers
             return value != null;
         }
     }
+
+    /// <summary>
+    /// 时间字符串 (HH:mm:ss) 与 DateTime 之间的双向转换器
+    /// 用于 TimePicker 控件绑定
+    /// </summary>
+    public class TimeStringToDateTimeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string timeStr && TimeSpan.TryParse(timeStr, out var timeSpan))
+            {
+                return DateTime.Today.Add(timeSpan);
+            }
+            return DateTime.Today.AddHours(9);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is DateTime dt)
+            {
+                return dt.ToString("HH:mm:ss");
+            }
+            return "00:00:00";
+        }
+    }
 }
