@@ -1,0 +1,103 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:ReTime_Testing.Controls"
+    xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+    xmlns:models="clr-namespace:ReTime_Testing.Models.UI">
+
+    <local:ToastSeverityToInfoBarSeverityConverter x:Key="SeverityConverter"/>
+    <local:ToastSeverityToBackgroundConverter x:Key="BackgroundConverter"/>
+
+    <Style TargetType="local:ToastOverlay">
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ToastOverlay">
+                    <ScrollViewer VerticalAlignment="Bottom"
+                                  HorizontalAlignment="Right"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  MaxWidth="460"
+                                  Margin="4"
+                                  Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
+                        <ItemsControl x:Name="PART_ItemsControl"
+                                      ItemsSource="{Binding Messages, RelativeSource={RelativeSource TemplatedParent}}"
+                                      HorizontalAlignment="Right"
+                                      ClipToBounds="True">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:ToastMessage}">
+                                    <Border x:Name="Root"
+                                            Margin="0,0,0,4"
+                                            Opacity="0"
+                                            RenderTransformOrigin="1,1">
+                                        <Border.RenderTransform>
+                                            <TranslateTransform Y="-25"/>
+                                        </Border.RenderTransform>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <EventTrigger RoutedEvent="Loaded">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                 From="0" To="1"
+                                                                                 Duration="0:0:0.3">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(TranslateTransform.Y)"
+                                                                                 From="-25" To="0"
+                                                                                 Duration="0:0:0.3">
+                                                                    <DoubleAnimation.EasingFunction>
+                                                                        <CubicEase EasingMode="EaseOut"/>
+                                                                    </DoubleAnimation.EasingFunction>
+                                                                </DoubleAnimation>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                    <DataTrigger Binding="{Binding IsOpen}" Value="False">
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     To="0"
+                                                                                     Duration="0:0:0.3">
+                                                                        <DoubleAnimation.EasingFunction>
+                                                                            <CubicEase EasingMode="EaseIn"/>
+                                                                        </DoubleAnimation.EasingFunction>
+                                                                    </DoubleAnimation>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <ui:InfoBar Title="{Binding Title}"
+                                                    Message="{Binding Message}"
+                                                    Severity="{Binding Severity, Converter={StaticResource SeverityConverter}}"
+                                                    Background="{Binding Severity, Converter={StaticResource BackgroundConverter}}"
+                                                    IsClosable="{Binding CanUserClose}"
+                                                    IsOpen="True"
+                                                    IsEnabled="{Binding IsOpen}"
+                                                    ActionButton="{Binding ActionContent}"
+                                                    local:InfoBarCloseBehavior.CloseCommand="{Binding CloseToastCommand, RelativeSource={RelativeSource AncestorType=local:ToastOverlay}}"
+                                                    HorizontalAlignment="Right"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

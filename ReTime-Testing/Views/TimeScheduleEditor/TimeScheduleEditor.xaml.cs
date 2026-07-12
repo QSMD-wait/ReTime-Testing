@@ -10,18 +10,16 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using iNKORE.UI.WPF.Modern.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using ReTime_Testing.Services;
+using ReTime_Testing.Controls;
+using ReTime_Testing.Helpers;
+using ReTime_Testing.Models.UI;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 namespace ReTime_Testing.Views.TimeScheduleEditor
 {
-    /// <summary>
-    /// TimeScheduleEditor.xaml 的交互逻辑
-    /// </summary>
     public partial class TimeScheduleEditor : Window
     {
         private readonly TimeScheduleEditorViewModel _viewModel;
-        private readonly IToastService _toastService;
         private bool _isWindowClosing = false;
         private ContentDialog? _activeDialog = null;
 
@@ -33,12 +31,13 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
 
             _viewModel = services.GetRequiredService<TimeScheduleEditorViewModel>();
-            _toastService = services.GetRequiredService<IToastService>();
+
+            ToastOverlayControl.AttachToHost(this);
 
             this.DataContext = _viewModel;
 
             _viewModel.ForceSaveConfirmRequested += OnForceSaveConfirmRequested;
-            _toastService.ToastRequested += OnToastRequested;
+            _viewModel.ToastRequested += OnToastRequested;
 
             this.Closing += OnWindowClosing;
         }
@@ -90,38 +89,11 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             return result == ContentDialogResult.Primary;
         }
 
-        private void OnToastRequested(string message, ToastType type, int durationMs)
+        private void OnToastRequested(ToastMessage message)
         {
             Dispatcher.BeginInvoke(() =>
             {
-                var severity = type switch
-                {
-                    ToastType.Success => InfoBarSeverity.Success,
-                    ToastType.Warning => InfoBarSeverity.Warning,
-                    ToastType.Error => InfoBarSeverity.Error,
-                    _ => InfoBarSeverity.Informational
-                };
-
-                var toast = new InfoBar
-                {
-                    Message = message,
-                    Severity = severity,
-                    IsOpen = true,
-                    IsClosable = true,
-                    Margin = new Thickness(0, 0, 0, 4),
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                };
-
-                ToastContainer.Children.Add(toast);
-
-                var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(durationMs) };
-                timer.Tick += (s, e) =>
-                {
-                    timer.Stop();
-                    toast.IsOpen = false;
-                    ToastContainer.Children.Remove(toast);
-                };
-                timer.Start();
+                this.ShowToast(message);
             });
         }
 

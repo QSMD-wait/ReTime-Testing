@@ -7,22 +7,17 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ReTime_Testing.Models;
+using ReTime_Testing.Models.UI;
 using ReTime_Testing.Services;
 
 namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 
-/// <summary>
-/// 时间计划表编辑器 ViewModel
-/// 核心设计：每个计划表独立维护编辑状态（ScheduleEditingState），切换时驻留内存
-/// 自动保存：合法时 Debounce 自动保存，非法时终止自动保存
-/// </summary>
 public partial class TimeScheduleEditorViewModel : ObservableObject
 {
     private readonly ITimeScheduleManager _scheduleManager;
     private readonly ISettingsService _settingsService;
     private readonly ITimeService? _timeService;
     private readonly IScheduleManager? _scheduleRunManager;
-    private readonly IToastService _toastService;
 
     private readonly Dictionary<string, ScheduleEditingState> _editingStates = new();
     private ScheduleEditingState? _currentEditingState;
@@ -34,6 +29,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private readonly DispatcherTimer _autoSaveTimer;
 
     public event Func<string, List<string>, Task<bool>>? ForceSaveConfirmRequested;
+    public event Action<ToastMessage>? ToastRequested;
 
     [ObservableProperty]
     private bool _hasUnpersistedChanges = false;
@@ -72,13 +68,11 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     public TimeScheduleEditorViewModel(
         ITimeScheduleManager scheduleManager,
         ISettingsService settingsService,
-        IToastService toastService,
         ITimeService? timeService = null,
         IScheduleManager? scheduleRunManager = null)
     {
         _scheduleManager = scheduleManager;
         _settingsService = settingsService;
-        _toastService = toastService;
         _timeService = timeService;
         _scheduleRunManager = scheduleRunManager;
 
@@ -220,7 +214,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: false))
         {
-            _toastService.Show("已自动保存", ToastType.Success, 2000);
+            ToastRequested?.Invoke(new ToastMessage("已自动保存") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
         }
     }
 
@@ -398,7 +392,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: false))
         {
-            _toastService.Show("保存成功", ToastType.Success, 2000);
+            ToastRequested?.Invoke(new ToastMessage("保存成功") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
         }
     }
 
@@ -409,7 +403,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (PerformSave(force: true))
         {
-            _toastService.Show("已强制保存", ToastType.Warning, 3000);
+            ToastRequested?.Invoke(new ToastMessage("已强制保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
         }
     }
 
@@ -563,12 +557,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             }
             else
             {
-                _toastService.Show("请修正验证错误后再保存", ToastType.Warning, 3000);
+                ToastRequested?.Invoke(new ToastMessage("请修正验证错误后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
             }
         }
         else
         {
-            _toastService.Show("存在验证错误，请修正后再保存", ToastType.Warning, 3000);
+            ToastRequested?.Invoke(new ToastMessage("存在验证错误，请修正后再保存") { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
         }
     }
 

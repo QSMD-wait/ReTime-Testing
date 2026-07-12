@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:controls="clr-namespace:ReTime_Testing.Controls"
         xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
         Title="时间计划表编辑器"
@@ -608,12 +609,9 @@
         </ui:CommandBar>
 
         <!-- Toast 通知容器 -->
-        <StackPanel x:Name="ToastContainer"
-                    Grid.Column="0" Grid.ColumnSpan="2"
-                    VerticalAlignment="Bottom"
-                    HorizontalAlignment="Right"
-                    Margin="0,0,16,60"
-                    Orientation="Vertical"/>
+        <controls:ToastOverlay x:Name="ToastOverlayControl"
+                               Grid.Column="0" Grid.ColumnSpan="2"
+                               Margin="0,0,16,60"/>
 
         <!-- 保存时验证失败的 InfoBar -->
         <ui:InfoBar Grid.Column="0" Grid.ColumnSpan="2"

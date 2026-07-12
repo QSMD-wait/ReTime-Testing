@@ -1,6 +1,7 @@
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using ReTime_Testing.Services;
+using ReTime_Testing.Helpers;
+using ReTime_Testing.Models.UI;
 using ReTime_Testing.ViewModels;
 
 namespace ReTime_Testing.Views.Testing
@@ -18,6 +19,21 @@ namespace ReTime_Testing.Views.Testing
 
                 DataContext = ActivatorUtilities.CreateInstance<TimeTopSettingViewModel>(services);
             }
+
+            ToastOverlayControl.AttachToHost(this);
+
+            if (DataContext is TimeTopSettingViewModel viewModel)
+            {
+                viewModel.ToastRequested += OnToastRequested;
+            }
+        }
+
+        private void OnToastRequested(ToastMessage message)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                this.ShowToast(message);
+            });
         }
 
         protected override void OnClosed(EventArgs e)
@@ -26,6 +42,7 @@ namespace ReTime_Testing.Views.Testing
 
             if (DataContext is TimeTopSettingViewModel viewModel)
             {
+                viewModel.ToastRequested -= OnToastRequested;
                 viewModel.Cleanup();
             }
         }
