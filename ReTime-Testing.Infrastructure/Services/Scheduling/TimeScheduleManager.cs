@@ -364,6 +364,7 @@ namespace ReTime_Testing.Services
                 {
                     Id = s.Id,
                     Name = s.Settings?.Metadata?.Name ?? s.Id,
+                    Description = s.Settings?.Metadata?.Description,
                     CreatedAt = TryParseDateTime(s.Settings?.Metadata?.CreatedAt),
                     UpdatedAt = TryParseDateTime(s.Settings?.Metadata?.UpdatedAt)
                 }).ToList();
@@ -482,6 +483,29 @@ namespace ReTime_Testing.Services
             {
                 Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
                     $"重命名计划表失败: {id}, 错误: {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        public bool UpdateScheduleMetadata(string id, string name, string? description)
+        {
+            try
+            {
+                var schedule = LoadSchedule(id);
+                if (schedule == null)
+                {
+                    return false;
+                }
+
+                schedule.Settings.Metadata.Name = name;
+                schedule.Settings.Metadata.Description = description;
+                SaveSchedule(schedule);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
+                    $"更新计划表元数据失败: {id}, 错误: {ex.Message}", ex);
                 return false;
             }
         }

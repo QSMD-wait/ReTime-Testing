@@ -18,6 +18,11 @@ namespace ReTime_Testing.Models
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
+        /// 计划表描述
+        /// </summary>
+        public string? Description { get; set; }
+
+        /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime? CreatedAt { get; set; }

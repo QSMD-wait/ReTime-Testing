@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Controls;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models.UI;
+using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 namespace ReTime_Testing.Views.TimeScheduleEditor
@@ -38,6 +39,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             _viewModel.ForceSaveConfirmRequested += OnForceSaveConfirmRequested;
             _viewModel.ToastRequested += OnToastRequested;
+            _viewModel.EditScheduleInfoRequested += OnEditScheduleInfoRequested;
 
             this.Closing += OnWindowClosing;
         }
@@ -74,6 +76,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                                 Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C42B1C"))
                             }
                         }
+                    
                     }
                 },
                 PrimaryButtonText = "强制保存",
@@ -318,6 +321,224 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 DefaultButton = ContentDialogButton.Close,
                 IsShadowEnabled = false
             };
+        }
+
+        private async Task<bool> OnEditScheduleInfoRequested(ScheduleListItem schedule)
+        {
+            if (_isWindowClosing) return false;
+
+            var labelBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8B8B8B"));
+
+            string newName = schedule.Name;
+            string? newDescription = schedule.Description;
+            bool nameEdited = false;
+            bool descEdited = false;
+
+            var nameLabel = new TextBlock { Text = "名称", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
+
+            var nameBox = new TextBox
+            {
+                Text = schedule.Name,
+                IsReadOnly = true
+            };
+
+            var nameEditButton = new Button
+            {
+                Content = new TextBlock { Text = "\uE70F", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 11 },
+                Width = 26, Height = 26,
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = "编辑名称",
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                Foreground = labelBrush
+            };
+
+            var nameRow = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+            nameRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            nameRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(nameBox, 0);
+            Grid.SetColumn(nameEditButton, 1);
+            nameRow.Children.Add(nameBox);
+            nameRow.Children.Add(nameEditButton);
+
+            nameEditButton.Click += (s, e) =>
+            {
+                nameBox.IsReadOnly = false;
+                nameBox.Focus();
+                nameBox.SelectAll();
+                nameEditButton.Visibility = Visibility.Collapsed;
+                nameEdited = true;
+            };
+
+            nameBox.LostFocus += (s, e) =>
+            {
+                if (nameBox.IsReadOnly) return;
+                var text = nameBox.Text?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(text))
+                {
+                    newName = text;
+                }
+                else
+                {
+                    nameBox.Text = newName;
+                }
+                nameBox.IsReadOnly = true;
+                nameEditButton.Visibility = Visibility.Visible;
+            };
+
+            var descLabel = new TextBlock { Text = "描述", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+
+            var descBox = new TextBox
+            {
+                Text = schedule.Description ?? "",
+                IsReadOnly = true,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                MaxHeight = 100,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+
+            var descEditButton = new Button
+            {
+                Content = new TextBlock { Text = "\uE70F", FontFamily = new FontFamily("Segoe Fluent Icons"), FontSize = 11 },
+                Width = 26, Height = 26,
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = "编辑描述",
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                Foreground = labelBrush
+            };
+
+            var descRow = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+            descRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            descRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(descBox, 0);
+            Grid.SetColumn(descEditButton, 1);
+            descRow.Children.Add(descBox);
+            descRow.Children.Add(descEditButton);
+
+            descEditButton.Click += (s, e) =>
+            {
+                descBox.IsReadOnly = false;
+                descBox.Focus();
+                descEditButton.Visibility = Visibility.Collapsed;
+                descEdited = true;
+            };
+
+            descBox.LostFocus += (s, e) =>
+            {
+                if (descBox.IsReadOnly) return;
+                newDescription = string.IsNullOrWhiteSpace(descBox.Text) ? null : descBox.Text.Trim();
+                descBox.IsReadOnly = true;
+                descEditButton.Visibility = Visibility.Visible;
+            };
+
+            var idLabel = new TextBlock { Text = "ID", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 16, 0, 4) };
+
+            var idBox = new TextBox
+            {
+                Text = schedule.Id,
+                IsReadOnly = true,
+                IsEnabled = false
+            };
+
+            var panel = new StackPanel();
+            panel.Children.Add(nameLabel);
+            panel.Children.Add(nameRow);
+            panel.Children.Add(descLabel);
+            panel.Children.Add(descRow);
+            panel.Children.Add(idLabel);
+            panel.Children.Add(idBox);
+
+            var dialog = new ContentDialog
+            {
+                Title = "计划表信息",
+                Content = new ScrollViewer
+                {
+                    Content = panel,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    MaxHeight = 400
+                },
+                PrimaryButtonText = "保存",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                IsShadowEnabled = false
+            };
+
+            _activeDialog = dialog;
+            var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            if (_isWindowClosing) return false;
+
+            if (result == ContentDialogResult.Primary)
+            {
+                if (!nameBox.IsReadOnly)
+                {
+                    var text = nameBox.Text?.Trim() ?? "";
+                    if (!string.IsNullOrEmpty(text)) newName = text;
+                }
+
+                if (!descBox.IsReadOnly)
+                {
+                    newDescription = string.IsNullOrWhiteSpace(descBox.Text) ? null : descBox.Text.Trim();
+                }
+
+                if (string.IsNullOrEmpty(newName))
+                {
+                    var warnDialog = new ContentDialog
+                    {
+                        Title = "保存失败",
+                        Content = "计划表名称不能为空",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+                    _activeDialog = warnDialog;
+                    await warnDialog.ShowAsync();
+                    _activeDialog = null;
+                    return false;
+                }
+
+                if (!nameEdited && !descEdited && newName == schedule.Name && newDescription == schedule.Description)
+                {
+                    return false;
+                }
+
+                var scheduleManager = ((App)Application.Current).Services.GetRequiredService<ITimeScheduleManager>();
+                var success = scheduleManager.UpdateScheduleMetadata(schedule.Id, newName, newDescription);
+
+                if (success)
+                {
+                    schedule.Name = newName;
+                    schedule.Description = newDescription;
+                    this.ShowToast(new ToastMessage("保存成功", $"计划表 \"{newName}\" 信息已更新")
+                    {
+                        Severity = ToastSeverity.Success,
+                        Duration = TimeSpan.FromSeconds(2)
+                    });
+                }
+                else
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "保存失败",
+                        Content = "更新计划表信息时发生错误，请重试",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+                    _activeDialog = errorDialog;
+                    await errorDialog.ShowAsync();
+                    _activeDialog = null;
+                }
+
+                return success;
+            }
+
+            return false;
         }
     }
 }

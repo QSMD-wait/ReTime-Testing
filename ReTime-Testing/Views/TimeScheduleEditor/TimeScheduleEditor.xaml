@@ -214,7 +214,7 @@
                                     </ui:AppBarButton.Icon>
                                 </ui:AppBarButton>
                                 <ui:AppBarSeparator/>
-                                <ui:AppBarButton Label="信息" ToolTip="编辑计划表基本信息（暂未开放）" Command="{Binding EditScheduleInfoCommand}" IsEnabled="False">
+                                <ui:AppBarButton Label="信息" ToolTip="编辑计划表基本信息" Command="{Binding EditScheduleInfoCommand}">
                                     <ui:AppBarButton.Icon>
                                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
                                     </ui:AppBarButton.Icon>

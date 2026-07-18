@@ -14,6 +14,9 @@ public partial class ScheduleListItem : ObservableObject
     private string _name = "";
 
     [ObservableProperty]
+    private string? _description;
+
+    [ObservableProperty]
     private bool _isActivated;
 
     public DateTime? CreatedAt { get; set; }

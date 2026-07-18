@@ -30,6 +30,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     public event Func<string, List<string>, Task<bool>>? ForceSaveConfirmRequested;
     public event Action<ToastMessage>? ToastRequested;
+    public event Func<ScheduleListItem, Task<bool>>? EditScheduleInfoRequested;
 
     [ObservableProperty]
     private bool _hasUnpersistedChanges = false;
@@ -283,8 +284,27 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditScheduleInfo()
+    private async Task EditScheduleInfoAsync()
     {
+        if (SelectedSchedule == null) return;
+
+        if (EditScheduleInfoRequested != null)
+            {
+                var scheduleId = SelectedSchedule.Id;
+                var updated = await EditScheduleInfoRequested(SelectedSchedule);
+                if (updated)
+                {
+                    RefreshScheduleList();
+                    var restored = Schedules.FirstOrDefault(s => s.Id == scheduleId);
+                    if (restored != null)
+                    {
+                        _isSwitchingSchedule = true;
+                        SelectedSchedule = restored;
+                        _isSwitchingSchedule = false;
+                        LoadScheduleForSelection(restored);
+                    }
+                }
+            }
     }
 
     #endregion
@@ -578,6 +598,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             {
                 Id = info.Id,
                 Name = info.Name,
+                Description = info.Description,
                 IsActivated = info.Id == currentSelectedId,
                 CreatedAt = info.CreatedAt,
                 UpdatedAt = info.UpdatedAt
@@ -813,6 +834,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             {
                 Id = s.Id,
                 Name = s.Name,
+                Description = s.Description,
                 IsActivated = s.Id == currentSelectedId,
                 CreatedAt = s.CreatedAt,
                 UpdatedAt = s.UpdatedAt

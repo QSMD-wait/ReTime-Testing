@@ -69,6 +69,11 @@ public interface ITimeScheduleManager
     bool RenameSchedule(string id, string newName);
 
     /// <summary>
+    /// 更新计划表元数据（名称和描述）
+    /// </summary>
+    bool UpdateScheduleMetadata(string id, string name, string? description);
+
+    /// <summary>
     /// 检查计划表是否存在
     /// </summary>
     bool ScheduleExists(string id);
