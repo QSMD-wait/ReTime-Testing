@@ -385,58 +385,42 @@
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                                               Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NotNullToVisibilityConverter}}"
                                               Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
-                                    <StackPanel Margin="16,12">
+                                    <StackPanel Margin="20,16">
 
                                         <!-- 面板头部：动态类型标题 -->
-                                        <Grid Margin="0,0,0,12">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4"
+                                                    Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,8,0"
+                                                    Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
+                                                    VerticalAlignment="Center"/>
+                                            <TextBlock Text="编辑时间段" FontSize="16" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4"
+                                                    Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,8,0"
+                                                    Background="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCautionBrushKey}}"
+                                                    VerticalAlignment="Center"/>
+                                            <TextBlock Text="编辑时间点" FontSize="16" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                        </StackPanel>
 
-                                            <!-- 时间段头部 -->
-                                            <StackPanel Orientation="Horizontal" Grid.Column="0"
-                                                        Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,8,0"
-                                                        Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
-                                                        VerticalAlignment="Center"/>
-                                                <TextBlock Text="编辑时间段" FontSize="16" FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                            </StackPanel>
+                                        <Border Height="1" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}" Margin="0,8,0,16"/>
 
-                                            <!-- 时间点头部 -->
-                                            <StackPanel Orientation="Horizontal" Grid.Column="0"
-                                                        Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,8,0"
-                                                        Background="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCautionBrushKey}}"
-                                                        VerticalAlignment="Center"/>
-                                                <TextBlock Text="编辑时间点" FontSize="16" FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <!-- 分隔线 -->
-                                        <Border Height="1" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}" Margin="0,0,0,12"/>
-
-                                        <!-- 分组：基本信息 -->
-                                        <TextBlock Text="基本信息" FontSize="12" FontWeight="SemiBold"
-                                                   Margin="0,0,0,8"
-                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-
-                                        <TextBlock Text="名称" FontSize="12" Margin="0,0,0,4"
+                                        <!-- 名称 -->
+                                        <TextBlock Text="名称" FontSize="12" Margin="0,0,0,6"
                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                         <TextBox Text="{Binding SelectedScheduleItem.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                                        <!-- 分组：时间设置 -->
-                                        <TextBlock Text="时间设置" FontSize="12" FontWeight="SemiBold"
-                                                   Margin="0,16,0,8"
+                                        <Border Height="1" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}" Margin="0,16,0,12"/>
+                                        <TextBlock Text="时间设置" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"
                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
 
                                         <!-- 时间段：开始/结束时间上下排列 -->
                                         <StackPanel Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <TextBlock Text="开始时间" FontSize="12" Margin="0,0,0,4"
+                                            <TextBlock Text="开始时间" FontSize="12" Margin="0,0,0,6"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                             <ui:TimePicker SelectedDateTime="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, Converter={StaticResource TimeStringToDateTimeConverter}}"
                                                            PickerVisibility="All" IsClockVisible="False"
@@ -447,11 +431,10 @@
                                                     CornerRadius="4" Padding="8,4"
                                                     Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
-                                                           FontSize="11" Foreground="#C42B1C"
-                                                           TextWrapping="Wrap"/>
+                                                           FontSize="11" Foreground="#C42B1C" TextWrapping="Wrap"/>
                                             </Border>
 
-                                            <TextBlock Text="结束时间" FontSize="12" Margin="0,8,0,4"
+                                            <TextBlock Text="结束时间" FontSize="12" Margin="0,12,0,6"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                             <ui:TimePicker SelectedDateTime="{Binding SelectedScheduleItem.EndTime, Mode=TwoWay, Converter={StaticResource TimeStringToDateTimeConverter}}"
                                                            PickerVisibility="All" IsClockVisible="False"
@@ -462,24 +445,25 @@
                                                     CornerRadius="4" Padding="8,4"
                                                     Visibility="{Binding SelectedScheduleItem.HasEndTimeError, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <TextBlock Text="{Binding SelectedScheduleItem.EndTimeError}"
-                                                           FontSize="11" Foreground="#C42B1C"
-                                                           TextWrapping="Wrap"/>
+                                                           FontSize="11" Foreground="#C42B1C" TextWrapping="Wrap"/>
                                             </Border>
 
-                                            <!-- 持续时间 -->
-                                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                                <TextBlock Text="持续时间: " FontSize="11"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
-                                                           VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding SelectedScheduleItem.Duration, Mode=OneWay}" FontSize="11" FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                                           VerticalAlignment="Center"/>
-                                            </StackPanel>
+                                            <Border Margin="0,8,0,0" Padding="8,6" CornerRadius="4"
+                                                    Background="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="持续时间" FontSize="11"
+                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                    <TextBlock Text="{Binding SelectedScheduleItem.Duration, Mode=OneWay}" FontSize="11" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
                                         </StackPanel>
 
                                         <!-- 时间点：时间+目标状态 -->
                                         <StackPanel Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <TextBlock Text="时间" FontSize="12" Margin="0,0,0,4"
+                                            <TextBlock Text="时间" FontSize="12" Margin="0,0,0,6"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                             <ui:TimePicker SelectedDateTime="{Binding SelectedScheduleItem.StartTime, Mode=TwoWay, Converter={StaticResource TimeStringToDateTimeConverter}}"
                                                            PickerVisibility="All" IsClockVisible="False"
@@ -490,120 +474,121 @@
                                                     CornerRadius="4" Padding="8,4"
                                                     Visibility="{Binding SelectedScheduleItem.HasStartTimeError, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <TextBlock Text="{Binding SelectedScheduleItem.StartTimeError}"
-                                                           FontSize="11" Foreground="#C42B1C"
-                                                           TextWrapping="Wrap"/>
+                                                           FontSize="11" Foreground="#C42B1C" TextWrapping="Wrap"/>
                                             </Border>
 
-                                            <TextBlock Text="目标状态" FontSize="12" Margin="0,12,0,4"
+                                            <TextBlock Text="目标状态" FontSize="12" Margin="0,12,0,6"
                                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                             <ComboBox ItemsSource="{Binding ToStateOptions}"
                                                       SelectedItem="{Binding SelectedScheduleItem.ToState, Mode=TwoWay}"
                                                       HorizontalAlignment="Stretch"/>
                                         </StackPanel>
 
-                                        <!-- 分组：样式 -->
-                                        <TextBlock Text="样式" FontSize="12" FontWeight="SemiBold"
-                                                   Margin="0,16,0,8"
+                                        <Border Height="1" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}" Margin="0,16,0,12"/>
+                                        <TextBlock Text="样式" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"
                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
 
-                                        <ui:ToggleSwitch IsOn="{Binding SelectedScheduleItem.HasCustomStyle, Mode=TwoWay}"
-                                                         OnContent="自定义样式" OffContent="默认样式"
-                                                         Margin="0,0,0,8"/>
+                                        <Expander Header="自定义样式" IsExpanded="{Binding SelectedScheduleItem.HasCustomStyle, Mode=OneWay}"
+                                                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                            <StackPanel Margin="0,8,0,0">
+                                                <ui:ToggleSwitch IsOn="{Binding SelectedScheduleItem.HasCustomStyle, Mode=TwoWay}"
+                                                                 OnContent="启用自定义样式" OffContent="使用默认样式"
+                                                                 Margin="0,0,0,12"/>
 
-                                        <StackPanel IsEnabled="{Binding SelectedScheduleItem.HasCustomStyle}"
-                                                    Margin="0,0,0,0">
+                                                <StackPanel IsEnabled="{Binding SelectedScheduleItem.HasCustomStyle}">
+                                                    <!-- 颜色预览 + Hex输入 -->
+                                                    <Grid Margin="0,0,0,10">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Width="40" Height="28" CornerRadius="4" Margin="0,0,8,0"
+                                                                BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"
+                                                                BorderThickness="1" VerticalAlignment="Center">
+                                                            <Border.Background>
+                                                                <SolidColorBrush Color="{Binding SelectedScheduleItem.PreviewColor}"/>
+                                                            </Border.Background>
+                                                        </Border>
+                                                        <TextBox Grid.Column="1"
+                                                                 Text="{Binding SelectedScheduleItem.HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 VerticalAlignment="Center"/>
+                                                    </Grid>
 
-                                            <!-- 颜色预览 + Hex输入 -->
-                                            <Grid Margin="0,0,0,8">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Border Width="40" Height="28" CornerRadius="4" Margin="0,0,8,0"
-                                                        BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"
-                                                        BorderThickness="1" VerticalAlignment="Center">
-                                                    <Border.Background>
-                                                        <SolidColorBrush Color="{Binding SelectedScheduleItem.PreviewColor}"/>
-                                                    </Border.Background>
-                                                </Border>
-                                                <TextBox Grid.Column="1"
-                                                         Text="{Binding SelectedScheduleItem.HexColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                         VerticalAlignment="Center"/>
-                                            </Grid>
+                                                    <!-- R -->
+                                                    <Grid Margin="0,0,0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="16"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="36"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="R" FontSize="12" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                                        <Slider Grid.Column="1" Margin="4,0"
+                                                                Minimum="0" Maximum="255"
+                                                                Value="{Binding SelectedScheduleItem.ForegroundR, Mode=TwoWay}"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding SelectedScheduleItem.ForegroundR, StringFormat={}{0:0}}"
+                                                                   FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                    </Grid>
 
-                                            <!-- R -->
-                                            <Grid Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="36"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="R" FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                                <Slider Grid.Column="1" Margin="4,0"
-                                                        Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundR, Mode=TwoWay}"/>
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding SelectedScheduleItem.ForegroundR, StringFormat={}{0:0}}"
-                                                           FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                            </Grid>
+                                                    <!-- G -->
+                                                    <Grid Margin="0,0,0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="16"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="36"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="G" FontSize="12" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                                        <Slider Grid.Column="1" Margin="4,0"
+                                                                Minimum="0" Maximum="255"
+                                                                Value="{Binding SelectedScheduleItem.ForegroundG, Mode=TwoWay}"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding SelectedScheduleItem.ForegroundG, StringFormat={}{0:0}}"
+                                                                   FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                    </Grid>
 
-                                            <!-- G -->
-                                            <Grid Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="36"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="G" FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                                <Slider Grid.Column="1" Margin="4,0"
-                                                        Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundG, Mode=TwoWay}"/>
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding SelectedScheduleItem.ForegroundG, StringFormat={}{0:0}}"
-                                                           FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                            </Grid>
+                                                    <!-- B -->
+                                                    <Grid Margin="0,0,0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="16"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="36"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="B" FontSize="12" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                                        <Slider Grid.Column="1" Margin="4,0"
+                                                                Minimum="0" Maximum="255"
+                                                                Value="{Binding SelectedScheduleItem.ForegroundB, Mode=TwoWay}"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding SelectedScheduleItem.ForegroundB, StringFormat={}{0:0}}"
+                                                                   FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                    </Grid>
 
-                                            <!-- B -->
-                                            <Grid Margin="0,0,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="36"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="B" FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                                <Slider Grid.Column="1" Margin="4,0"
-                                                        Minimum="0" Maximum="255"
-                                                        Value="{Binding SelectedScheduleItem.ForegroundB, Mode=TwoWay}"/>
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding SelectedScheduleItem.ForegroundB, StringFormat={}{0:0}}"
-                                                           FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                            </Grid>
-
-                                            <!-- 透明度 -->
-                                            <Grid Margin="0,8,0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="16"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="36"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="A" FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                                                           ToolTip="透明度"/>
-                                                <Slider Grid.Column="1" Margin="4,0"
-                                                        Minimum="0" Maximum="100"
-                                                        Value="{Binding SelectedScheduleItem.Opacity, Mode=TwoWay}"/>
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding SelectedScheduleItem.Opacity, StringFormat={}{0:0}%}"
-                                                           FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                            </Grid>
-                                        </StackPanel>
+                                                    <!-- 透明度 -->
+                                                    <Grid Margin="0,4,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="16"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="36"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="A" FontSize="12" VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
+                                                                   ToolTip="透明度"/>
+                                                        <Slider Grid.Column="1" Margin="4,0"
+                                                                Minimum="0" Maximum="100"
+                                                                Value="{Binding SelectedScheduleItem.Opacity, Mode=TwoWay}"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding SelectedScheduleItem.Opacity, StringFormat={}{0:0}%}"
+                                                                   FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Expander>
 
                                     </StackPanel>
                                 </ScrollViewer>
