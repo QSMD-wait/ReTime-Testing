@@ -506,55 +506,32 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             if (item.ItemType == ScheduleItemType.TimePoint)
             {
                 var existingIndex = schedule.TimePoints.FindIndex(t => t.Id == item.Id);
-                var convertedPoint = ScheduleItemConverter.ToTimePoint(item);
 
                 if (existingIndex >= 0)
                 {
-                    schedule.TimePoints[existingIndex] = convertedPoint;
+                    ScheduleItemConverter.ApplyListItemToTimePoint(item, schedule.TimePoints[existingIndex]);
                 }
                 else
                 {
-                    schedule.TimePoints.Add(convertedPoint);
+                    schedule.TimePoints.Add(ScheduleItemConverter.ToTimePoint(item));
                 }
             }
             else
             {
                 var existingIndex = schedule.Schedules.FindIndex(s => s.Id == item.Id);
-                var convertedSegment = ScheduleItemConverter.ToScheduleItem(item);
-
-                ApplySegmentStyles(convertedSegment, item);
 
                 if (existingIndex >= 0)
                 {
-                    schedule.Schedules[existingIndex] = convertedSegment;
+                    ScheduleItemConverter.ApplyListItemToSegment(item, schedule.Schedules[existingIndex]);
                 }
                 else
                 {
-                    schedule.Schedules.Add(convertedSegment);
+                    schedule.Schedules.Add(ScheduleItemConverter.ToScheduleItem(item));
                 }
             }
         }
 
         return schedule;
-    }
-
-    private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
-    {
-        segment.Styles ??= new StyleOverridesData();
-
-        if (item.HasCustomStyle)
-        {
-            segment.Styles.Enabled = true;
-            segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
-            segment.Styles.BackgroundColor = item.HasBackgroundColor
-                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
-                : null;
-            segment.Styles.Opacity = item.Opacity / 100.0;
-        }
-        else
-        {
-            segment.Styles.Enabled = false;
-        }
     }
 
     private async Task ShowForceSaveDialogAsync(List<string> errors)

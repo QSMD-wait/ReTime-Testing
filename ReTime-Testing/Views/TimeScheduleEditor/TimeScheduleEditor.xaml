@@ -461,6 +461,32 @@
                                             </Border>
                                         </StackPanel>
 
+                                        <!-- 行为配置（仅时间段） -->
+                                        <StackPanel Visibility="{Binding IsSegmentSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <Border Height="1" Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}" Margin="0,16,0,12"/>
+                                            <TextBlock Text="行为" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,8"
+                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+
+                                            <Expander Header="行为配置" IsExpanded="{Binding SelectedScheduleItem.HasBehavior, Mode=OneWay}"
+                                                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                                <StackPanel Margin="0,8,0,0">
+                                                    <ui:ToggleSwitch IsOn="{Binding SelectedScheduleItem.HasBehavior, Mode=TwoWay}"
+                                                                     OnContent="自定义行为" OffContent="默认行为"
+                                                                     Margin="0,0,0,12"/>
+
+                                                    <StackPanel IsEnabled="{Binding SelectedScheduleItem.HasBehavior}">
+                                                        <TextBlock Text="轮询间隔 (ms)" FontSize="12" Margin="0,0,0,6"
+                                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                                        <TextBox Text="{Binding SelectedScheduleItem.PollingIntervalMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 HorizontalAlignment="Stretch" Margin="0,0,0,12"/>
+
+                                                        <ui:ToggleSwitch IsOn="{Binding SelectedScheduleItem.ReverseProgress, Mode=TwoWay}"
+                                                                         OnContent="倒计时模式" OffContent="正计时模式"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Expander>
+                                        </StackPanel>
+
                                         <!-- 时间点：时间+目标状态 -->
                                         <StackPanel Visibility="{Binding IsTimePointSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <TextBlock Text="时间" FontSize="12" Margin="0,0,0,6"

@@ -61,6 +61,16 @@ public static class ScheduleItemConverter
             result.HasCustomStyle = false;
         }
 
+        // 加载行为配置
+        if (item.Behavior != null && item.Behavior.HasAnyOverride)
+        {
+            result.HasBehavior = true;
+            if (item.Behavior.PollingIntervalMs.HasValue)
+                result.PollingIntervalMs = item.Behavior.PollingIntervalMs.Value;
+            if (item.Behavior.ReverseProgress.HasValue)
+                result.ReverseProgress = item.Behavior.ReverseProgress.Value;
+        }
+
         return result;
     }
 
@@ -178,21 +188,26 @@ public static class ScheduleItemConverter
     }
 
     /// <summary>
-    /// 将列表项转换回时间段实体
+    /// 将列表项转换回时间段实体（仅用于新建项）
     /// </summary>
     public static TimeScheduleItem ToScheduleItem(ScheduleItemListItem item)
     {
-        return new TimeScheduleItem
+        var result = new TimeScheduleItem
         {
             Id = item.Id,
             Name = item.Name,
             StartTime = item.StartTime,
             EndTime = item.EndTime
         };
+
+        ApplySegmentStyles(result, item);
+        ApplySegmentBehavior(result, item);
+
+        return result;
     }
 
     /// <summary>
-    /// 将列表项转换回时间点实体
+    /// 将列表项转换回时间点实体（仅用于新建项）
     /// </summary>
     public static CustomTimePoint ToTimePoint(ScheduleItemListItem item)
     {
@@ -221,5 +236,85 @@ public static class ScheduleItemConverter
         }
 
         return tp;
+    }
+
+    /// <summary>
+    /// 增量更新已有时间段实体（只修改编辑器管理的字段，保留其他字段）
+    /// </summary>
+    public static void ApplyListItemToSegment(ScheduleItemListItem item, TimeScheduleItem target)
+    {
+        target.Name = item.Name;
+        target.StartTime = item.StartTime;
+        target.EndTime = item.EndTime;
+
+        ApplySegmentStyles(target, item);
+        ApplySegmentBehavior(target, item);
+    }
+
+    /// <summary>
+    /// 增量更新已有时间点实体（只修改编辑器管理的字段，保留其他字段如 Type、FromState 等）
+    /// </summary>
+    public static void ApplyListItemToTimePoint(ScheduleItemListItem item, CustomTimePoint target)
+    {
+        target.Name = item.Name;
+        target.Time = item.StartTime;
+
+        // 更新 StateChange.ToState
+        target.StateChange ??= new StateChangeData();
+        target.StateChange.ToState = item.ToState;
+
+        // 更新样式
+        if (item.HasCustomStyle)
+        {
+            target.StyleChange = new StyleChangeData
+            {
+                ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
+                BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
+                Opacity = item.Opacity / 100.0
+            };
+        }
+        else
+        {
+            target.StyleChange = null;
+        }
+    }
+
+    /// <summary>
+    /// 应用样式到时间段
+    /// </summary>
+    private static void ApplySegmentStyles(TimeScheduleItem segment, ScheduleItemListItem item)
+    {
+        segment.Styles ??= new StyleOverridesData();
+
+        if (item.HasCustomStyle)
+        {
+            segment.Styles.Enabled = true;
+            segment.Styles.ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}";
+            segment.Styles.BackgroundColor = item.HasBackgroundColor
+                ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}"
+                : null;
+            segment.Styles.Opacity = item.Opacity / 100.0;
+        }
+        else
+        {
+            segment.Styles.Enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// 应用行为配置到时间段
+    /// </summary>
+    private static void ApplySegmentBehavior(TimeScheduleItem segment, ScheduleItemListItem item)
+    {
+        if (item.HasBehavior)
+        {
+            segment.Behavior ??= new ScheduleBehaviorData();
+            segment.Behavior.PollingIntervalMs = item.PollingIntervalMs > 0 ? item.PollingIntervalMs : null;
+            segment.Behavior.ReverseProgress = item.ReverseProgress;
+        }
+        else
+        {
+            segment.Behavior = null;
+        }
     }
 }

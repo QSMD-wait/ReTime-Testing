@@ -65,6 +65,15 @@ public partial class ScheduleItemListItem : ObservableObject
     [ObservableProperty]
     private bool _hasBackgroundColor;
 
+    [ObservableProperty]
+    private bool _hasBehavior;
+
+    [ObservableProperty]
+    private int _pollingIntervalMs;
+
+    [ObservableProperty]
+    private bool _reverseProgress;
+
     public Color PreviewColor => Color.FromArgb((byte)(Opacity * 2.55), ForegroundR, ForegroundG, ForegroundB);
 
     public Color PreviewBackgroundColor => Color.FromArgb((byte)(Opacity * 2.55), BackgroundR, BackgroundG, BackgroundB);
@@ -188,6 +197,12 @@ public partial class ScheduleItemListItem : ObservableObject
     }
 
     partial void OnHasBackgroundColorChanged(bool value) => ItemChanged?.Invoke(this);
+
+    partial void OnHasBehaviorChanged(bool value) => ItemChanged?.Invoke(this);
+
+    partial void OnPollingIntervalMsChanged(int value) => ItemChanged?.Invoke(this);
+
+    partial void OnReverseProgressChanged(bool value) => ItemChanged?.Invoke(this);
 
     partial void OnStartTimeErrorChanged(string value)
     {
