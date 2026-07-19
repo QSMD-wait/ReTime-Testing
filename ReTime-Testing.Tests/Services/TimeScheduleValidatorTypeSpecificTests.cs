@@ -31,7 +31,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = null
                 }
             }
@@ -59,7 +59,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Success
@@ -90,7 +90,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Progress
@@ -121,7 +121,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Loading
@@ -152,7 +152,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Success
@@ -183,7 +183,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = null
                 }
             }
@@ -211,7 +211,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = "#00FF00"
@@ -242,7 +242,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = null,
@@ -275,7 +275,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = "#00FF00"
@@ -306,7 +306,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         BackgroundColor = "#FF0000"
@@ -337,7 +337,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         Opacity = 0.5
@@ -368,7 +368,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "09:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = "#00FF00",
@@ -411,7 +411,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "08:30:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = "#00FF00"
@@ -452,7 +452,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_test",
                     Name = "测试时间点",
                     Time = "08:30:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Success
@@ -483,7 +483,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_state",
                     Name = "状态变更",
                     Time = "09:00:00",
-                    Type = TimePointType.StateChange,
+                    Types = new List<TimePointType> { TimePointType.StateChange },
                     StateChange = new StateChangeData
                     {
                         ToState = ProgressStateType.Success
@@ -494,7 +494,7 @@ public class TimeScheduleValidatorTypeSpecificTests
                     Id = "tp_style",
                     Name = "样式变更",
                     Time = "10:00:00",
-                    Type = TimePointType.StyleChange,
+                    Types = new List<TimePointType> { TimePointType.StyleChange },
                     StyleChange = new StyleChangeData
                     {
                         ForegroundColor = "#00FF00"

@@ -22,7 +22,7 @@ public static class TestDataHelper
         {
             Time = DateTime.Today.AddHours(hour).AddMinutes(minute),
             Name = name,
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = fromState,

@@ -131,7 +131,7 @@ public class ScheduleManagerTests
         {
             Time = DateTime.Today.AddHours(9),
             Name = "工作开始",
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = ProgressStateType.Loading,
@@ -143,7 +143,7 @@ public class ScheduleManagerTests
         {
             Time = DateTime.Today.AddHours(12),
             Name = "午休开始",
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = ProgressStateType.Progress,
@@ -155,7 +155,7 @@ public class ScheduleManagerTests
         {
             Time = DateTime.Today.AddHours(13),
             Name = "下午工作开始",
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = ProgressStateType.Loading,
@@ -167,7 +167,7 @@ public class ScheduleManagerTests
         {
             Time = DateTime.Today.AddHours(18),
             Name = "工作结束",
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = ProgressStateType.Progress,

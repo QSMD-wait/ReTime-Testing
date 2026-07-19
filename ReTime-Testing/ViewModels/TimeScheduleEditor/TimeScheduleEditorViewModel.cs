@@ -345,6 +345,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             Name = "新时间点",
             StartTime = startTime,
             ItemType = ScheduleItemType.TimePoint,
+            HasStateChange = true,
+            HasStyleChange = false,
             ToState = ProgressStateType.Success
         };
 
@@ -698,6 +700,10 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             if (!TryParseTime(tp.StartTime, out var tpTime))
                 continue;
 
+            // 仅包含 StateChange 的时间点不能在时间段内部
+            if (!tp.HasStateChange)
+                continue;
+
             foreach (var seg in segments)
             {
                 if (!TimeFormatValidator.IsValidFormat(seg.StartTime) ||
@@ -724,6 +730,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 _currentEditingState.ValidationErrors.Add($"[{item.Name}] {item.StartTimeError}");
             if (item.HasEndTimeError)
                 _currentEditingState.ValidationErrors.Add($"[{item.Name}] {item.EndTimeError}");
+            if (item.HasTypeError)
+                _currentEditingState.ValidationErrors.Add($"[{item.Name}] 至少需要启用一种类型");
         }
     }
 

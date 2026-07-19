@@ -163,7 +163,7 @@ public class ScheduleManagerStyleChangeTests
         {
             Time = DateTime.Today.AddHours(9),
             Name = "样式变更",
-            Type = TimePointType.StyleChange,
+            Types = new List<TimePointType> { TimePointType.StyleChange },
             StyleChange = new StyleChangeData
             {
                 ForegroundColor = "#00FF00",
@@ -190,7 +190,7 @@ public class ScheduleManagerStyleChangeTests
         {
             Time = DateTime.Today.AddHours(9),
             Name = "状态变更",
-            Type = TimePointType.StateChange,
+            Types = new List<TimePointType> { TimePointType.StateChange },
             StateChange = new StateChangeData
             {
                 FromState = ProgressStateType.Loading,

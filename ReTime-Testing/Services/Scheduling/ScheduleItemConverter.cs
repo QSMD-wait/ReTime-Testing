@@ -88,15 +88,21 @@ public static class ScheduleItemConverter
             ItemType = ScheduleItemType.TimePoint,
         };
 
+        // 读取类型列表
+        bool hasStateChange = point.Types != null && point.Types.Contains(TimePointType.StateChange);
+        bool hasStyleChange = point.Types != null && point.Types.Contains(TimePointType.StyleChange);
+        result.HasStateChange = hasStateChange;
+        result.HasStyleChange = hasStyleChange;
+
         // 尝试从 StateChange 中读取 ToState
-        if (point.StateChange != null && point.StateChange.ToState != default)
+        if (hasStateChange && point.StateChange != null && point.StateChange.ToState != default)
         {
             result.ToState = point.StateChange.ToState;
         }
 
         // 加载样式（从 StyleChange 中读取）
         bool hasStyle = false;
-        if (point.StyleChange != null)
+        if (hasStyleChange && point.StyleChange != null)
         {
             if (!string.IsNullOrEmpty(point.StyleChange.ForegroundColor))
             {
@@ -211,23 +217,29 @@ public static class ScheduleItemConverter
     /// </summary>
     public static CustomTimePoint ToTimePoint(ScheduleItemListItem item)
     {
-        var types = new List<TimePointType> { TimePointType.StateChange };
+        var types = new List<TimePointType>();
+        if (item.HasStateChange) types.Add(TimePointType.StateChange);
+        if (item.HasStyleChange) types.Add(TimePointType.StyleChange);
+        if (types.Count == 0) types.Add(TimePointType.StateChange);
+
         var tp = new CustomTimePoint
         {
             Id = item.Id,
             Name = item.Name,
             Time = item.StartTime,
-            Types = types,
-            StateChange = new StateChangeData
-            {
-                ToState = item.ToState
-            }
+            Types = types
         };
 
-        // 写入样式到 StyleChange（如果设置了自定义样式）
-        if (item.HasCustomStyle)
+        if (item.HasStateChange)
         {
-            types.Add(TimePointType.StyleChange);
+            tp.StateChange = new StateChangeData
+            {
+                ToState = item.ToState
+            };
+        }
+
+        if (item.HasStyleChange && item.HasCustomStyle)
+        {
             tp.StyleChange = new StyleChangeData
             {
                 ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
@@ -253,43 +265,55 @@ public static class ScheduleItemConverter
     }
 
     /// <summary>
-    /// 增量更新已有时间点实体（只修改编辑器管理的字段，保留其他字段如 Types、FromState 等）
+    /// 增量更新已有时间点实体（只修改编辑器管理的字段，保留其他字段如 FromState 等）
     /// </summary>
     public static void ApplyListItemToTimePoint(ScheduleItemListItem item, CustomTimePoint target)
     {
         target.Name = item.Name;
         target.Time = item.StartTime;
 
-        // 更新 StateChange.ToState
-        target.StateChange ??= new StateChangeData();
-        target.StateChange.ToState = item.ToState;
-
-        // 更新样式
-        if (item.HasCustomStyle)
+        // 根据 HasStateChange 更新 Types 和 StateChange
+        if (item.HasStateChange)
         {
-            target.StyleChange = new StyleChangeData
+            if (!target.Types.Contains(TimePointType.StateChange))
             {
-                ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
-                BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
-                Opacity = item.Opacity / 100.0
-            };
+                target.Types.Insert(0, TimePointType.StateChange);
+            }
+            target.StateChange ??= new StateChangeData();
+            target.StateChange.ToState = item.ToState;
+        }
+        else
+        {
+            target.Types.Remove(TimePointType.StateChange);
+            target.StateChange = null;
+        }
 
-            // 确保 Types 包含 StyleChange
+        // 根据 HasStyleChange 更新 Types 和 StyleChange
+        if (item.HasStyleChange)
+        {
             if (!target.Types.Contains(TimePointType.StyleChange))
             {
                 target.Types.Add(TimePointType.StyleChange);
             }
+
+            if (item.HasCustomStyle)
+            {
+                target.StyleChange = new StyleChangeData
+                {
+                    ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
+                    BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
+                    Opacity = item.Opacity / 100.0
+                };
+            }
+            else
+            {
+                target.StyleChange = null;
+            }
         }
         else
         {
-            target.StyleChange = null;
             target.Types.Remove(TimePointType.StyleChange);
-        }
-
-        // 确保 Types 包含 StateChange（编辑器默认行为）
-        if (!target.Types.Contains(TimePointType.StateChange))
-        {
-            target.Types.Insert(0, TimePointType.StateChange);
+            target.StyleChange = null;
         }
     }
 

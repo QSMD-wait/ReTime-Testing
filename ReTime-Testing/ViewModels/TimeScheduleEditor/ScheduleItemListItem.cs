@@ -38,6 +38,8 @@ public partial class ScheduleItemListItem : ObservableObject
 
     public bool HasEndTimeError => !string.IsNullOrEmpty(EndTimeError);
 
+    public bool HasTypeError => !HasStateChange && !HasStyleChange;
+
     [ObservableProperty]
     private byte _foregroundR = 0x00;
 
@@ -58,6 +60,12 @@ public partial class ScheduleItemListItem : ObservableObject
 
     [ObservableProperty]
     private double _opacity = 100;
+
+    [ObservableProperty]
+    private bool _hasStateChange = true;
+
+    [ObservableProperty]
+    private bool _hasStyleChange = false;
 
     [ObservableProperty]
     private bool _hasCustomStyle = false;
@@ -187,11 +195,31 @@ public partial class ScheduleItemListItem : ObservableObject
         ItemChanged?.Invoke(this);
     }
 
+    partial void OnHasStateChangeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(HasTypeError));
+        ItemChanged?.Invoke(this);
+    }
+
+    partial void OnHasStyleChangeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(HasTypeError));
+        if (!value)
+        {
+            HasCustomStyle = false;
+        }
+        ItemChanged?.Invoke(this);
+    }
+
     partial void OnHasCustomStyleChanged(bool value)
     {
         if (!value)
         {
             HasBackgroundColor = false;
+        }
+        if (value && !HasStyleChange)
+        {
+            HasStyleChange = true;
         }
         ItemChanged?.Invoke(this);
     }
