@@ -3,18 +3,18 @@ using System.Text.Json.Serialization;
 namespace ReTime_Testing.Models;
 
 /// <summary>
-/// 时间点类型
+/// 时间点类型（原子值，可组合为数组使用）
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TimePointType
 {
     /// <summary>
-    /// 更改状态，可能包含样式信息（对应原来的 ToState/FromState/StyleOverrides）
+    /// 状态变更
     /// </summary>
-    StateChange,
+    StateChange = 0,
 
     /// <summary>
-    /// 仅更改样式（不影响状态），适用于只改变样式的时间点
+    /// 样式变更
     /// </summary>
-    StyleChange
+    StyleChange = 1
 }

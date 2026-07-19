@@ -15,7 +15,7 @@ public class TimePointTests
         // Assert
         timePoint.Time.Should().Be(default);
         timePoint.Name.Should().BeEmpty();
-        timePoint.Type.Should().Be(TimePointType.StateChange);
+        timePoint.Types.Should().Contain(TimePointType.StateChange);
         timePoint.StateChange.Should().BeNull();
         timePoint.StyleChange.Should().BeNull();
         timePoint.TryGetFromState(out _).Should().BeFalse();
@@ -38,12 +38,12 @@ public class TimePointTests
         };
 
         // Act
-        var timePoint = new TimePoint(time, name, TimePointType.StateChange, stateChange);
+        var timePoint = new TimePoint(time, name, new List<TimePointType> { TimePointType.StateChange }, stateChange);
 
         // Assert
         timePoint.Time.Should().Be(time);
         timePoint.Name.Should().Be(name);
-        timePoint.Type.Should().Be(TimePointType.StateChange);
+        timePoint.Types.Should().Contain(TimePointType.StateChange);
         timePoint.StateChange.Should().NotBeNull();
         timePoint.StyleChange.Should().BeNull();
         timePoint.TryGetFromState(out var actualFrom).Should().BeTrue();
@@ -66,12 +66,12 @@ public class TimePointTests
         };
 
         // Act
-        var timePoint = new TimePoint(time, name, TimePointType.StyleChange, null, styleChange);
+        var timePoint = new TimePoint(time, name, new List<TimePointType> { TimePointType.StyleChange }, null, styleChange);
 
         // Assert
         timePoint.Time.Should().Be(time);
         timePoint.Name.Should().Be(name);
-        timePoint.Type.Should().Be(TimePointType.StyleChange);
+        timePoint.Types.Should().Contain(TimePointType.StyleChange);
         timePoint.StateChange.Should().BeNull();
         timePoint.StyleChange.Should().NotBeNull();
         var styleOverrides = timePoint.GetStyleOverrides();

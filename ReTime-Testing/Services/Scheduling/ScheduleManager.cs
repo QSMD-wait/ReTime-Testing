@@ -162,14 +162,10 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
             foreach (var timePoint in pendingTimePoints)
             {
-                if (timePoint.Type == TimePointType.StyleChange)
-                {
-                    Logger.Trace("ScheduleManager", $"[{timePoint.Time:HH:mm}] {timePoint.Name}: 样式变更");
-                    ExecuteStyleChange(timePoint);
-                    styleChanges++;
-                    debugEntries.Add($"[{timePoint.Time:HH:mm}]样式变更:{timePoint.Name}");
-                }
-                else
+                bool hasStateChange = timePoint.Types.Contains(TimePointType.StateChange);
+                bool hasStyleChange = timePoint.Types.Contains(TimePointType.StyleChange);
+
+                if (hasStateChange)
                 {
                     timePoint.TryGetFromState(out var fromState);
                     timePoint.TryGetToState(out var toState);
@@ -177,6 +173,14 @@ public class ScheduleManager : IScheduleManager, IDisposable
                     ExecuteTransition(timePoint, fromState, toState);
                     stateChanges++;
                     debugEntries.Add($"[{timePoint.Time:HH:mm}]{fromState}→{toState}:{timePoint.Name}");
+                }
+
+                if (hasStyleChange)
+                {
+                    Logger.Trace("ScheduleManager", $"[{timePoint.Time:HH:mm}] {timePoint.Name}: 样式变更");
+                    ExecuteStyleChange(timePoint);
+                    styleChanges++;
+                    debugEntries.Add($"[{timePoint.Time:HH:mm}]样式变更:{timePoint.Name}");
                 }
                 _currentPlan.LastExecutedTimePoint = timePoint;
             }
@@ -363,14 +367,10 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
                 foreach (var point in missedPoints)
                 {
-                    if (point.Type == TimePointType.StyleChange)
-                    {
-                        Logger.Trace("ScheduleManager", $"[{point.Time:HH:mm}] {point.Name}: 样式变更");
-                        ExecuteStyleChange(point);
-                        styleChanges++;
-                        debugEntries.Add($"[{point.Time:HH:mm}]样式变更:{point.Name}");
-                    }
-                    else
+                    bool hasStateChange = point.Types.Contains(TimePointType.StateChange);
+                    bool hasStyleChange = point.Types.Contains(TimePointType.StyleChange);
+
+                    if (hasStateChange)
                     {
                         point.TryGetFromState(out var fromState);
                         point.TryGetToState(out var toState);
@@ -378,6 +378,14 @@ public class ScheduleManager : IScheduleManager, IDisposable
                         ExecuteTransition(point, fromState, toState);
                         stateChanges++;
                         debugEntries.Add($"[{point.Time:HH:mm}]{fromState}→{toState}:{point.Name}");
+                    }
+
+                    if (hasStyleChange)
+                    {
+                        Logger.Trace("ScheduleManager", $"[{point.Time:HH:mm}] {point.Name}: 样式变更");
+                        ExecuteStyleChange(point);
+                        styleChanges++;
+                        debugEntries.Add($"[{point.Time:HH:mm}]样式变更:{point.Name}");
                     }
                     _currentPlan.LastExecutedTimePoint = point;
                 }

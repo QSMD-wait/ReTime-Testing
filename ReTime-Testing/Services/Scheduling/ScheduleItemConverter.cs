@@ -211,12 +211,13 @@ public static class ScheduleItemConverter
     /// </summary>
     public static CustomTimePoint ToTimePoint(ScheduleItemListItem item)
     {
+        var types = new List<TimePointType> { TimePointType.StateChange };
         var tp = new CustomTimePoint
         {
             Id = item.Id,
             Name = item.Name,
             Time = item.StartTime,
-            Type = TimePointType.StateChange,
+            Types = types,
             StateChange = new StateChangeData
             {
                 ToState = item.ToState
@@ -226,7 +227,7 @@ public static class ScheduleItemConverter
         // 写入样式到 StyleChange（如果设置了自定义样式）
         if (item.HasCustomStyle)
         {
-            tp.Type = TimePointType.StyleChange;
+            types.Add(TimePointType.StyleChange);
             tp.StyleChange = new StyleChangeData
             {
                 ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
@@ -252,7 +253,7 @@ public static class ScheduleItemConverter
     }
 
     /// <summary>
-    /// 增量更新已有时间点实体（只修改编辑器管理的字段，保留其他字段如 Type、FromState 等）
+    /// 增量更新已有时间点实体（只修改编辑器管理的字段，保留其他字段如 Types、FromState 等）
     /// </summary>
     public static void ApplyListItemToTimePoint(ScheduleItemListItem item, CustomTimePoint target)
     {
@@ -272,10 +273,23 @@ public static class ScheduleItemConverter
                 BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
                 Opacity = item.Opacity / 100.0
             };
+
+            // 确保 Types 包含 StyleChange
+            if (!target.Types.Contains(TimePointType.StyleChange))
+            {
+                target.Types.Add(TimePointType.StyleChange);
+            }
         }
         else
         {
             target.StyleChange = null;
+            target.Types.Remove(TimePointType.StyleChange);
+        }
+
+        // 确保 Types 包含 StateChange（编辑器默认行为）
+        if (!target.Types.Contains(TimePointType.StateChange))
+        {
+            target.Types.Insert(0, TimePointType.StateChange);
         }
     }
 

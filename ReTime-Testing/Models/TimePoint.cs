@@ -24,9 +24,9 @@ public class TimePoint
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 时间点类型（StateChange = 更改状态，可包含样式；StyleChange = 仅更改样式）
+    /// 时间点类型列表（数组形式，支持组合）
     /// </summary>
-    public TimePointType Type { get; set; } = TimePointType.StateChange;
+    public List<TimePointType> Types { get; set; } = new() { TimePointType.StateChange };
 
     /// <summary>
     /// 状态变更数据（当 Type = StateChange 时生效）
@@ -67,7 +67,7 @@ public class TimePoint
     }
 
     /// <summary>
-    /// 获取样式覆盖（从 StyleChange 或 StateChange 中读取样式属性并转换为 Brush）
+    /// 获取样式覆盖（从 StyleChange 中读取样式属性并转换为 Brush）
     /// </summary>
     public StyleOverrides? GetStyleOverrides()
     {
@@ -75,7 +75,7 @@ public class TimePoint
         string? bg = null;
         double? opacity = null;
 
-        if (Type == TimePointType.StyleChange && StyleChange != null)
+        if (Types.Contains(TimePointType.StyleChange) && StyleChange != null)
         {
             fg = StyleChange.ForegroundColor;
             bg = StyleChange.BackgroundColor;
@@ -127,14 +127,14 @@ public class TimePoint
     /// </summary>
     /// <param name="time">绝对时间</param>
     /// <param name="name">时间点名称</param>
-    /// <param name="type">时间点类型</param>
-    /// <param name="stateChange">状态变更数据（Type = StateChange 时使用）</param>
-    /// <param name="styleChange">样式变更数据（Type = StyleChange 时使用）</param>
-    public TimePoint(DateTime time, string name, TimePointType type, StateChangeData? stateChange = null, StyleChangeData? styleChange = null)
+    /// <param name="types">时间点类型列表</param>
+    /// <param name="stateChange">状态变更数据（Types 包含 StateChange 时使用）</param>
+    /// <param name="styleChange">样式变更数据（Types 包含 StyleChange 时使用）</param>
+    public TimePoint(DateTime time, string name, List<TimePointType> types, StateChangeData? stateChange = null, StyleChangeData? styleChange = null)
     {
         Time = time;
         Name = name;
-        Type = type;
+        Types = types;
         StateChange = stateChange;
         StyleChange = styleChange;
     }
@@ -144,7 +144,7 @@ public class TimePoint
     /// </summary>
     public TimePoint Clone()
     {
-        return new TimePoint(Time, Name, Type, StateChange, StyleChange);
+        return new TimePoint(Time, Name, new List<TimePointType>(Types), StateChange, StyleChange);
     }
 
     /// <summary>
@@ -156,6 +156,6 @@ public class TimePoint
             return $"{Time:HH:mm:ss} - {Name} ({fromState} -> {toState})";
         if (TryGetToState(out toState))
             return $"{Time:HH:mm:ss} - {Name} ({toState})";
-        return $"{Time:HH:mm:ss} - {Name} ({Type})";
+        return $"{Time:HH:mm:ss} - {Name} ({string.Join("+", Types)})";
     }
 }

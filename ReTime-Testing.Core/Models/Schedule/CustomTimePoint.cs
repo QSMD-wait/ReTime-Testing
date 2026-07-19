@@ -34,19 +34,20 @@ namespace ReTime_Testing.Models
         public string Time { get; set; } = "00:00:00";
 
         /// <summary>
-    /// 时间点类型（必填）："StateChange" 或 "StyleChange"
-    /// </summary>
-    [JsonPropertyName("type")]
-    public TimePointType Type { get; set; } = TimePointType.StateChange;
+        /// 时间点类型列表（必填，数组形式）
+        /// 支持组合：["StateChange"]、["StyleChange"]、["StateChange", "StyleChange"]
+        /// </summary>
+        [JsonPropertyName("type")]
+        public List<TimePointType> Types { get; set; } = new() { TimePointType.StateChange };
 
-    /// <summary>
-    /// 状态变更数据（当 Type = StateChange 时生效）
-    /// </summary>
-    public StateChangeData? StateChange { get; set; }
+        /// <summary>
+        /// 状态变更数据（当 Types 包含 StateChange 时生效）
+        /// </summary>
+        public StateChangeData? StateChange { get; set; }
 
-    /// <summary>
-    /// 样式变更数据（当 Type = StyleChange 时生效）
-    /// </summary>
-    public StyleChangeData? StyleChange { get; set; }
-}
+        /// <summary>
+        /// 样式变更数据（当 Types 包含 StyleChange 时生效）
+        /// </summary>
+        public StyleChangeData? StyleChange { get; set; }
+    }
 }

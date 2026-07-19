@@ -167,31 +167,44 @@ public class TimeScheduleValidator
                 timePointIds.Add(tp.Id);
             }
 
-            // 根据类型验证对应的属性
-            if (tp.Type == TimePointType.StateChange)
+            // 验证类型列表
+            if (tp.Types == null || tp.Types.Count == 0)
             {
-                if (tp.StateChange == null)
-                {
-                    result.Errors.Add($"时间点 {tp.Id} StateChange 为 null");
-                }
-                else if (tp.StateChange.ToState == ProgressStateType.Progress)
-                {
-                    result.Errors.Add($"时间点 {tp.Id} 不能设置 Progress 状态，时间段固定为 Progress");
-                }
+                result.Errors.Add($"时间点 {tp.Id} 类型列表为空");
             }
-            else if (tp.Type == TimePointType.StyleChange)
+            else if (tp.Types.Distinct().Count() != tp.Types.Count)
             {
-                if (tp.StyleChange == null)
+                result.Errors.Add($"时间点 {tp.Id} 类型列表包含重复值");
+            }
+            else
+            {
+                // 按类型独立验证
+                if (tp.Types.Contains(TimePointType.StateChange))
                 {
-                    result.Errors.Add($"时间点 {tp.Id} StyleChange 为 null");
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(tp.StyleChange.ForegroundColor) && 
-                        string.IsNullOrEmpty(tp.StyleChange.BackgroundColor) &&
-                        tp.StyleChange.Opacity == null)
+                    if (tp.StateChange == null)
                     {
-                        result.Errors.Add($"时间点 {tp.Id} StyleChange 必须至少包含一个属性");
+                        result.Errors.Add($"时间点 {tp.Id} StateChange 为 null");
+                    }
+                    else if (tp.StateChange.ToState == ProgressStateType.Progress)
+                    {
+                        result.Errors.Add($"时间点 {tp.Id} 不能设置 Progress 状态，时间段固定为 Progress");
+                    }
+                }
+
+                if (tp.Types.Contains(TimePointType.StyleChange))
+                {
+                    if (tp.StyleChange == null)
+                    {
+                        result.Errors.Add($"时间点 {tp.Id} StyleChange 为 null");
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(tp.StyleChange.ForegroundColor) &&
+                            string.IsNullOrEmpty(tp.StyleChange.BackgroundColor) &&
+                            tp.StyleChange.Opacity == null)
+                        {
+                            result.Errors.Add($"时间点 {tp.Id} StyleChange 必须至少包含一个属性");
+                        }
                     }
                 }
             }
@@ -203,8 +216,8 @@ public class TimeScheduleValidator
                 continue;
             }
 
-            // 验证时间点不在时间段内部（仅 StateChange 类型）
-            if (tp.Type == TimePointType.StateChange)
+            // 验证时间点不在时间段内部（包含 StateChange 类型时）
+            if (tp.Types != null && tp.Types.Contains(TimePointType.StateChange))
             {
                 foreach (var schedule in scheduleTimes)
                 {

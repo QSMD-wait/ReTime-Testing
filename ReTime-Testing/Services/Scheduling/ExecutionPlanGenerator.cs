@@ -248,14 +248,14 @@ public class ExecutionPlanGenerator
                 // 自定义时间点覆盖
                 timePoints.Add(new TimePoint(segment.StartTime,
                     string.IsNullOrEmpty(customStart.Name) ? segment.Name + " 开始" : customStart.Name,
-                    customStart.Type,
+                    customStart.Types,
                     customStart.StateChange == null ? null : new StateChangeData { FromState = customStart.StateChange.FromState, ToState = customStart.StateChange.ToState },
                     customStart.StyleChange == null ? null : new StyleChangeData { ForegroundColor = customStart.StyleChange.ForegroundColor, BackgroundColor = customStart.StyleChange.BackgroundColor, Opacity = customStart.StyleChange.Opacity }));
             }
             else
             {
                 // 自动生成（状态变更到 Progress）
-                timePoints.Add(new TimePoint(segment.StartTime, $"{segment.Name} 开始", TimePointType.StateChange,
+                timePoints.Add(new TimePoint(segment.StartTime, $"{segment.Name} 开始", new List<TimePointType> { TimePointType.StateChange },
                     new StateChangeData { ToState = ProgressStateType.Progress }));
             }
 
@@ -264,14 +264,14 @@ public class ExecutionPlanGenerator
                 // 自定义时间点覆盖
                 timePoints.Add(new TimePoint(segment.EndTime,
                     string.IsNullOrEmpty(customEnd.Name) ? segment.Name + " 结束" : customEnd.Name,
-                    customEnd.Type,
+                    customEnd.Types,
                     customEnd.StateChange == null ? null : new StateChangeData { FromState = customEnd.StateChange.FromState, ToState = customEnd.StateChange.ToState },
                     customEnd.StyleChange == null ? null : new StyleChangeData { ForegroundColor = customEnd.StyleChange.ForegroundColor, BackgroundColor = customEnd.StyleChange.BackgroundColor, Opacity = customEnd.StyleChange.Opacity }));
             }
             else
             {
                 // 自动生成（状态变更到 Loading）
-                timePoints.Add(new TimePoint(segment.EndTime, $"{segment.Name} 结束", TimePointType.StateChange,
+                timePoints.Add(new TimePoint(segment.EndTime, $"{segment.Name} 结束", new List<TimePointType> { TimePointType.StateChange },
                     new StateChangeData { ToState = ProgressStateType.Loading }));
             }
         }
@@ -291,7 +291,7 @@ public class ExecutionPlanGenerator
                 {
                     timePoints.Add(new TimePoint(customTime,
                         string.IsNullOrEmpty(custom.Name) ? custom.Time : custom.Name,
-                        custom.Type,
+                        custom.Types,
                         custom.StateChange == null ? null : new StateChangeData { FromState = custom.StateChange.FromState, ToState = custom.StateChange.ToState },
                         custom.StyleChange == null ? null : new StyleChangeData { ForegroundColor = custom.StyleChange.ForegroundColor, BackgroundColor = custom.StyleChange.BackgroundColor, Opacity = custom.StyleChange.Opacity }));
 
