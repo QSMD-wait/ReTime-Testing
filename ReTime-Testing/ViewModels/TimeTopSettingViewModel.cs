@@ -103,6 +103,110 @@ namespace ReTime_Testing.ViewModels
     }
 
     /// <summary>
+    /// 单个状态样式项 ViewModel
+    /// </summary>
+    public partial class StateStyleItemViewModel : ObservableObject
+    {
+        private readonly Action _saveCallback;
+        private readonly Models.StateStyleEntry _entry;
+        private bool _isInitializing = true;
+
+        [ObservableProperty]
+        private bool _isEnabled = true;
+
+        [ObservableProperty]
+        private string _foregroundColor = "";
+
+        [ObservableProperty]
+        private string _backgroundColor = "";
+
+        [ObservableProperty]
+        private double _opacity = 1.0;
+
+        [ObservableProperty]
+        private bool _enableShadow;
+
+        [ObservableProperty]
+        private bool _hasEnableShadowOverride;
+
+        public string StateName { get; }
+        public string DisplayName { get; }
+
+        private static readonly Dictionary<string, string> StateDisplayNames = new()
+        {
+            ["Loading"] = "加载中",
+            ["Progress"] = "进行中",
+            ["Success"] = "成功",
+            ["Error"] = "错误",
+            ["Paused"] = "暂停",
+            ["Hidden"] = "隐藏",
+            ["Disabled"] = "禁用"
+        };
+
+        public StateStyleItemViewModel(string stateName, Models.StateStyleEntry entry, Action saveCallback)
+        {
+            StateName = stateName;
+            DisplayName = StateDisplayNames.GetValueOrDefault(stateName, stateName);
+            _entry = entry;
+            _saveCallback = saveCallback;
+
+            IsEnabled = entry.Enabled;
+            ForegroundColor = entry.ForegroundColor ?? "";
+            BackgroundColor = entry.BackgroundColor ?? "";
+            Opacity = entry.Opacity ?? 1.0;
+            HasEnableShadowOverride = entry.EnableShadow.HasValue;
+            EnableShadow = entry.EnableShadow ?? false;
+
+            _isInitializing = false;
+        }
+
+        partial void OnIsEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _entry.Enabled = value;
+            _saveCallback();
+        }
+
+        partial void OnForegroundColorChanged(string value)
+        {
+            if (_isInitializing) return;
+            _entry.ForegroundColor = string.IsNullOrWhiteSpace(value) ? null : value;
+            _saveCallback();
+        }
+
+        partial void OnBackgroundColorChanged(string value)
+        {
+            if (_isInitializing) return;
+            _entry.BackgroundColor = string.IsNullOrWhiteSpace(value) ? null : value;
+            _saveCallback();
+        }
+
+        partial void OnOpacityChanged(double value)
+        {
+            if (_isInitializing) return;
+            _entry.Opacity = value;
+            _saveCallback();
+        }
+
+        partial void OnEnableShadowChanged(bool value)
+        {
+            if (_isInitializing) return;
+            if (HasEnableShadowOverride)
+            {
+                _entry.EnableShadow = value;
+                _saveCallback();
+            }
+        }
+
+        partial void OnHasEnableShadowOverrideChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _entry.EnableShadow = value ? EnableShadow : null;
+            _saveCallback();
+        }
+    }
+
+    /// <summary>
     /// 外观页面 ViewModel
     /// </summary>
     public partial class AppearancePageViewModel : ObservableObject
@@ -118,6 +222,35 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedTextEffect = "none";
 
+        [ObservableProperty]
+        private int _progressBarHeight = 5;
+
+        [ObservableProperty]
+        private int _cornerRadius;
+
+        [ObservableProperty]
+        private bool _glowEnabled = true;
+
+        [ObservableProperty]
+        private string _glowColor = "";
+
+        [ObservableProperty]
+        private bool _autoHide;
+
+        [ObservableProperty]
+        private double _idleOpacity = 0.3;
+
+        [ObservableProperty]
+        private bool _stateStylesEnabled = true;
+
+        public List<StateStyleItemViewModel> StateStyleItems { get; } = [];
+
+        private void SaveAndRefresh()
+        {
+            _settingsService.SaveTimeTopSetting(_setting);
+            _desktopWindowManager.RefreshPosition();
+        }
+
         public AppearancePageViewModel(ISettingsService settingsService, IDesktopWindowManager desktopWindowManager)
         {
             _settingsService = settingsService;
@@ -127,6 +260,20 @@ namespace ReTime_Testing.ViewModels
             EnableShadow = _setting.ProgressBar.EnableShadow;
             SelectedTextEffect = _setting.TextOverlay.Style.TextEffect ?? "shadow";
 
+            ProgressBarHeight = _setting.ProgressBar.Height;
+            CornerRadius = _setting.ProgressBar.CornerRadius;
+            GlowEnabled = _setting.ProgressBar.GlowEnabled;
+            GlowColor = _setting.ProgressBar.GlowColor ?? "";
+
+            AutoHide = _setting.Behavior.AutoHide;
+            IdleOpacity = _setting.Behavior.IdleOpacity;
+
+            StateStylesEnabled = _setting.StateStyles.Enabled;
+            foreach (var kvp in _setting.StateStyles.Styles)
+            {
+                StateStyleItems.Add(new StateStyleItemViewModel(kvp.Key, kvp.Value, SaveAndRefresh));
+            }
+
             _isInitializing = false;
         }
 
@@ -134,7 +281,7 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.ProgressBar.EnableShadow = value;
-            _settingsService.SaveTimeTopSetting(_setting);
+            SaveAndRefresh();
         }
 
         partial void OnSelectedTextEffectChanged(string value)
@@ -143,6 +290,55 @@ namespace ReTime_Testing.ViewModels
             _setting.TextOverlay.Style.TextEffect = value;
             _settingsService.SaveTimeTopSetting(_setting);
             _desktopWindowManager.RefreshTextOverlay();
+        }
+
+        partial void OnProgressBarHeightChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.ProgressBar.Height = value;
+            SaveAndRefresh();
+        }
+
+        partial void OnCornerRadiusChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.ProgressBar.CornerRadius = value;
+            SaveAndRefresh();
+        }
+
+        partial void OnGlowEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.ProgressBar.GlowEnabled = value;
+            SaveAndRefresh();
+        }
+
+        partial void OnGlowColorChanged(string value)
+        {
+            if (_isInitializing) return;
+            _setting.ProgressBar.GlowColor = string.IsNullOrWhiteSpace(value) ? null : value;
+            SaveAndRefresh();
+        }
+
+        partial void OnAutoHideChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.Behavior.AutoHide = value;
+            _settingsService.SaveTimeTopSetting(_setting);
+        }
+
+        partial void OnIdleOpacityChanged(double value)
+        {
+            if (_isInitializing) return;
+            _setting.Behavior.IdleOpacity = value;
+            _settingsService.SaveTimeTopSetting(_setting);
+        }
+
+        partial void OnStateStylesEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.StateStyles.Enabled = value;
+            SaveAndRefresh();
         }
     }
 

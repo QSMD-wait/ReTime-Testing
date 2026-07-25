@@ -7,7 +7,7 @@
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="600">
+             d:DesignHeight="800" d:DesignWidth="600">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
         <FrameworkElement.Resources>
@@ -21,6 +21,49 @@
 
                 <TextBlock Text="外观" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
 
+                <!-- 进度条外观 -->
+                <ui:SettingsCard Header="进度条高度"
+                                 Description="进度条的像素高度（未实现）"
+                                 IsEnabled="False">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.AlignCenterVertical_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:NumberBox Value="{Binding ProgressBarHeight, Mode=TwoWay}"
+                                      SpinButtonPlacementMode="Compact"
+                                      Minimum="1"
+                                      Maximum="20"
+                                      SmallChange="1"
+                                      LargeChange="2"
+                                      MinWidth="100"/>
+                        <TextBlock Text="px"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </ui:SettingsCard>
+
+                <ui:SettingsCard Header="圆角半径"
+                                 Description="进度条两端的圆角半径，0为直角（未实现）"
+                                 IsEnabled="False">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.StyleGuide_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:NumberBox Value="{Binding CornerRadius, Mode=TwoWay}"
+                                      SpinButtonPlacementMode="Compact"
+                                      Minimum="0"
+                                      Maximum="10"
+                                      SmallChange="1"
+                                      LargeChange="2"
+                                      MinWidth="100"/>
+                        <TextBlock Text="px"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </ui:SettingsCard>
+
                 <ui:SettingsCard Header="进度条阴影效果"
                                  Description="控制进度条是否显示阴影效果（开启可能影响性能）">
                     <ui:SettingsCard.HeaderIcon>
@@ -28,6 +71,22 @@
                     </ui:SettingsCard.HeaderIcon>
                     <ui:ToggleSwitch IsOn="{Binding EnableShadow, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
                 </ui:SettingsCard>
+
+                <ui:SettingsExpander Header="发光效果"
+                                     Description="进度条前景色发光效果，颜色留空则跟随前景色（未实现）"
+                                     IsEnabled="False">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Lightbulb_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding GlowEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="发光颜色"
+                                         Description="十六进制颜色值，留空跟随前景色">
+                            <TextBox Text="{Binding GlowColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     MinWidth="120"/>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
 
                 <ui:SettingsCard Header="字体效果"
                                  Description="选择进度条文字的字体效果样式（描边可能造成文字边缘模糊）">
@@ -42,6 +101,95 @@
                         <ComboBoxItem Content="描边" Tag="outline"/>
                     </ComboBox>
                 </ui:SettingsCard>
+
+                <!-- 进度条行为 -->
+                <Separator Margin="0,8,0,4"/>
+                <TextBlock Text="进度条行为" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
+
+                <ui:SettingsCard Header="无段自动隐藏"
+                                 Description="无活跃时间段时自动隐藏进度条（未实现）"
+                                 IsEnabled="False">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.EyeOff_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding AutoHide, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                </ui:SettingsCard>
+
+                <ui:SettingsExpander Header="空闲透明度"
+                                     Description="无活跃时间段时进度条的透明度（自动隐藏关闭时生效，未实现）"
+                                     IsEnabled="False">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.SlideTransition_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <Slider Value="{Binding IdleOpacity, Mode=TwoWay}"
+                            Minimum="0" Maximum="1"
+                            TickFrequency="0.05"
+                            IsSnapToTickEnabled="True"
+                            Width="180"
+                            VerticalAlignment="Center"/>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="当前值">
+                            <TextBlock Text="{Binding IdleOpacity, StringFormat={}{0:F2}}"
+                                       MinWidth="60"/>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
+
+                <!-- 状态样式覆盖 -->
+                <Separator Margin="0,8,0,4"/>
+                <TextBlock Text="状态样式覆盖" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
+
+                <ui:SettingsCard Header="启用状态样式覆盖"
+                                 Description="启用后使用配置文件中的样式覆盖各状态的默认外观">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Color_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding StateStylesEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                </ui:SettingsCard>
+
+                <ItemsControl ItemsSource="{Binding StateStyleItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:SettingsExpander Header="{Binding DisplayName}"
+                                                 Description="{Binding StateName, StringFormat='覆盖 {0} 状态的默认样式'}"
+                                                 Margin="0,0,0,0">
+                                <ui:ToggleSwitch IsOn="{Binding IsEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                                <ui:SettingsExpander.Items>
+                                    <ui:SettingsCard Header="前景色"
+                                                     Description="十六进制颜色值，留空使用默认">
+                                        <TextBox Text="{Binding ForegroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 MinWidth="120"/>
+                                    </ui:SettingsCard>
+                                    <ui:SettingsCard Header="背景色"
+                                                     Description="十六进制颜色值，留空使用默认">
+                                        <TextBox Text="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 MinWidth="120"/>
+                                    </ui:SettingsCard>
+                                    <ui:SettingsCard Header="透明度">
+                                        <Slider Value="{Binding Opacity, Mode=TwoWay}"
+                                                Minimum="0" Maximum="1"
+                                                TickFrequency="0.05"
+                                                IsSnapToTickEnabled="True"
+                                                Width="150"
+                                                VerticalAlignment="Center"/>
+                                    </ui:SettingsCard>
+                                    <ui:SettingsCard Header="阴影覆盖">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:ToggleSwitch IsOn="{Binding HasEnableShadowOverride, Mode=TwoWay}"
+                                                             OffContent="跟随默认" OnContent="自定义"
+                                                             MinWidth="0"
+                                                             Margin="0,0,8,0"/>
+                                            <ui:ToggleSwitch IsOn="{Binding EnableShadow, Mode=TwoWay}"
+                                                             OffContent="关闭" OnContent="开启"
+                                                             MinWidth="0"
+                                                             IsEnabled="{Binding HasEnableShadowOverride}"/>
+                                        </StackPanel>
+                                    </ui:SettingsCard>
+                                </ui:SettingsExpander.Items>
+                            </ui:SettingsExpander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
             </ikw:SimpleStackPanel>
         </Grid>
