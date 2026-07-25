@@ -52,6 +52,54 @@
                     </ComboBox>
                 </ui:SettingsCard>
 
+                <ui:SettingsExpander Header="日志配置"
+                                     Description="管理应用日志的输出方式和保留策略">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.DocumentSearch_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding IsFileLogEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="最低日志等级"
+                                         Description="仅输出该等级及以上的日志">
+                            <ComboBox ItemsSource="{Binding LogLevelNames}"
+                                      SelectedIndex="{Binding SelectedLogLevelIndex, Mode=TwoWay}"
+                                      MinWidth="160"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="日志保留天数"
+                                         Description="超过该天数的日志文件将被自动清理">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:NumberBox Value="{Binding RetainedDays, Mode=TwoWay}"
+                                              SpinButtonPlacementMode="Compact"
+                                              Minimum="1"
+                                              Maximum="365"
+                                              SmallChange="1"
+                                              LargeChange="10"
+                                              MinWidth="100"/>
+                                <TextBlock Text="天(d)"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            </StackPanel>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="单文件大小上限"
+                                         Description="单个日志文件达到该大小后将自动滚动创建新文件">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:NumberBox Value="{Binding FileSizeLimitMB, Mode=TwoWay}"
+                                              SpinButtonPlacementMode="Compact"
+                                              Minimum="1"
+                                              Maximum="100"
+                                              SmallChange="1"
+                                              LargeChange="5"
+                                              MinWidth="100"/>
+                                <TextBlock Text=" MB "
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            </StackPanel>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
+
             </ikw:SimpleStackPanel>
         </Grid>
     </ScrollViewer>

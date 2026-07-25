@@ -21,6 +21,20 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private string _selectedAutoStartMethod = "registry";
 
+        [ObservableProperty]
+        private bool _isFileLogEnabled = true;
+
+        [ObservableProperty]
+        private int _selectedLogLevelIndex = 2;
+
+        [ObservableProperty]
+        private int _retainedDays = 30;
+
+        [ObservableProperty]
+        private int _fileSizeLimitMB = 10;
+
+        public List<string> LogLevelNames { get; } = new() { "错误 (ERR)", "警告 (WRN)", "信息 (INF)", "调试 (DBG)", "跟踪 (TRC)" };
+
         public BasicPageViewModel(ISettingsService settingsService)
         {
             _settingsService = settingsService;
@@ -29,6 +43,11 @@ namespace ReTime_Testing.ViewModels
             SelectedTheme = _setting.Basic.Theme;
             IsAutoStartEnabled = _setting.Basic.AutoStart.Enabled;
             SelectedAutoStartMethod = _setting.Basic.AutoStart.Method;
+
+            IsFileLogEnabled = _setting.Basic.Log.EnableFileOutput;
+            SelectedLogLevelIndex = 4 - (int)_setting.Basic.Log.MinimumLevel;
+            RetainedDays = _setting.Basic.Log.RetainedDays;
+            FileSizeLimitMB = _setting.Basic.Log.FileSizeLimitMB;
 
             _isInitializing = false;
         }
@@ -51,6 +70,34 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.Basic.AutoStart.Method = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnIsFileLogEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.Log.EnableFileOutput = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnSelectedLogLevelIndexChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.Log.MinimumLevel = (Models.LogLevel)(4 - value);
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnRetainedDaysChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.Log.RetainedDays = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnFileSizeLimitMBChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.Log.FileSizeLimitMB = value;
             _settingsService.SaveGlobalSetting(_setting);
         }
     }
