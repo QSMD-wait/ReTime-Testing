@@ -58,7 +58,13 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     public bool IsTimePointSelected => SelectedScheduleItem != null && SelectedScheduleItem.ItemType == ScheduleItemType.TimePoint;
     public bool HasScheduleItems => _currentEditingState != null && _currentEditingState.Items.Count > 0;
 
-    public Array ToStateOptions => Enum.GetValues(typeof(ProgressStateType));
+    public List<StateOptionItem> ToStateOptions { get; } = new()
+    {
+        new() { Value = ProgressStateType.Loading, DisplayName = "加载中 (Loading)" },
+        new() { Value = ProgressStateType.Success, DisplayName = "成功 (Success)" },
+        new() { Value = ProgressStateType.Error, DisplayName = "错误 (Error)" },
+        new() { Value = ProgressStateType.Paused, DisplayName = "暂停 (Paused)" },
+    };
 
     public TimeScheduleEditorViewModel(
         ITimeScheduleManager scheduleManager,

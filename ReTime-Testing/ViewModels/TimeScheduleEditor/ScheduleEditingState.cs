@@ -148,8 +148,13 @@ public class ScheduleEditingState
             BackgroundG = source.BackgroundG,
             BackgroundB = source.BackgroundB,
             Opacity = source.Opacity,
+            HasStateChange = source.HasStateChange,
+            HasStyleChange = source.HasStyleChange,
             HasCustomStyle = source.HasCustomStyle,
             HasBackgroundColor = source.HasBackgroundColor,
+            HasBehavior = source.HasBehavior,
+            PollingIntervalMs = source.PollingIntervalMs,
+            ReverseProgress = source.ReverseProgress,
         };
     }
 
@@ -180,7 +185,12 @@ public class ScheduleEditingState
             && a.BackgroundG == b.BackgroundG
             && a.BackgroundB == b.BackgroundB
             && Math.Abs(a.Opacity - b.Opacity) < 0.01
+            && a.HasStateChange == b.HasStateChange
+            && a.HasStyleChange == b.HasStyleChange
             && a.HasCustomStyle == b.HasCustomStyle
-            && a.HasBackgroundColor == b.HasBackgroundColor;
+            && a.HasBackgroundColor == b.HasBackgroundColor
+            && a.HasBehavior == b.HasBehavior
+            && a.PollingIntervalMs == b.PollingIntervalMs
+            && a.ReverseProgress == b.ReverseProgress;
     }
 }

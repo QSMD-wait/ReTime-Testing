@@ -530,7 +530,9 @@
                                                 <TextBlock Text="目标状态" FontSize="12" Margin="0,0,0,6"
                                                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                                 <ComboBox ItemsSource="{Binding ToStateOptions}"
-                                                          SelectedItem="{Binding SelectedScheduleItem.ToState, Mode=TwoWay}"
+                                                          DisplayMemberPath="DisplayName"
+                                                          SelectedValuePath="Value"
+                                                          SelectedValue="{Binding SelectedScheduleItem.ToState, Mode=TwoWay}"
                                                           HorizontalAlignment="Stretch"/>
                                             </StackPanel>
 
