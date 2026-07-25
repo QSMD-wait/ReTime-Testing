@@ -43,6 +43,7 @@ namespace ReTime_Testing.Services
             // ===== ViewModel（Transient：每次请求新实例） =====
             services.AddTransient<TimeTopDesktopViewModel>();
             services.AddTransient<TimeTopSettingViewModel>();
+            services.AddTransient<DebugTestViewModel>();
             services.AddTransient<TimePageViewModel>();
             services.AddTransient<TimeScheduleEditorViewModel>();
 

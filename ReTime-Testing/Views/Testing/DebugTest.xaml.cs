@@ -17,12 +17,12 @@ namespace ReTime_Testing.Views.Testing
                 var app = System.Windows.Application.Current as App;
                 var services = app?.Services ?? throw new InvalidOperationException("DI 容器未初始化");
 
-                DataContext = ActivatorUtilities.CreateInstance<TimeTopSettingViewModel>(services);
+                DataContext = ActivatorUtilities.CreateInstance<DebugTestViewModel>(services);
             }
 
             ToastOverlayControl.AttachToHost(this);
 
-            if (DataContext is TimeTopSettingViewModel viewModel)
+            if (DataContext is DebugTestViewModel viewModel)
             {
                 viewModel.ToastRequested += OnToastRequested;
             }
@@ -40,7 +40,7 @@ namespace ReTime_Testing.Views.Testing
         {
             base.OnClosed(e);
 
-            if (DataContext is TimeTopSettingViewModel viewModel)
+            if (DataContext is DebugTestViewModel viewModel)
             {
                 viewModel.ToastRequested -= OnToastRequested;
                 viewModel.Cleanup();
