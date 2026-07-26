@@ -12,7 +12,8 @@ public interface ITextSlotResolver
     /// 解析指定数据源的文本
     /// </summary>
     /// <param name="source">数据源类型</param>
-    /// <param name="customText">自定义文本（仅 Source=CustomText 时使用）</param>
-    /// <returns>解析后的文本，无法解析时返回空字符串</returns>
-    string Resolve(TextSourceType source, string? customText = null);
+    /// <param name="sourceSettings">组件专属配置</param>
+    /// <param name="commonSettings">通用自定义项</param>
+    /// <returns>解析后的文本（含前缀后缀），无法解析时返回空字符串</returns>
+    string Resolve(TextSourceType source, TextSlotSourceSettings? sourceSettings = null, TextSlotCommonSettings? commonSettings = null);
 }

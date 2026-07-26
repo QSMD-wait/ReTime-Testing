@@ -26,13 +26,14 @@ public class TextSlotResolverTests
     [Fact]
     public void Resolve_CustomText_ReturnsCustomText()
     {
-        Assert.Equal("Hello", _resolver.Resolve(TextSourceType.CustomText, "Hello"));
+        var settings = new TextSlotSourceSettings { Text = "Hello" };
+        Assert.Equal("Hello", _resolver.Resolve(TextSourceType.CustomText, settings));
     }
 
     [Fact]
     public void Resolve_CustomText_Null_ReturnsEmpty()
     {
-        Assert.Equal(string.Empty, _resolver.Resolve(TextSourceType.CustomText, null));
+        Assert.Equal(string.Empty, _resolver.Resolve(TextSourceType.CustomText));
     }
 
     [Fact]
@@ -43,10 +44,11 @@ public class TextSlotResolverTests
     }
 
     [Fact]
-    public void Resolve_SegmentName_NoPlan_ReturnsEmpty()
+    public void Resolve_SegmentName_NoPlan_ReturnsFallback()
     {
         _scheduleManager.CurrentPlan = null;
-        Assert.Equal(string.Empty, _resolver.Resolve(TextSourceType.SegmentName));
+        var settings = new TextSlotSourceSettings { Fallback = "无计划" };
+        Assert.Equal("无计划", _resolver.Resolve(TextSourceType.SegmentName, settings));
     }
 
     [Fact]
@@ -88,11 +90,24 @@ public class TextSlotResolverTests
     public void Resolve_RemainingTime_ZeroRemaining()
     {
         var now = new DateTime(2026, 1, 1, 10, 0, 0);
-        _timeService.CurrentTime = now.AddHours(3); // past end
+        _timeService.CurrentTime = now.AddHours(3);
         _scheduleManager.CurrentPlan = CreatePlanWithSegment("Work", now, now.AddHours(1));
 
         var result = _resolver.Resolve(TextSourceType.RemainingTime);
         Assert.Equal("0s", result);
+    }
+
+    [Fact]
+    public void Resolve_RemainingTime_HideSeconds()
+    {
+        var now = new DateTime(2026, 1, 1, 10, 0, 0);
+        _timeService.CurrentTime = now;
+        _scheduleManager.CurrentPlan = CreatePlanWithSegment(
+            "Work", now, now.AddHours(2).AddMinutes(30).AddSeconds(45));
+
+        var settings = new TextSlotSourceSettings { ShowSeconds = false };
+        var result = _resolver.Resolve(TextSourceType.RemainingTime, settings);
+        Assert.Equal("2h 30m", result);
     }
 
     [Fact]
@@ -113,7 +128,7 @@ public class TextSlotResolverTests
     {
         var start = new DateTime(2026, 1, 1, 8, 0, 0);
         var end = start.AddHours(4);
-        var now = start.AddHours(2); // 50%
+        var now = start.AddHours(2);
         _timeService.CurrentTime = now;
         _scheduleManager.CurrentPlan = CreatePlanWithSegment("Work", start, end);
 
@@ -122,11 +137,34 @@ public class TextSlotResolverTests
     }
 
     [Fact]
+    public void Resolve_ProgressPercent_CustomDecimalPlaces()
+    {
+        var start = new DateTime(2026, 1, 1, 8, 0, 0);
+        var end = start.AddHours(4);
+        var now = start.AddHours(2);
+        _timeService.CurrentTime = now;
+        _scheduleManager.CurrentPlan = CreatePlanWithSegment("Work", start, end);
+
+        var settings = new TextSlotSourceSettings { DecimalPlaces = 0 };
+        var result = _resolver.Resolve(TextSourceType.ProgressPercent, settings);
+        Assert.Equal("50%", result);
+    }
+
+    [Fact]
     public void Resolve_CurrentTime_ReturnsFormattedTime()
     {
         _timeService.CurrentTime = new DateTime(2026, 1, 1, 14, 30, 45);
         var result = _resolver.Resolve(TextSourceType.CurrentTime);
         Assert.Equal("14:30:45", result);
+    }
+
+    [Fact]
+    public void Resolve_CurrentTime_CustomFormat()
+    {
+        _timeService.CurrentTime = new DateTime(2026, 1, 1, 14, 30, 45);
+        var settings = new TextSlotSourceSettings { Format = "HH:mm" };
+        var result = _resolver.Resolve(TextSourceType.CurrentTime, settings);
+        Assert.Equal("14:30", result);
     }
 
     [Fact]
@@ -143,14 +181,29 @@ public class TextSlotResolverTests
     }
 
     [Fact]
-    public void Resolve_NextSegment_NoNext_ReturnsEmpty()
+    public void Resolve_NextSegment_NoNext_ReturnsFallback()
     {
         var now = new DateTime(2026, 1, 1, 10, 0, 0);
         _timeService.CurrentTime = now;
         _scheduleManager.CurrentPlan = CreatePlanWithSegment("最后段", now, now.AddHours(1));
 
-        var result = _resolver.Resolve(TextSourceType.NextSegment);
-        Assert.Equal(string.Empty, result);
+        var settings = new TextSlotSourceSettings { Fallback = "无" };
+        var result = _resolver.Resolve(TextSourceType.NextSegment, settings);
+        Assert.Equal("无", result);
+    }
+
+    [Fact]
+    public void Resolve_NextSegment_ShowTime()
+    {
+        var now = new DateTime(2026, 1, 1, 10, 0, 0);
+        _timeService.CurrentTime = now;
+        var plan = CreatePlanWithSegment("当前段", now, now.AddHours(1));
+        plan.TimeSegments.Add(new TimeSegment("next", "休息", now.AddHours(1), now.AddHours(2), ProgressStateType.Success, false));
+        _scheduleManager.CurrentPlan = plan;
+
+        var settings = new TextSlotSourceSettings { ShowTime = true };
+        var result = _resolver.Resolve(TextSourceType.NextSegment, settings);
+        Assert.Equal("休息 (11:00)", result);
     }
 
     [Fact]
@@ -164,11 +217,26 @@ public class TextSlotResolverTests
     [Fact]
     public void Resolve_CurrentDayOfWeek_ReturnsDayName()
     {
-        // 2026-05-04 is Monday
         _timeService.CurrentTime = new DateTime(2026, 5, 4, 14, 30, 0);
         var result = _resolver.Resolve(TextSourceType.CurrentDayOfWeek);
         Assert.Equal(DayOfWeek.Monday, _timeService.CurrentTime.DayOfWeek);
         Assert.False(string.IsNullOrEmpty(result));
+    }
+
+    [Fact]
+    public void Resolve_CommonSettings_Invisible_ReturnsEmpty()
+    {
+        var common = new TextSlotCommonSettings { Visible = false };
+        Assert.Equal(string.Empty, _resolver.Resolve(TextSourceType.CurrentTime, null, common));
+    }
+
+    [Fact]
+    public void Resolve_CommonSettings_PrefixSuffix()
+    {
+        _timeService.CurrentTime = new DateTime(2026, 1, 1, 14, 30, 45);
+        var common = new TextSlotCommonSettings { Prefix = "⏱ ", Suffix = " !" };
+        var result = _resolver.Resolve(TextSourceType.CurrentTime, null, common);
+        Assert.Equal("⏱ 14:30:45 !", result);
     }
 
     private static ExecutionPlan CreatePlanWithSegment(string name, DateTime? start = null, DateTime? end = null)

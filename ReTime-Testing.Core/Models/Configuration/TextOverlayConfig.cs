@@ -60,6 +60,85 @@ public enum TextSourceType
 }
 
 /// <summary>
+/// 文字插槽组件专属配置（不同 Source 类型读取不同字段）
+/// </summary>
+public class TextSlotSourceSettings
+{
+    /// <summary>
+    /// 自定义文本内容（仅 Source=CustomText 时生效）
+    /// </summary>
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    /// <summary>
+    /// 格式字符串（Source=CurrentTime/CurrentDate/CurrentDayOfWeek 时生效）
+    /// CurrentTime 默认 "HH:mm:ss"，CurrentDate 默认 "yyyy/MM/dd"，CurrentDayOfWeek 默认 "long"
+    /// </summary>
+    [JsonPropertyName("format")]
+    public string? Format { get; set; }
+
+    /// <summary>
+    /// 是否显示秒（Source=RemainingTime/ElapsedTime 时生效，默认 true）
+    /// </summary>
+    [JsonPropertyName("showSeconds")]
+    public bool? ShowSeconds { get; set; }
+
+    /// <summary>
+    /// 小数位数（Source=ProgressPercent 时生效，默认 1）
+    /// </summary>
+    [JsonPropertyName("decimalPlaces")]
+    public int? DecimalPlaces { get; set; }
+
+    /// <summary>
+    /// 无数据时的回退文本（Source=SegmentName/NextSegment 时生效）
+    /// </summary>
+    [JsonPropertyName("fallback")]
+    public string? Fallback { get; set; }
+
+    /// <summary>
+    /// 是否同时显示开始时间（Source=NextSegment 时生效，默认 false）
+    /// </summary>
+    [JsonPropertyName("showTime")]
+    public bool? ShowTime { get; set; }
+}
+
+/// <summary>
+/// 文字插槽通用自定义项（所有 Source 类型共享）
+/// </summary>
+public class TextSlotCommonSettings
+{
+    /// <summary>
+    /// 该项是否可见（可临时隐藏而不删除）
+    /// </summary>
+    [JsonPropertyName("visible")]
+    public bool Visible { get; set; } = true;
+
+    /// <summary>
+    /// 前缀文本（显示在内容之前，如 "⏱"）
+    /// </summary>
+    [JsonPropertyName("prefix")]
+    public string? Prefix { get; set; }
+
+    /// <summary>
+    /// 后缀文本（显示在内容之后，如 "%"）
+    /// </summary>
+    [JsonPropertyName("suffix")]
+    public string? Suffix { get; set; }
+
+    /// <summary>
+    /// 单项字体大小覆盖（null 表示使用全局字体大小）
+    /// </summary>
+    [JsonPropertyName("fontSizeOverride")]
+    public double? FontSizeOverride { get; set; }
+
+    /// <summary>
+    /// 单项颜色覆盖（null 表示使用全局文字颜色，ARGB 十六进制如 "#FF0000"）
+    /// </summary>
+    [JsonPropertyName("colorOverride")]
+    public string? ColorOverride { get; set; }
+}
+
+/// <summary>
 /// 文字插槽配置
 /// </summary>
 public class TextSlotConfig
@@ -71,16 +150,16 @@ public class TextSlotConfig
     public TextSourceType Source { get; set; } = TextSourceType.None;
 
     /// <summary>
-    /// 自定义文本（仅 Source=CustomText 时生效）
+    /// 组件专属配置（不同 Source 类型读取不同字段）
     /// </summary>
-    [JsonPropertyName("customText")]
-    public string CustomText { get; set; } = "";
+    [JsonPropertyName("sourceSettings")]
+    public TextSlotSourceSettings SourceSettings { get; set; } = new();
 
     /// <summary>
-    /// 项间分隔符
+    /// 通用自定义项（所有 Source 类型共享）
     /// </summary>
-    [JsonPropertyName("separator")]
-    public string Separator { get; set; } = "  ";
+    [JsonPropertyName("commonSettings")]
+    public TextSlotCommonSettings CommonSettings { get; set; } = new();
 }
 
 /// <summary>

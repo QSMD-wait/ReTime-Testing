@@ -332,9 +332,24 @@ namespace ReTime_Testing.Services
             target.TextOverlay.Style.Opacity = Math.Clamp(target.TextOverlay.Style.Opacity, 0.0, 1.0);
             target.TextOverlay.Style.ItemSpacing = Math.Max(0, target.TextOverlay.Style.ItemSpacing);
 
+            EnsureSlotDefaults(target.TextOverlay.Layout.Left.Slots);
+            EnsureSlotDefaults(target.TextOverlay.Layout.Center.Slots);
+            EnsureSlotDefaults(target.TextOverlay.Layout.Right.Slots);
+
             target.Window ??= new WindowConfig();
 
             return target;
+        }
+
+        private static void EnsureSlotDefaults(List<TextSlotConfig> slots)
+        {
+            foreach (var slot in slots)
+            {
+                slot.SourceSettings ??= new TextSlotSourceSettings();
+                slot.CommonSettings ??= new TextSlotCommonSettings();
+                if (slot.CommonSettings.FontSizeOverride.HasValue)
+                    slot.CommonSettings.FontSizeOverride = Math.Max(1, slot.CommonSettings.FontSizeOverride.Value);
+            }
         }
 
         #endregion

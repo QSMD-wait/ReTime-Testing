@@ -17,14 +17,20 @@ public class TextSlotDisplay
     public string Text { get; }
 
     /// <summary>
-    /// 分隔符
+    /// 单项字体大小覆盖（null 表示使用全局字体大小）
     /// </summary>
-    public string Separator { get; }
+    public double? FontSizeOverride { get; }
 
-    public TextSlotDisplay(string text, string separator = "  ")
+    /// <summary>
+    /// 单项颜色覆盖（null 表示使用全局文字颜色）
+    /// </summary>
+    public string? ColorOverride { get; }
+
+    public TextSlotDisplay(string text, double? fontSizeOverride = null, string? colorOverride = null)
     {
         Text = text;
-        Separator = separator;
+        FontSizeOverride = fontSizeOverride;
+        ColorOverride = colorOverride;
     }
 }
 
@@ -43,17 +49,17 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     /// <summary>
     /// 左侧文字列表
     /// </summary>
-    public ObservableCollection<TextSlotDisplay> LeftSlots { get; } = [];
+    public ObservableCollection<TextSlotDisplay> LeftSlots { get; } = new();
 
     /// <summary>
     /// 中间文字列表
     /// </summary>
-    public ObservableCollection<TextSlotDisplay> CenterSlots { get; } = [];
+    public ObservableCollection<TextSlotDisplay> CenterSlots { get; } = new();
 
     /// <summary>
     /// 右侧文字列表
     /// </summary>
-    public ObservableCollection<TextSlotDisplay> RightSlots { get; } = [];
+    public ObservableCollection<TextSlotDisplay> RightSlots { get; } = new();
 
     [ObservableProperty]
     private bool _isVisible;
@@ -147,7 +153,6 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
     /// </summary>
     private void UpdateSlotList(ObservableCollection<TextSlotDisplay> slots, List<TextSlotConfig> configs)
     {
-        // 确保列表长度一致
         while (slots.Count < configs.Count)
         {
             slots.Add(new TextSlotDisplay(""));
@@ -157,16 +162,17 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
             slots.RemoveAt(slots.Count - 1);
         }
 
-        // 更新文本
         for (int i = 0; i < configs.Count; i++)
         {
             var config = configs[i];
-            var text = _resolver.Resolve(config.Source, config.CustomText);
+            var text = _resolver.Resolve(config.Source, config.SourceSettings, config.CommonSettings);
             var oldSlot = slots[i];
 
-            if (oldSlot.Text != text || oldSlot.Separator != config.Separator)
+            if (oldSlot.Text != text
+                || oldSlot.FontSizeOverride != config.CommonSettings.FontSizeOverride
+                || oldSlot.ColorOverride != config.CommonSettings.ColorOverride)
             {
-                slots[i] = new TextSlotDisplay(text, config.Separator);
+                slots[i] = new TextSlotDisplay(text, config.CommonSettings.FontSizeOverride, config.CommonSettings.ColorOverride);
             }
         }
     }

@@ -243,7 +243,7 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _stateStylesEnabled = true;
 
-        public List<StateStyleItemViewModel> StateStyleItems { get; } = [];
+        public List<StateStyleItemViewModel> StateStyleItems { get; } = new();
 
         private void SaveAndRefresh()
         {

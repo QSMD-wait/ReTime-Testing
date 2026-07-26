@@ -99,7 +99,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
         if (width <= 0) return;
 
         var style = StyleConfig ?? new TextOverlayStyleConfig();
-        var fontSize = Math.Max(1, style.FontSize);
+        var baseFontSize = Math.Max(1, style.FontSize);
         var leftOffset = style.LeftOffset;
         var rightOffset = style.RightOffset;
         var centerOffset = style.CenterOffset;
@@ -107,17 +107,11 @@ public class PriorityTextOverlayPanel : FrameworkElement
         var itemSpacing = Math.Max(0, style.ItemSpacing);
         var opacity = Math.Clamp(style.Opacity, 0.0, 1.0);
 
-        // 构建画刷
         var baseColor = ParseColor(style.TextColor, Colors.LightGray);
         var textColor = baseColor;
         textColor.A = (byte)(255 * opacity);
         var opaqueTextBrush = new SolidColorBrush(textColor);
         opaqueTextBrush.Freeze();
-
-        var sepColor = baseColor;
-        sepColor.A = (byte)(255 * opacity * 0.5);
-        var separatorBrush = new SolidColorBrush(sepColor);
-        separatorBrush.Freeze();
 
         var pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
         var typeface = new Typeface(
@@ -126,12 +120,10 @@ public class PriorityTextOverlayPanel : FrameworkElement
             SystemFonts.MessageFontWeight,
             FontStretches.Normal);
 
-        // 测量所有项
-        var leftItems = MeasureGroup(LeftSlots, typeface, pixelsPerDip, fontSize);
-        var rightItems = MeasureGroup(RightSlots, typeface, pixelsPerDip, fontSize);
-        var centerItems = MeasureGroup(CenterSlots, typeface, pixelsPerDip, fontSize);
+        var leftItems = MeasureGroup(LeftSlots, typeface, pixelsPerDip, baseFontSize, textColor, opacity);
+        var rightItems = MeasureGroup(RightSlots, typeface, pixelsPerDip, baseFontSize, textColor, opacity);
+        var centerItems = MeasureGroup(CenterSlots, typeface, pixelsPerDip, baseFontSize, textColor, opacity);
 
-        // 1. 放置 Left（从左向右，优先级最高），正偏移→右移，基础边距16
         double x = 16 + leftOffset;
         for (int i = 0; i < leftItems.Count; i++)
         {
@@ -141,7 +133,6 @@ public class PriorityTextOverlayPanel : FrameworkElement
         }
         double leftEnd = x;
 
-        // 2. 放置 Right（从右向左，优先级居中），正偏移→右移，基础边距16
         double rightBound = width - 16 + rightOffset;
         x = rightBound;
         for (int i = rightItems.Count - 1; i >= 0; i--)
@@ -152,7 +143,6 @@ public class PriorityTextOverlayPanel : FrameworkElement
         }
         double rightStart = rightItems.Count > 0 ? rightItems[0].X : rightBound;
 
-        // 3. Right 与 Left 重叠 → 隐藏重叠的 Right 项
         for (int i = 0; i < rightItems.Count; i++)
         {
             if (rightItems[i].X < leftEnd)
@@ -162,7 +152,6 @@ public class PriorityTextOverlayPanel : FrameworkElement
         }
         rightStart = rightItems.FirstOrDefault(m => m.Visible)?.X ?? rightBound;
 
-        // 4. 放置 Center（居中 + 偏移，优先级最低），正偏移→右移
         double centerTotalWidth = centerItems.Sum(m => m.TotalWidth)
             + Math.Max(0, centerItems.Count - 1) * itemSpacing;
         double centerStart = (width - centerTotalWidth) / 2 + centerOffset;
@@ -174,7 +163,6 @@ public class PriorityTextOverlayPanel : FrameworkElement
             if (i < centerItems.Count - 1) x += itemSpacing;
         }
 
-        // 5. Center 与 Left/Right 重叠 → 隐藏重叠的 Center 项
         foreach (var item in centerItems)
         {
             double itemEnd = item.X + item.TextWidth;
@@ -182,22 +170,21 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 item.Visible = false;
         }
 
-        // 6. 绘制所有可见项（正垂直偏移→上移，y=0 为面板顶部=进度条底边，不可越过）
-        double baseY = (RenderSize.Height - fontSize) / 2 - 2;
+        double baseY = (RenderSize.Height - baseFontSize) / 2 - 2;
         double y = Math.Max(0, baseY - verticalOffset);
 
         var textEffect = style.TextEffect ?? "none";
 
         foreach (var item in leftItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, opaqueTextBrush, textEffect);
         foreach (var item in centerItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, opaqueTextBrush, textEffect);
         foreach (var item in rightItems.Where(m => m.Visible))
-            DrawItem(dc, item, y, typeface, pixelsPerDip, fontSize, opaqueTextBrush, separatorBrush, textEffect);
+            DrawItem(dc, item, y, typeface, pixelsPerDip, opaqueTextBrush, textEffect);
     }
 
     private static List<MeasuredSlot> MeasureGroup(
-        ObservableCollection<TextSlotDisplay>? slots, Typeface typeface, double pixelsPerDip, double fontSize)
+        ObservableCollection<TextSlotDisplay>? slots, Typeface typeface, double pixelsPerDip, double baseFontSize, Color baseTextColor, double opacity)
     {
         var result = new List<MeasuredSlot>();
         if (slots == null) return result;
@@ -206,24 +193,22 @@ public class PriorityTextOverlayPanel : FrameworkElement
         {
             if (string.IsNullOrEmpty(slot.Text)) continue;
 
+            var fontSize = slot.FontSizeOverride ?? baseFontSize;
+            var itemColor = ParseColor(slot.ColorOverride, baseTextColor);
+            itemColor.A = (byte)(255 * opacity);
+            var itemBrush = new SolidColorBrush(itemColor);
+            itemBrush.Freeze();
+
             var formattedText = new FormattedText(
                 slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 typeface, fontSize, TextBrush, pixelsPerDip);
 
-            double separatorWidth = 0;
-            if (!string.IsNullOrEmpty(slot.Separator))
-            {
-                var formattedSep = new FormattedText(
-                    slot.Separator, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                    typeface, fontSize, TextBrush, pixelsPerDip);
-                separatorWidth = formattedSep.Width;
-            }
-
             result.Add(new MeasuredSlot(slot)
             {
                 TextWidth = formattedText.Width,
-                SeparatorWidth = separatorWidth,
-                TotalWidth = formattedText.Width + separatorWidth,
+                TotalWidth = formattedText.Width,
+                FontSize = fontSize,
+                ItemBrush = itemBrush,
             });
         }
 
@@ -231,12 +216,14 @@ public class PriorityTextOverlayPanel : FrameworkElement
     }
 
     private static void DrawItem(DrawingContext dc, MeasuredSlot item, double y,
-        Typeface typeface, double pixelsPerDip, double fontSize,
-        Brush textBrush, Brush separatorBrush, string textEffect)
+        Typeface typeface, double pixelsPerDip,
+        Brush fallbackBrush, string textEffect)
     {
+        var brush = item.ItemBrush ?? fallbackBrush;
+
         var mainText = new FormattedText(
             item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            typeface, fontSize, textBrush, pixelsPerDip);
+            typeface, item.FontSize, brush, pixelsPerDip);
 
         switch (textEffect)
         {
@@ -245,7 +232,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 shadowBrush.Freeze();
                 dc.DrawText(new FormattedText(
                     item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                    typeface, fontSize, shadowBrush, pixelsPerDip),
+                    typeface, item.FontSize, shadowBrush, pixelsPerDip),
                     new Point(item.X + 1, y + 1));
                 dc.DrawText(mainText, new Point(item.X, y));
                 break;
@@ -262,48 +249,17 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 dc.DrawText(mainText, new Point(item.X, y));
                 break;
         }
-
-        if (item.SeparatorWidth > 0)
-        {
-            var mainSep = new FormattedText(
-                item.Slot.Separator, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                typeface, fontSize, separatorBrush, pixelsPerDip);
-
-            switch (textEffect)
-            {
-                case "shadow":
-                    var shadowBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
-                    shadowBrush.Freeze();
-                    dc.DrawText(new FormattedText(
-                        item.Slot.Separator, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                        typeface, fontSize, shadowBrush, pixelsPerDip),
-                        new Point(item.X + item.TextWidth + 1, y + 1));
-                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
-                    break;
-
-                case "outline":
-                    var outlinePen = new Pen(new SolidColorBrush(Color.FromArgb(160, 0, 0, 0)), 0.8);
-                    outlinePen.Freeze();
-                    var sepGeo = mainSep.BuildGeometry(new Point(item.X + item.TextWidth, y));
-                    dc.DrawGeometry(null, outlinePen, sepGeo);
-                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
-                    break;
-
-                default:
-                    dc.DrawText(mainSep, new Point(item.X + item.TextWidth, y));
-                    break;
-            }
-        }
     }
 
     private class MeasuredSlot
     {
         public TextSlotDisplay Slot { get; }
         public double TextWidth { get; set; }
-        public double SeparatorWidth { get; set; }
         public double TotalWidth { get; set; }
         public double X { get; set; }
         public bool Visible { get; set; } = true;
+        public double FontSize { get; set; }
+        public Brush? ItemBrush { get; set; }
 
         public MeasuredSlot(TextSlotDisplay slot) => Slot = slot;
     }
