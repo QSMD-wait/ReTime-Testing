@@ -1,0 +1,151 @@
+<pages:SettingsPageBase x:Class="ReTime_Testing.Views.Settings.Pages.TextOverlayPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="600">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
+        <FrameworkElement.Resources>
+            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+        </FrameworkElement.Resources>
+
+        <Grid>
+            <ikw:SimpleStackPanel MaxWidth="1000"
+                                 HorizontalAlignment="Stretch"
+                                 Spacing="{StaticResource SettingsCardSpacing}">
+
+                <TextBlock Text="文字覆盖" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+
+                <!-- 全局开关 -->
+                <ui:SettingsCard Header="启用文字覆盖"
+                                 Description="在进度条上方显示自定义文字信息">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextT_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ui:ToggleSwitch IsOn="{Binding IsEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+                </ui:SettingsCard>
+
+                <!-- ========== 全局样式 ========== -->
+                <Separator Margin="0,8,0,4"/>
+                <TextBlock Text="全局样式" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
+
+                <ui:SettingsCard Header="字体大小"
+                                 Description="文字覆盖的字体大小（像素）">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextFontSize_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:NumberBox Value="{Binding FontSize, Mode=TwoWay}"
+                                      SpinButtonPlacementMode="Compact"
+                                      Minimum="6" Maximum="48"
+                                      SmallChange="1" LargeChange="2"
+                                      MinWidth="100"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="8,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </ui:SettingsCard>
+
+                <ui:SettingsCard Header="文字透明度"
+                                 Description="文字覆盖的整体透明度">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Eye_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <Slider Value="{Binding Opacity, Mode=TwoWay}"
+                            Minimum="0" Maximum="1"
+                            TickFrequency="0.05" IsSnapToTickEnabled="True"
+                            Width="180" VerticalAlignment="Center"/>
+                </ui:SettingsCard>
+
+                <ui:SettingsCard Header="文字颜色"
+                                 Description="ARGB 十六进制颜色值，如 #E0E0E0">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Color_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <TextBox Text="{Binding TextColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             MinWidth="120"/>
+                </ui:SettingsCard>
+
+                <ui:SettingsCard Header="组件间隔"
+                                 Description="同一组内相邻组件之间的像素间隔">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Spacebar_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:NumberBox Value="{Binding ItemSpacing, Mode=TwoWay}"
+                                      SpinButtonPlacementMode="Compact"
+                                      Minimum="0" Maximum="40"
+                                      SmallChange="1" LargeChange="4"
+                                      MinWidth="100"/>
+                        <TextBlock Text="px" VerticalAlignment="Center" Margin="8,0,0,0"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </StackPanel>
+                </ui:SettingsCard>
+
+                <ui:SettingsCard Header="文字效果"
+                                 Description="文字的字体效果样式">
+                    <ui:SettingsCard.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextFont_24_Regular}" />
+                    </ui:SettingsCard.HeaderIcon>
+                    <ComboBox SelectedValue="{Binding SelectedTextEffect, Mode=TwoWay}"
+                              SelectedValuePath="Tag"
+                              MinWidth="120">
+                        <ComboBoxItem Content="无效果" Tag="none"/>
+                        <ComboBoxItem Content="阴影" Tag="shadow"/>
+                        <ComboBoxItem Content="描边" Tag="outline"/>
+                    </ComboBox>
+                </ui:SettingsCard>
+
+                <!-- ========== 布局偏移 ========== -->
+                <Separator Margin="0,8,0,4"/>
+                <TextBlock Text="布局偏移" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
+
+                <ui:SettingsExpander Header="区域偏移"
+                                     Description="各区域水平偏移和整体垂直偏移">
+                    <ui:SettingsExpander.HeaderIcon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowMove_24_Regular}" />
+                    </ui:SettingsExpander.HeaderIcon>
+                    <ui:SettingsExpander.Items>
+                        <ui:SettingsCard Header="左区域水平偏移"
+                                         Description="正→右移，负→左移">
+                            <ui:NumberBox Value="{Binding LeftOffset, Mode=TwoWay}"
+                                          SpinButtonPlacementMode="Compact"
+                                          Minimum="-200" Maximum="200"
+                                          SmallChange="1" LargeChange="10"
+                                          MinWidth="100"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="中区域水平偏移"
+                                         Description="正→右移，负→左移">
+                            <ui:NumberBox Value="{Binding CenterOffset, Mode=TwoWay}"
+                                          SpinButtonPlacementMode="Compact"
+                                          Minimum="-200" Maximum="200"
+                                          SmallChange="1" LargeChange="10"
+                                          MinWidth="100"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="右区域水平偏移"
+                                         Description="正→右移，负→左移">
+                            <ui:NumberBox Value="{Binding RightOffset, Mode=TwoWay}"
+                                          SpinButtonPlacementMode="Compact"
+                                          Minimum="-200" Maximum="200"
+                                          SmallChange="1" LargeChange="10"
+                                          MinWidth="100"/>
+                        </ui:SettingsCard>
+                        <ui:SettingsCard Header="整体垂直偏移"
+                                         Description="正→上移，负→下移，不会遮挡进度条">
+                            <ui:NumberBox Value="{Binding VerticalOffset, Mode=TwoWay}"
+                                          SpinButtonPlacementMode="Compact"
+                                          Minimum="-50" Maximum="50"
+                                          SmallChange="1" LargeChange="5"
+                                          MinWidth="100"/>
+                        </ui:SettingsCard>
+                    </ui:SettingsExpander.Items>
+                </ui:SettingsExpander>
+
+            </ikw:SimpleStackPanel>
+        </Grid>
+    </ScrollViewer>
+</pages:SettingsPageBase>

@@ -1,0 +1,402 @@
+<pages:SettingsPageBase x:Class="ReTime_Testing.Views.Settings.Pages.TextOverlayLayoutPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
+             xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="700">
+
+    <Grid Margin="12,8,12,8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="插槽布局" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,4"/>
+
+        <!-- 插槽组行 -->
+        <ikw:SimpleStackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,2">
+
+            <!-- 左组行 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="6" Padding="10,6" Margin="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignLeft_24_Regular}"
+                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="左组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding LeftGroupVisible, Mode=TwoWay}"
+                                     OffContent="" OnContent="" MinWidth="0"
+                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding LeftSlots}" Tag="0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
+                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
+                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                        <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
+                                            <ui:FontIcon.Style>
+                                                <Style TargetType="ui:FontIcon">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                </Style>
+                                            </ui:FontIcon.Style>
+                                        </ui:FontIcon>
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
+                                    </ikw:SimpleStackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddLeftSlot"/>
+                </Grid>
+            </Border>
+
+            <!-- 中组行 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="6" Padding="10,6" Margin="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignCenterHorizontal_24_Regular}"
+                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="中组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding CenterGroupVisible, Mode=TwoWay}"
+                                     OffContent="" OnContent="" MinWidth="0"
+                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding CenterSlots}" Tag="1">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
+                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
+                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
+                                            <ui:FontIcon.Style>
+                                                <Style TargetType="ui:FontIcon">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                </Style>
+                                            </ui:FontIcon.Style>
+                                        </ui:FontIcon>
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
+                                    </ikw:SimpleStackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddCenterSlot"/>
+                </Grid>
+            </Border>
+
+            <!-- 右组行 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="6" Padding="10,6" Margin="0,0,0,1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignRight_24_Regular}"
+                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="右组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding RightGroupVisible, Mode=TwoWay}"
+                                     OffContent="" OnContent="" MinWidth="0"
+                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+
+                    <ItemsControl Grid.Column="2" ItemsSource="{Binding RightSlots}" Tag="2">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
+                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
+                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
+                                            <ui:FontIcon.Style>
+                                                <Style TargetType="ui:FontIcon">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                </Style>
+                                            </ui:FontIcon.Style>
+                                        </ui:FontIcon>
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
+                                    </ikw:SimpleStackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddRightSlot"/>
+                </Grid>
+            </Border>
+
+        </ikw:SimpleStackPanel>
+
+        <!-- 分隔线 -->
+        <Separator Grid.Row="2" Margin="0,2"/>
+
+        <!-- Pivot 风格 TabControl -->
+        <TabControl Grid.Row="3"
+                    SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                    Style="{StaticResource TabControlPivotStyle}"
+                    Margin="0,2,0,0">
+
+            <!-- ==================== Tab 1: 组件库（网格布局）==================== -->
+            <TabItem Header="组件库">
+                <DockPanel LastChildFill="True">
+                    <!-- 搜索栏 + 分类筛选 -->
+                    <DockPanel DockPanel.Dock="Top" Margin="4,4,4,2">
+                        <TextBox DockPanel.Dock="Left" Width="160" Height="28"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 ui:ControlHelper.PlaceholderText="搜索组件..."
+                                 VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+                        <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding}" Cursor="Hand" FontSize="11" Padding="6,2"
+                                            Margin="4,0" BorderThickness="0"
+                                            Background="Transparent"
+                                            Click="OnCategoryClick"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+
+                    <!-- 网格布局：WrapPanel -->
+                    <ScrollViewer DockPanel.Dock="Top" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
+                        <ItemsControl ItemsSource="{Binding FilteredComponents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ComponentLibraryItem}">
+                                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                            CornerRadius="6" Padding="10,8" Margin="3"
+                                            Cursor="Hand" MouseLeftButtonDown="OnComponentClick"
+                                            BorderThickness="1" BorderBrush="Transparent"
+                                            Width="180">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource SubtleFillSecondaryHoverBrush}"/>
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <ikw:SimpleStackPanel Spacing="4">
+                                            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
+                                                <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18"
+                                                             Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                                           VerticalAlignment="Center"/>
+                                        </ikw:SimpleStackPanel>
+                                            <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       FontSize="10" TextWrapping="Wrap" MaxHeight="32"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </ikw:SimpleStackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ==================== Tab 2: 插槽设置 ==================== -->
+            <TabItem Header="插槽设置">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
+                    <Grid>
+                        <!-- 未选中插槽时的提示 -->
+                        <TextBlock x:Name="HintText" Text="请在上方插槽组中点击一个插槽进行编辑"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="12" Margin="0,30,0,0"/>
+
+                        <!-- 选中插槽后的编辑面板 -->
+                        <ContentControl x:Name="SlotEditor" Content="{Binding SelectedSlot}" Margin="0,4,0,0">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
+                                    <ikw:SimpleStackPanel Spacing="2">
+
+                                        <!-- 数据源设置 -->
+                                        <TextBlock Text="数据源设置" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,2"/>
+
+                                        <ui:SettingsCard Header="数据源类型" Description="选择该插槽显示的内容来源">
+                                            <ui:SettingsCard.HeaderIcon>
+                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Database_24_Regular}" />
+                                            </ui:SettingsCard.HeaderIcon>
+                                            <ComboBox SelectedIndex="{Binding SourceTypeIndex, Mode=TwoWay}" MinWidth="140">
+                                                <ComboBoxItem Content="不显示"/>
+                                                <ComboBoxItem Content="自定义文本"/>
+                                                <ComboBoxItem Content="当前段名"/>
+                                                <ComboBoxItem Content="剩余时间"/>
+                                                <ComboBoxItem Content="已过时间"/>
+                                                <ComboBoxItem Content="进度百分比"/>
+                                                <ComboBoxItem Content="系统时间"/>
+                                                <ComboBoxItem Content="下一段名"/>
+                                                <ComboBoxItem Content="当前日期"/>
+                                                <ComboBoxItem Content="星期几"/>
+                                            </ComboBox>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="自定义文本" Description="数据源为「自定义文本」时显示的内容">
+                                            <TextBox Text="{Binding CustomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="格式字符串" Description="系统时间/日期/星期几的格式">
+                                            <TextBox Text="{Binding Format, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="显示秒数" Description="剩余时间/已过时间是否显示秒数">
+                                            <ui:ToggleSwitch IsOn="{Binding ShowSeconds, Mode=TwoWay}" OffContent="否" OnContent="是" MinWidth="0"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="小数位数" Description="进度百分比的小数位数">
+                                            <ui:NumberBox Value="{Binding DecimalPlaces, Mode=TwoWay}"
+                                                          SpinButtonPlacementMode="Compact" Minimum="0" Maximum="4" SmallChange="1" MinWidth="90"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="回退文本" Description="当前段名/下一段名无数据时的回退文本">
+                                            <TextBox Text="{Binding Fallback, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="同时显示时间" Description="下一段名同时显示开始时间">
+                                            <ui:ToggleSwitch IsOn="{Binding ShowTime, Mode=TwoWay}" OffContent="否" OnContent="是" MinWidth="0"/>
+                                        </ui:SettingsCard>
+
+                                        <Separator Margin="0,3,0,1"/>
+
+                                        <!-- 通用设置 -->
+                                        <TextBlock Text="通用设置" FontSize="13" FontWeight="SemiBold" Margin="0,1,0,1"/>
+
+                                        <ui:SettingsCard Header="可见" Description="临时隐藏而不删除">
+                                            <ui:ToggleSwitch IsOn="{Binding Visible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="前缀" Description="显示在内容之前的文本">
+                                            <TextBox Text="{Binding Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="后缀" Description="显示在内容之后的文本">
+                                            <TextBox Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="字体大小覆盖" Description="留空使用全局字体大小">
+                                            <ui:NumberBox Value="{Binding FontSizeOverride, Mode=TwoWay}"
+                                                          SpinButtonPlacementMode="Compact" Minimum="6" Maximum="48" SmallChange="1" LargeChange="2" MinWidth="90"/>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="颜色覆盖" Description="ARGB 十六进制，留空使用全局颜色">
+                                            <TextBox Text="{Binding ColorOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
+                                        </ui:SettingsCard>
+
+                                        <Separator Margin="0,3,0,1"/>
+
+                                        <!-- 排序与删除 -->
+                                        <TextBlock Text="排序与删除" FontSize="13" FontWeight="SemiBold" Margin="0,1,0,1"/>
+
+                                        <ui:SettingsCard Header="移动位置" Description="调整该插槽在组内的排列顺序">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="▲ 上移" FontSize="11" Padding="6,2" Margin="0,0,6,0" Click="OnMoveSelectedUp"/>
+                                                <Button Content="▼ 下移" FontSize="11" Padding="6,2" Click="OnMoveSelectedDown"/>
+                                            </StackPanel>
+                                        </ui:SettingsCard>
+
+                                        <ui:SettingsCard Header="删除插槽" Description="从组中移除此插槽">
+                                            <Button Content="删除" FontSize="11" Padding="8,2" Click="OnRemoveSelectedSlot"/>
+                                        </ui:SettingsCard>
+
+                                    </ikw:SimpleStackPanel>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ==================== Tab 3: 组设置 ==================== -->
+            <TabItem Header="组设置">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
+                    <ikw:SimpleStackPanel Spacing="2" Margin="0,4,0,0">
+
+                        <TextBlock Text="组可见性" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,2"/>
+
+                        <ui:SettingsCard Header="左组可见" Description="启用或禁用左组插槽">
+                            <ui:ToggleSwitch IsOn="{Binding LeftGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
+                        </ui:SettingsCard>
+
+                        <ui:SettingsCard Header="中组可见" Description="启用或禁用中组插槽">
+                            <ui:ToggleSwitch IsOn="{Binding CenterGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
+                        </ui:SettingsCard>
+
+                        <ui:SettingsCard Header="右组可见" Description="启用或禁用右组插槽">
+                            <ui:ToggleSwitch IsOn="{Binding RightGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
+                        </ui:SettingsCard>
+
+                    </ikw:SimpleStackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- 底部状态栏 -->
+        <Border Grid.Row="4" Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                CornerRadius="4" Padding="10,4" Margin="0,4,0,0">
+            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}" FontSize="12"
+                             Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+            </ikw:SimpleStackPanel>
+        </Border>
+
+    </Grid>
+</pages:SettingsPageBase>

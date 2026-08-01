@@ -445,6 +445,8 @@ namespace ReTime_Testing.ViewModels
         private const string TAG_BASIC = "Basic";
         private const string TAG_APPEARANCE = "Appearance";
         private const string TAG_TIME = "Time";
+        private const string TAG_TEXT_OVERLAY = "TextOverlay";
+        private const string TAG_TEXT_OVERLAY_LAYOUT = "TextOverlayLayout";
         private const string TAG_WINDOW = "Window";
         private const string TAG_ABOUT = "About";
 
@@ -459,6 +461,8 @@ namespace ReTime_Testing.ViewModels
         private BasicPageViewModel? _basicPage;
         private AppearancePageViewModel? _appearancePage;
         private TimePageViewModel? _timePage;
+        private TextOverlayPageViewModel? _textOverlayPage;
+        private TextOverlayLayoutPageViewModel? _textOverlayLayoutPage;
         private WindowPageViewModel? _windowPage;
         private AboutPageViewModel? _aboutPage;
 
@@ -492,6 +496,8 @@ namespace ReTime_Testing.ViewModels
                 TAG_BASIC => _basicPage ??= new BasicPageViewModel(_settingsService),
                 TAG_APPEARANCE => _appearancePage ??= new AppearancePageViewModel(_settingsService, _desktopWindowManager),
                 TAG_TIME => _timePage ??= new TimePageViewModel(_settingsService, _timeService, _timeCalibrationService),
+                TAG_TEXT_OVERLAY => _textOverlayPage ??= new TextOverlayPageViewModel(_settingsService, _desktopWindowManager),
+                TAG_TEXT_OVERLAY_LAYOUT => _textOverlayLayoutPage ??= new TextOverlayLayoutPageViewModel(_settingsService, _desktopWindowManager),
                 TAG_WINDOW => _windowPage ??= new WindowPageViewModel(_settingsService, _desktopWindowManager),
                 TAG_ABOUT => _aboutPage ??= new AboutPageViewModel(),
                 _ => _basicPage ??= new BasicPageViewModel(_settingsService)
@@ -507,6 +513,8 @@ namespace ReTime_Testing.ViewModels
             _timePage = null;
             _basicPage = null;
             _appearancePage = null;
+            _textOverlayPage = null;
+            _textOverlayLayoutPage = null;
             _windowPage = null;
             _aboutPage = null;
         }

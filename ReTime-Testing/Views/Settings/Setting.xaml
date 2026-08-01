@@ -39,6 +39,16 @@
             <pages:WindowPage/>
         </DataTemplate>
 
+        <!-- 数据模板：文字覆盖设置 -->
+        <DataTemplate DataType="{x:Type viewModels:TextOverlayPageViewModel}">
+            <pages:TextOverlayPage/>
+        </DataTemplate>
+
+        <!-- 数据模板：文字覆盖布局设置 -->
+        <DataTemplate DataType="{x:Type viewModels:TextOverlayLayoutPageViewModel}">
+            <pages:TextOverlayLayoutPage/>
+        </DataTemplate>
+
         <!-- 数据模板：关于 -->
         <DataTemplate DataType="{x:Type viewModels:AboutPageViewModel}">
             <pages:AboutPage/>
@@ -75,6 +85,24 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Clock_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="文字覆盖" Tag="TextOverlay">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextT_24_Regular}"/>
+                    </ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.MenuItems>
+                        <ui:NavigationViewItem Content="全局设置" Tag="TextOverlay">
+                            <ui:NavigationViewItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Settings_24_Regular}"/>
+                            </ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="插槽布局" Tag="TextOverlayLayout">
+                            <ui:NavigationViewItem.Icon>
+                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Grid_24_Regular}"/>
+                            </ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                    </ui:NavigationViewItem.MenuItems>
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem Content="窗口" Tag="Window">

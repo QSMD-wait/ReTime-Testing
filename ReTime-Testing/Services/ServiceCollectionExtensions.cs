@@ -45,6 +45,8 @@ namespace ReTime_Testing.Services
             services.AddTransient<TimeTopSettingViewModel>();
             services.AddTransient<DebugTestViewModel>();
             services.AddTransient<TimePageViewModel>();
+            services.AddTransient<TextOverlayPageViewModel>();
+            services.AddTransient<TextOverlayLayoutPageViewModel>();
             services.AddTransient<TimeScheduleEditorViewModel>();
 
             return services;
