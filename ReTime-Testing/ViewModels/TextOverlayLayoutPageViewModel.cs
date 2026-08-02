@@ -41,6 +41,12 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedTabIndex;
 
+    partial void OnSelectedSlotChanged(TextSlotItemViewModel? value)
+    {
+        foreach (var slot in LeftSlots.Concat(CenterSlots).Concat(RightSlots))
+            slot.IsSelected = slot == value;
+    }
+
     #endregion
 
     #region 组件库搜索与筛选
@@ -277,6 +283,9 @@ public partial class TextSlotItemViewModel : ObservableObject
     private bool _isInitializing = true;
 
     public Models.TextSlotConfig Config { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
 
     [ObservableProperty]
     private int _sourceTypeIndex;
