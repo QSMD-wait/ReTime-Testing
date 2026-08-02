@@ -7,8 +7,183 @@
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
+             xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="700">
+
+    <FrameworkElement.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
+        <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+        <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
+
+        <!-- 插槽 ListBoxItem 样式：卡片风格 + 选中高亮 + 悬停效果 -->
+        <Style x:Key="SlotListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="2,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="6,3"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ui:FontIcon Grid.Column="0"
+                                             Icon="{Binding IconGlyph}"
+                                             FontSize="12"
+                                             Margin="0,0,4,0"
+                                             VerticalAlignment="Center"
+                                             x:Name="SlotIcon"/>
+
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding DisplayName}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <Button Grid.Column="2"
+                                        x:Name="DeleteButton"
+                                        FontSize="10"
+                                        Padding="2"
+                                        MinWidth="0" MinHeight="0"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                        Click="OnSlotDeleteClick"
+                                        ToolTip="移除插槽"
+                                        Background="Transparent"
+                                        BorderThickness="0">
+                                    <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{DynamicResource AccentControlElevationBorderBrush}"/>
+                                <Setter TargetName="SlotIcon" Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 组行内水平 ListBox 样式 -->
+        <Style x:Key="HorizontalSlotListBoxStyle" TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource SlotListBoxItemStyle}"/>
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox">
+                        <ItemsPresenter SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 分类筛选 RadioButton 样式 -->
+        <Style x:Key="CategoryRadioButtonStyle" TargetType="RadioButton">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 添加按钮样式（圆形图标按钮） -->
+        <Style x:Key="AddSlotButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTip" Value="添加插槽"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ui:FontIcon x:Name="AddIcon"
+                                         Icon="{x:Static ui:FluentSystemIcons.Add_24_Regular}"
+                                         FontSize="14"
+                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+                                <Setter TargetName="AddIcon" Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </FrameworkElement.Resources>
 
     <Grid Margin="12,8,12,8">
         <Grid.RowDefinitions>
@@ -31,45 +206,23 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignLeft_24_Regular}"
-                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="左组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding LeftGroupVisible, Mode=TwoWay}"
-                                     OffContent="" OnContent="" MinWidth="0"
-                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.AlignLeft_24_Regular}"
+                                     FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="左组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="2" ItemsSource="{Binding LeftSlots}" Tag="0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
-                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
-                                        <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ListBox Grid.Column="1" ItemsSource="{Binding LeftSlots}"
+                             SelectedItem="{Binding SelectedSlot, Mode=TwoWay}"
+                             Style="{StaticResource HorizontalSlotListBoxStyle}"
+                             SelectionChanged="OnSlotSelectionChanged"
+                             Tag="0"/>
 
-                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddLeftSlot"/>
+                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddLeftSlot"/>
                 </Grid>
             </Border>
 
@@ -79,45 +232,23 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignCenterHorizontal_24_Regular}"
-                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="中组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding CenterGroupVisible, Mode=TwoWay}"
-                                     OffContent="" OnContent="" MinWidth="0"
-                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.AlignCenterHorizontal_24_Regular}"
+                                     FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="中组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="2" ItemsSource="{Binding CenterSlots}" Tag="1">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
-                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ListBox Grid.Column="1" ItemsSource="{Binding CenterSlots}"
+                             SelectedItem="{Binding SelectedSlot, Mode=TwoWay}"
+                             Style="{StaticResource HorizontalSlotListBoxStyle}"
+                             SelectionChanged="OnSlotSelectionChanged"
+                             Tag="1"/>
 
-                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddCenterSlot"/>
+                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddCenterSlot"/>
                 </Grid>
             </Border>
 
@@ -127,45 +258,23 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <ui:FontIcon Grid.Column="0" Icon="{x:Static ui:FluentSystemIcons.AlignRight_24_Regular}"
-                                 FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="右组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ui:ToggleSwitch Grid.Column="1" IsOn="{Binding RightGroupVisible, Mode=TwoWay}"
-                                     OffContent="" OnContent="" MinWidth="0"
-                                     Margin="36,0,8,0" VerticalAlignment="Center"/>
+                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.AlignRight_24_Regular}"
+                                     FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="右组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="2" ItemsSource="{Binding RightSlots}" Tag="2">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border CornerRadius="4" Margin="1,0" Padding="6,3"
-                                        Cursor="Hand" MouseLeftButtonDown="OnSlotClick"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="11" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ListBox Grid.Column="1" ItemsSource="{Binding RightSlots}"
+                             SelectedItem="{Binding SelectedSlot, Mode=TwoWay}"
+                             Style="{StaticResource HorizontalSlotListBoxStyle}"
+                             SelectionChanged="OnSlotSelectionChanged"
+                             Tag="2"/>
 
-                    <Button Grid.Column="3" Content="＋" FontSize="14" Padding="4,0" Margin="6,0,0,0" ToolTip="添加插槽" Click="OnAddRightSlot"/>
+                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddRightSlot"/>
                 </Grid>
             </Border>
 
@@ -180,7 +289,7 @@
                     Style="{StaticResource TabControlPivotStyle}"
                     Margin="0,2,0,0">
 
-            <!-- ==================== Tab 1: 组件库（网格布局）==================== -->
+            <!-- ==================== Tab 1: 组件库 ==================== -->
             <TabItem Header="组件库">
                 <DockPanel LastChildFill="True">
                     <!-- 搜索栏 + 分类筛选 -->
@@ -189,25 +298,22 @@
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  ui:ControlHelper.PlaceholderText="搜索组件..."
                                  VerticalContentAlignment="Center" Margin="0,0,8,0"/>
-                        <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Categories}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Content="{Binding}" Cursor="Hand" FontSize="11" Padding="6,2"
-                                            Margin="4,0" BorderThickness="0"
-                                            Background="Transparent"
-                                            Click="OnCategoryClick"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel Orientation="Horizontal" x:Name="CategoryPanel">
+                            <RadioButton Content="全部" Style="{StaticResource CategoryRadioButtonStyle}"
+                                         GroupName="CategoryFilter" IsChecked="True" Checked="OnCategoryChecked"/>
+                            <RadioButton Content="文本类" Style="{StaticResource CategoryRadioButtonStyle}"
+                                         GroupName="CategoryFilter" Checked="OnCategoryChecked"/>
+                            <RadioButton Content="时间类" Style="{StaticResource CategoryRadioButtonStyle}"
+                                         GroupName="CategoryFilter" Checked="OnCategoryChecked"/>
+                            <RadioButton Content="日期类" Style="{StaticResource CategoryRadioButtonStyle}"
+                                         GroupName="CategoryFilter" Checked="OnCategoryChecked"/>
+                            <RadioButton Content="进度类" Style="{StaticResource CategoryRadioButtonStyle}"
+                                         GroupName="CategoryFilter" Checked="OnCategoryChecked"/>
+                        </StackPanel>
                     </DockPanel>
 
                     <!-- 网格布局：WrapPanel -->
-                    <ScrollViewer DockPanel.Dock="Top" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
                         <ItemsControl ItemsSource="{Binding FilteredComponents}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -225,7 +331,7 @@
                                             <Style TargetType="Border">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource SubtleFillSecondaryHoverBrush}"/>
+                                                        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
                                                         <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
                                                     </Trigger>
                                                 </Style.Triggers>
@@ -237,7 +343,7 @@
                                                              Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
                                                            VerticalAlignment="Center"/>
-                                        </ikw:SimpleStackPanel>
+                                            </ikw:SimpleStackPanel>
                                             <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                                        FontSize="10" TextWrapping="Wrap" MaxHeight="32"
                                                        TextTrimming="CharacterEllipsis"/>
@@ -255,7 +361,8 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
                     <Grid>
                         <!-- 未选中插槽时的提示 -->
-                        <TextBlock x:Name="HintText" Text="请在上方插槽组中点击一个插槽进行编辑"
+                        <TextBlock x:Name="HintText"
+                                   Text="请在上方插槽组中点击一个插槽进行编辑"
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    FontSize="12" Margin="0,30,0,0"/>
@@ -264,15 +371,15 @@
                         <ContentControl x:Name="SlotEditor" Content="{Binding SelectedSlot}" Margin="0,4,0,0">
                             <ContentControl.ContentTemplate>
                                 <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                    <ikw:SimpleStackPanel Spacing="2">
+                                    <ikw:SimpleStackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                                        <!-- 数据源设置 -->
-                                        <TextBlock Text="数据源设置" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,2"/>
-
-                                        <ui:SettingsCard Header="数据源类型" Description="选择该插槽显示的内容来源">
-                                            <ui:SettingsCard.HeaderIcon>
-                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Database_24_Regular}" />
-                                            </ui:SettingsCard.HeaderIcon>
+                                        <!-- ====== 数据源设置 ====== -->
+                                        <ui:SettingsExpander Header="数据源设置"
+                                                             Description="选择和配置该插槽显示的内容来源"
+                                                             IsExpanded="True">
+                                            <ui:SettingsExpander.HeaderIcon>
+                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Database_24_Regular}"/>
+                                            </ui:SettingsExpander.HeaderIcon>
                                             <ComboBox SelectedIndex="{Binding SourceTypeIndex, Mode=TwoWay}" MinWidth="140">
                                                 <ComboBoxItem Content="不显示"/>
                                                 <ComboBoxItem Content="自定义文本"/>
@@ -285,74 +392,142 @@
                                                 <ComboBoxItem Content="当前日期"/>
                                                 <ComboBoxItem Content="星期几"/>
                                             </ComboBox>
-                                        </ui:SettingsCard>
+                                            <ui:SettingsExpander.Items>
+                                                <ui:SettingsCard Header="自定义文本"
+                                                                 Description="数据源为「自定义文本」时显示的内容">
+                                                    <TextBox Text="{Binding CustomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="180"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsCustomTextRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="自定义文本" Description="数据源为「自定义文本」时显示的内容">
-                                            <TextBox Text="{Binding CustomText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="格式字符串"
+                                                                 Description="系统时间/日期/星期几的格式">
+                                                    <TextBox Text="{Binding Format, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="180"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsFormatRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="格式字符串" Description="系统时间/日期/星期几的格式">
-                                            <TextBox Text="{Binding Format, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="显示秒数"
+                                                                 Description="剩余时间/已过时间是否显示秒数">
+                                                    <ui:ToggleSwitch IsOn="{Binding ShowSeconds, Mode=TwoWay}"
+                                                                     OffContent="否" OnContent="是" MinWidth="0"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsShowSecondsRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="显示秒数" Description="剩余时间/已过时间是否显示秒数">
-                                            <ui:ToggleSwitch IsOn="{Binding ShowSeconds, Mode=TwoWay}" OffContent="否" OnContent="是" MinWidth="0"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="小数位数"
+                                                                 Description="进度百分比的小数位数">
+                                                    <ui:NumberBox Value="{Binding DecimalPlaces, Mode=TwoWay}"
+                                                                  SpinButtonPlacementMode="Compact"
+                                                                  Minimum="0" Maximum="4" SmallChange="1" MinWidth="90"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsDecimalPlacesRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="小数位数" Description="进度百分比的小数位数">
-                                            <ui:NumberBox Value="{Binding DecimalPlaces, Mode=TwoWay}"
-                                                          SpinButtonPlacementMode="Compact" Minimum="0" Maximum="4" SmallChange="1" MinWidth="90"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="回退文本"
+                                                                 Description="当前段名/下一段名无数据时的回退文本">
+                                                    <TextBox Text="{Binding Fallback, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="180"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsFallbackRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="回退文本" Description="当前段名/下一段名无数据时的回退文本">
-                                            <TextBox Text="{Binding Fallback, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="180"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="同时显示时间"
+                                                                 Description="下一段名同时显示开始时间">
+                                                    <ui:ToggleSwitch IsOn="{Binding ShowTime, Mode=TwoWay}"
+                                                                     OffContent="否" OnContent="是" MinWidth="0"/>
+                                                    <ui:SettingsCard.Visibility>
+                                                        <Binding Path="IsShowTimeRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
+                                                    </ui:SettingsCard.Visibility>
+                                                </ui:SettingsCard>
+                                            </ui:SettingsExpander.Items>
+                                        </ui:SettingsExpander>
 
-                                        <ui:SettingsCard Header="同时显示时间" Description="下一段名同时显示开始时间">
-                                            <ui:ToggleSwitch IsOn="{Binding ShowTime, Mode=TwoWay}" OffContent="否" OnContent="是" MinWidth="0"/>
-                                        </ui:SettingsCard>
+                                        <!-- ====== 通用设置 ====== -->
+                                        <ui:SettingsExpander Header="通用设置"
+                                                             Description="可见性、前后缀、字体和颜色覆盖"
+                                                             IsExpanded="True">
+                                            <ui:SettingsExpander.HeaderIcon>
+                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Settings_24_Regular}"/>
+                                            </ui:SettingsExpander.HeaderIcon>
+                                            <ui:SettingsExpander.Items>
+                                                <ui:SettingsCard Header="可见"
+                                                                 Description="临时隐藏而不删除">
+                                                    <ui:ToggleSwitch IsOn="{Binding Visible, Mode=TwoWay}"
+                                                                     OffContent="隐藏" OnContent="显示" MinWidth="0"/>
+                                                </ui:SettingsCard>
 
-                                        <Separator Margin="0,3,0,1"/>
+                                                <ui:SettingsCard Header="前缀"
+                                                                 Description="显示在内容之前的文本">
+                                                    <TextBox Text="{Binding Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="100"/>
+                                                </ui:SettingsCard>
 
-                                        <!-- 通用设置 -->
-                                        <TextBlock Text="通用设置" FontSize="13" FontWeight="SemiBold" Margin="0,1,0,1"/>
+                                                <ui:SettingsCard Header="后缀"
+                                                                 Description="显示在内容之后的文本">
+                                                    <TextBox Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="100"/>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="可见" Description="临时隐藏而不删除">
-                                            <ui:ToggleSwitch IsOn="{Binding Visible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="字体大小覆盖"
+                                                                 Description="留空使用全局字体大小">
+                                                    <ui:NumberBox Value="{Binding FontSizeOverrideValue, Mode=TwoWay}"
+                                                                  SpinButtonPlacementMode="Compact"
+                                                                  Minimum="0" Maximum="48"
+                                                                  SmallChange="1" LargeChange="2" MinWidth="90"/>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="前缀" Description="显示在内容之前的文本">
-                                            <TextBox Text="{Binding Prefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="颜色覆盖"
+                                                                 Description="ARGB 十六进制，留空使用全局颜色">
+                                                    <TextBox Text="{Binding ColorOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinWidth="100"/>
+                                                </ui:SettingsCard>
+                                            </ui:SettingsExpander.Items>
+                                        </ui:SettingsExpander>
 
-                                        <ui:SettingsCard Header="后缀" Description="显示在内容之后的文本">
-                                            <TextBox Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
-                                        </ui:SettingsCard>
+                                        <!-- ====== 排序与删除 ====== -->
+                                        <ui:SettingsExpander Header="排序与删除"
+                                                             Description="调整排列顺序或移除此插槽">
+                                            <ui:SettingsExpander.HeaderIcon>
+                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowSort_24_Regular}"/>
+                                            </ui:SettingsExpander.HeaderIcon>
+                                            <ui:SettingsExpander.Items>
+                                                <ui:SettingsCard Header="移动位置"
+                                                                 Description="调整该插槽在组内的排列顺序">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Button Click="OnMoveSelectedUp" Padding="6,2" Margin="0,0,6,0">
+                                                            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ChevronUp_24_Regular}" FontSize="10"/>
+                                                                <TextBlock Text="上移" FontSize="11"/>
+                                                            </ikw:SimpleStackPanel>
+                                                        </Button>
+                                                        <Button Click="OnMoveSelectedDown" Padding="6,2">
+                                                            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                                                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ChevronDown_24_Regular}" FontSize="10"/>
+                                                                <TextBlock Text="下移" FontSize="11"/>
+                                                            </ikw:SimpleStackPanel>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </ui:SettingsCard>
 
-                                        <ui:SettingsCard Header="字体大小覆盖" Description="留空使用全局字体大小">
-                                            <ui:NumberBox Value="{Binding FontSizeOverride, Mode=TwoWay}"
-                                                          SpinButtonPlacementMode="Compact" Minimum="6" Maximum="48" SmallChange="1" LargeChange="2" MinWidth="90"/>
-                                        </ui:SettingsCard>
-
-                                        <ui:SettingsCard Header="颜色覆盖" Description="ARGB 十六进制，留空使用全局颜色">
-                                            <TextBox Text="{Binding ColorOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100"/>
-                                        </ui:SettingsCard>
-
-                                        <Separator Margin="0,3,0,1"/>
-
-                                        <!-- 排序与删除 -->
-                                        <TextBlock Text="排序与删除" FontSize="13" FontWeight="SemiBold" Margin="0,1,0,1"/>
-
-                                        <ui:SettingsCard Header="移动位置" Description="调整该插槽在组内的排列顺序">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="▲ 上移" FontSize="11" Padding="6,2" Margin="0,0,6,0" Click="OnMoveSelectedUp"/>
-                                                <Button Content="▼ 下移" FontSize="11" Padding="6,2" Click="OnMoveSelectedDown"/>
-                                            </StackPanel>
-                                        </ui:SettingsCard>
-
-                                        <ui:SettingsCard Header="删除插槽" Description="从组中移除此插槽">
-                                            <Button Content="删除" FontSize="11" Padding="8,2" Click="OnRemoveSelectedSlot"/>
-                                        </ui:SettingsCard>
+                                                <ui:SettingsCard Header="删除插槽"
+                                                                 Description="从组中移除此插槽">
+                                                    <Button Click="OnRemoveSelectedSlot" Padding="8,2">
+                                                        <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="4">
+                                                            <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Delete_24_Regular}" FontSize="10"/>
+                                                            <TextBlock Text="删除" FontSize="11"/>
+                                                        </ikw:SimpleStackPanel>
+                                                    </Button>
+                                                </ui:SettingsCard>
+                                            </ui:SettingsExpander.Items>
+                                        </ui:SettingsExpander>
 
                                     </ikw:SimpleStackPanel>
                                 </DataTemplate>
@@ -365,22 +540,7 @@
             <!-- ==================== Tab 3: 组设置 ==================== -->
             <TabItem Header="组设置">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
-                    <ikw:SimpleStackPanel Spacing="2" Margin="0,4,0,0">
-
-                        <TextBlock Text="组可见性" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,2"/>
-
-                        <ui:SettingsCard Header="左组可见" Description="启用或禁用左组插槽">
-                            <ui:ToggleSwitch IsOn="{Binding LeftGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
-                        </ui:SettingsCard>
-
-                        <ui:SettingsCard Header="中组可见" Description="启用或禁用中组插槽">
-                            <ui:ToggleSwitch IsOn="{Binding CenterGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
-                        </ui:SettingsCard>
-
-                        <ui:SettingsCard Header="右组可见" Description="启用或禁用右组插槽">
-                            <ui:ToggleSwitch IsOn="{Binding RightGroupVisible, Mode=TwoWay}" OffContent="隐藏" OnContent="显示" MinWidth="0"/>
-                        </ui:SettingsCard>
-
+                    <ikw:SimpleStackPanel Spacing="{StaticResource SettingsCardSpacing}" Margin="0,4,0,0">
                     </ikw:SimpleStackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -388,12 +548,16 @@
         </TabControl>
 
         <!-- 底部状态栏 -->
-        <Border Grid.Row="4" Background="{DynamicResource SubtleFillColorTertiaryBrush}"
-                CornerRadius="4" Padding="10,4" Margin="0,4,0,0">
+        <Border Grid.Row="4"
+                Background="{DynamicResource LayerFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource AccentControlElevationBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4" Padding="10,5" Margin="0,4,0,0">
             <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}" FontSize="12"
                              Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                            VerticalAlignment="Center"/>
             </ikw:SimpleStackPanel>
         </Border>

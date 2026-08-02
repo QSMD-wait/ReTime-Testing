@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using ReTime_Testing.Services;
 
 namespace ReTime_Testing.ViewModels;
@@ -15,14 +16,9 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
 
     #region 组可见性
 
-    [ObservableProperty]
-    private bool _leftGroupVisible = true;
-
-    [ObservableProperty]
-    private bool _centerGroupVisible = true;
-
-    [ObservableProperty]
-    private bool _rightGroupVisible = true;
+    public bool LeftGroupVisible => true;
+    public bool CenterGroupVisible => true;
+    public bool RightGroupVisible => true;
 
     #endregion
 
@@ -63,15 +59,15 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
 
     public ComponentLibraryItem[] AllComponents =>
     [
-        new("自定义文本", "显示固定的自定义文本内容", "TextT", Models.TextSourceType.CustomText, "文本类"),
-        new("当前段名", "显示当前时间段的名称", "Tag", Models.TextSourceType.SegmentName, "文本类"),
-        new("剩余时间", "显示当前段的剩余时间", "Hourglass", Models.TextSourceType.RemainingTime, "时间类"),
-        new("已过时间", "显示当前段已过的时间", "History", Models.TextSourceType.ElapsedTime, "时间类"),
-        new("进度百分比", "显示当前段的进度百分比", "DataUsage", Models.TextSourceType.ProgressPercent, "进度类"),
-        new("系统时间", "显示当前系统时间", "Clock", Models.TextSourceType.CurrentTime, "时间类"),
-        new("下一段名", "显示下一个时间段的名称", "FastForward", Models.TextSourceType.NextSegment, "文本类"),
-        new("当前日期", "显示当前日期", "Calendar", Models.TextSourceType.CurrentDate, "日期类"),
-        new("星期几", "显示当前是星期几", "CalendarWeekNumbers", Models.TextSourceType.CurrentDayOfWeek, "日期类"),
+        new("自定义文本", "显示固定的自定义文本内容", FluentSystemIcons.TextT_24_Regular, Models.TextSourceType.CustomText, "文本类"),
+        new("当前段名", "显示当前时间段的名称", FluentSystemIcons.Tag_24_Regular, Models.TextSourceType.SegmentName, "文本类"),
+        new("剩余时间", "显示当前段的剩余时间", FluentSystemIcons.Hourglass_24_Regular, Models.TextSourceType.RemainingTime, "时间类"),
+        new("已过时间", "显示当前段已过的时间", FluentSystemIcons.History_24_Regular, Models.TextSourceType.ElapsedTime, "时间类"),
+        new("进度百分比", "显示当前段的进度百分比", FluentSystemIcons.DataUsage_24_Regular, Models.TextSourceType.ProgressPercent, "进度类"),
+        new("系统时间", "显示当前系统时间", FluentSystemIcons.Clock_24_Regular, Models.TextSourceType.CurrentTime, "时间类"),
+        new("下一段名", "显示下一个时间段的名称", FluentSystemIcons.FastForward_24_Regular, Models.TextSourceType.NextSegment, "文本类"),
+        new("当前日期", "显示当前日期", FluentSystemIcons.Calendar_24_Regular, Models.TextSourceType.CurrentDate, "日期类"),
+        new("星期几", "显示当前是星期几", FluentSystemIcons.CalendarWeekNumbers_24_Regular, Models.TextSourceType.CurrentDayOfWeek, "日期类"),
     ];
 
     private ICollectionView? _filteredComponents;
@@ -120,9 +116,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
     private void LoadFromConfig()
     {
         var layout = _setting.TextOverlay.Layout;
-        LeftGroupVisible = layout.Left.Visible;
-        CenterGroupVisible = layout.Center.Visible;
-        RightGroupVisible = layout.Right.Visible;
 
         LoadSlots(LeftSlots, layout.Left.Slots);
         LoadSlots(CenterSlots, layout.Center.Slots);
@@ -149,9 +142,9 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
     private void SaveToConfig()
     {
         var layout = _setting.TextOverlay.Layout;
-        layout.Left.Visible = LeftGroupVisible;
-        layout.Center.Visible = CenterGroupVisible;
-        layout.Right.Visible = RightGroupVisible;
+        layout.Left.Visible = true;
+        layout.Center.Visible = true;
+        layout.Right.Visible = true;
 
         SaveSlots(LeftSlots, layout.Left.Slots);
         SaveSlots(CenterSlots, layout.Center.Slots);
@@ -169,10 +162,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
     }
 
     #region 属性变更回调
-
-    partial void OnLeftGroupVisibleChanged(bool value) => SaveAndRefresh();
-    partial void OnCenterGroupVisibleChanged(bool value) => SaveAndRefresh();
-    partial void OnRightGroupVisibleChanged(bool value) => SaveAndRefresh();
 
     #endregion
 
@@ -268,11 +257,11 @@ public class ComponentLibraryItem
 {
     public string Name { get; }
     public string Description { get; }
-    public string IconGlyph { get; }
+    public FontIconData? IconGlyph { get; }
     public Models.TextSourceType SourceType { get; }
     public string Category { get; }
 
-    public ComponentLibraryItem(string name, string description, string iconGlyph, Models.TextSourceType sourceType, string category)
+    public ComponentLibraryItem(string name, string description, FontIconData? iconGlyph, Models.TextSourceType sourceType, string category)
     {
         Name = name;
         Description = description;
@@ -322,6 +311,18 @@ public partial class TextSlotItemViewModel : ObservableObject
     [ObservableProperty]
     private double? _fontSizeOverride;
 
+    public double FontSizeOverrideValue
+    {
+        get => FontSizeOverride ?? 0;
+        set
+        {
+            if (value <= 0)
+                FontSizeOverride = null;
+            else
+                FontSizeOverride = value;
+        }
+    }
+
     [ObservableProperty]
     private string _colorOverride = "";
 
@@ -331,8 +332,16 @@ public partial class TextSlotItemViewModel : ObservableObject
     public string DisplayName => SourceTypeValues[SourceTypeIndex] switch
     {
         Models.TextSourceType.None => "（空）",
-        Models.TextSourceType.CustomText => string.IsNullOrWhiteSpace(CustomText) ? "自定义" : CustomText,
-        _ => SourceTypeValues[SourceTypeIndex].ToString()
+        Models.TextSourceType.CustomText => string.IsNullOrWhiteSpace(CustomText) ? "自定义文本" : CustomText,
+        Models.TextSourceType.SegmentName => "当前段名",
+        Models.TextSourceType.RemainingTime => "剩余时间",
+        Models.TextSourceType.ElapsedTime => "已过时间",
+        Models.TextSourceType.ProgressPercent => "进度百分比",
+        Models.TextSourceType.CurrentTime => "系统时间",
+        Models.TextSourceType.NextSegment => "下一段名",
+        Models.TextSourceType.CurrentDate => "当前日期",
+        Models.TextSourceType.CurrentDayOfWeek => "星期几",
+        _ => "未知"
     };
 
     public string DisplayDescription => SourceTypeValues[SourceTypeIndex] switch
@@ -350,20 +359,34 @@ public partial class TextSlotItemViewModel : ObservableObject
         _ => ""
     };
 
-    public string IconGlyph => SourceTypeValues[SourceTypeIndex] switch
+    public FontIconData? IconGlyph => SourceTypeValues[SourceTypeIndex] switch
     {
-        Models.TextSourceType.None => "Cancel",
-        Models.TextSourceType.CustomText => "TextT",
-        Models.TextSourceType.SegmentName => "Tag",
-        Models.TextSourceType.RemainingTime => "Hourglass",
-        Models.TextSourceType.ElapsedTime => "History",
-        Models.TextSourceType.ProgressPercent => "DataUsage",
-        Models.TextSourceType.CurrentTime => "Clock",
-        Models.TextSourceType.NextSegment => "FastForward",
-        Models.TextSourceType.CurrentDate => "Calendar",
-        Models.TextSourceType.CurrentDayOfWeek => "CalendarWeekNumbers",
-        _ => "QuestionCircle"
+        Models.TextSourceType.None => FluentSystemIcons.Dismiss_24_Regular,
+        Models.TextSourceType.CustomText => FluentSystemIcons.TextT_24_Regular,
+        Models.TextSourceType.SegmentName => FluentSystemIcons.Tag_24_Regular,
+        Models.TextSourceType.RemainingTime => FluentSystemIcons.Hourglass_24_Regular,
+        Models.TextSourceType.ElapsedTime => FluentSystemIcons.History_24_Regular,
+        Models.TextSourceType.ProgressPercent => FluentSystemIcons.DataUsage_24_Regular,
+        Models.TextSourceType.CurrentTime => FluentSystemIcons.Clock_24_Regular,
+        Models.TextSourceType.NextSegment => FluentSystemIcons.FastForward_24_Regular,
+        Models.TextSourceType.CurrentDate => FluentSystemIcons.Calendar_24_Regular,
+        Models.TextSourceType.CurrentDayOfWeek => FluentSystemIcons.CalendarWeekNumbers_24_Regular,
+        _ => FluentSystemIcons.QuestionCircle_24_Regular
     };
+
+    public bool IsSourceConfigurable => SourceTypeIndex > 0;
+
+    public bool IsCustomTextRelevant => SourceTypeIndex == 1;
+
+    public bool IsFormatRelevant => SourceTypeIndex is 6 or 8 or 9;
+
+    public bool IsShowSecondsRelevant => SourceTypeIndex is 3 or 4;
+
+    public bool IsDecimalPlacesRelevant => SourceTypeIndex == 5;
+
+    public bool IsFallbackRelevant => SourceTypeIndex is 2 or 7;
+
+    public bool IsShowTimeRelevant => SourceTypeIndex == 7;
 
     public TextSlotItemViewModel(Models.TextSlotConfig config, Action? saveCallback)
     {
@@ -411,8 +434,25 @@ public partial class TextSlotItemViewModel : ObservableObject
         _saveCallback?.Invoke();
     }
 
-    partial void OnSourceTypeIndexChanged(int value) => OnSave();
-    partial void OnCustomTextChanged(string value) => OnSave();
+    partial void OnSourceTypeIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(DisplayDescription));
+        OnPropertyChanged(nameof(IconGlyph));
+        OnPropertyChanged(nameof(IsSourceConfigurable));
+        OnPropertyChanged(nameof(IsCustomTextRelevant));
+        OnPropertyChanged(nameof(IsFormatRelevant));
+        OnPropertyChanged(nameof(IsShowSecondsRelevant));
+        OnPropertyChanged(nameof(IsDecimalPlacesRelevant));
+        OnPropertyChanged(nameof(IsFallbackRelevant));
+        OnPropertyChanged(nameof(IsShowTimeRelevant));
+        OnSave();
+    }
+    partial void OnCustomTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(DisplayName));
+        OnSave();
+    }
     partial void OnFormatChanged(string value) => OnSave();
     partial void OnShowSecondsChanged(bool value) => OnSave();
     partial void OnDecimalPlacesChanged(int value) => OnSave();
@@ -421,6 +461,10 @@ public partial class TextSlotItemViewModel : ObservableObject
     partial void OnVisibleChanged(bool value) => OnSave();
     partial void OnPrefixChanged(string value) => OnSave();
     partial void OnSuffixChanged(string value) => OnSave();
-    partial void OnFontSizeOverrideChanged(double? value) => OnSave();
+    partial void OnFontSizeOverrideChanged(double? value)
+    {
+        OnPropertyChanged(nameof(FontSizeOverrideValue));
+        OnSave();
+    }
     partial void OnColorOverrideChanged(string value) => OnSave();
 }
