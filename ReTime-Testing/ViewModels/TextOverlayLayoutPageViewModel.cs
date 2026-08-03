@@ -101,10 +101,10 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
         new("剩余时间", "显示当前段的剩余时间", FluentSystemIcons.Hourglass_24_Regular, Models.TextSourceType.RemainingTime, "时间类"),
         new("已过时间", "显示当前段已过的时间", FluentSystemIcons.History_24_Regular, Models.TextSourceType.ElapsedTime, "时间类"),
         new("进度百分比", "显示当前段的进度百分比", FluentSystemIcons.DataUsage_24_Regular, Models.TextSourceType.ProgressPercent, "进度类"),
-        new("系统时间", "显示当前系统时间", FluentSystemIcons.Clock_24_Regular, Models.TextSourceType.CurrentTime, "时间类"),
+        new("当前时间", "显示当前系统时间", FluentSystemIcons.Clock_24_Regular, Models.TextSourceType.CurrentTime, "时间类"),
         new("下一段名", "显示下一个时间段的名称", FluentSystemIcons.FastForward_24_Regular, Models.TextSourceType.NextSegment, "文本类"),
         new("当前日期", "显示当前日期", FluentSystemIcons.Calendar_24_Regular, Models.TextSourceType.CurrentDate, "日期类"),
-        new("星期几", "显示当前是星期几", FluentSystemIcons.CalendarWeekNumbers_24_Regular, Models.TextSourceType.CurrentDayOfWeek, "日期类"),
+        new("当前星期", "显示当前是星期几", FluentSystemIcons.CalendarWeekNumbers_24_Regular, Models.TextSourceType.CurrentDayOfWeek, "日期类"),
     ];
 
     private ICollectionView? _filteredComponents;
@@ -407,6 +407,9 @@ public partial class TextSlotItemViewModel : ObservableObject
     [ObservableProperty]
     private string _colorOverride = "";
 
+    [ObservableProperty]
+    private string _fontFamily = "";
+
     private static readonly Models.TextSourceType[] SourceTypeValues =
         Enum.GetValues<Models.TextSourceType>();
 
@@ -418,10 +421,10 @@ public partial class TextSlotItemViewModel : ObservableObject
         Models.TextSourceType.RemainingTime => "剩余时间",
         Models.TextSourceType.ElapsedTime => "已过时间",
         Models.TextSourceType.ProgressPercent => "进度百分比",
-        Models.TextSourceType.CurrentTime => "系统时间",
+        Models.TextSourceType.CurrentTime => "当前时间",
         Models.TextSourceType.NextSegment => "下一段名",
         Models.TextSourceType.CurrentDate => "当前日期",
-        Models.TextSourceType.CurrentDayOfWeek => "星期几",
+        Models.TextSourceType.CurrentDayOfWeek => "当前星期",
         _ => "未知"
     };
 
@@ -433,10 +436,10 @@ public partial class TextSlotItemViewModel : ObservableObject
         Models.TextSourceType.RemainingTime => "剩余时间",
         Models.TextSourceType.ElapsedTime => "已过时间",
         Models.TextSourceType.ProgressPercent => "进度百分比",
-        Models.TextSourceType.CurrentTime => "系统时间",
+        Models.TextSourceType.CurrentTime => "当前时间",
         Models.TextSourceType.NextSegment => "下一段名称",
         Models.TextSourceType.CurrentDate => "当前日期",
-        Models.TextSourceType.CurrentDayOfWeek => "星期几",
+        Models.TextSourceType.CurrentDayOfWeek => "当前星期",
         _ => ""
     };
 
@@ -469,6 +472,32 @@ public partial class TextSlotItemViewModel : ObservableObject
 
     public bool IsShowTimeRelevant => SourceTypeIndex == 7;
 
+    /// <summary>
+    /// 格式预设列表（当前时间/当前日期/当前星期）
+    /// </summary>
+    public FormatPresetOption[] FormatPresets => SourceTypeValues[SourceTypeIndex] switch
+    {
+        Models.TextSourceType.CurrentTime => [
+            new("HH:mm", "HH:mm"),
+            new("HH:mm:ss", "HH:mm:ss"),
+            new("hh:mm tt", "hh:mm tt"),
+            new("HH时mm分", "HH时mm分"),
+        ],
+        Models.TextSourceType.CurrentDate => [
+            new("yyyy-MM-dd", "yyyy-MM-dd"),
+            new("yyyy/MM/dd", "yyyy/MM/dd"),
+            new("yyyy年MM月dd日", "yyyy年MM月dd日"),
+            new("MM月dd日", "MM月dd日"),
+        ],
+        Models.TextSourceType.CurrentDayOfWeek => [
+            new("星期X", "星期X"),
+            new("周X", "周X"),
+            new("dddd", "dddd"),
+            new("ddd", "ddd"),
+        ],
+        _ => []
+    };
+
     public TextSlotItemViewModel(Models.TextSlotConfig config, Action? saveCallback)
     {
         Config = config;
@@ -487,8 +516,10 @@ public partial class TextSlotItemViewModel : ObservableObject
         Suffix = config.CommonSettings.Suffix ?? "";
         FontSizeOverride = config.CommonSettings.FontSizeOverride;
         ColorOverride = config.CommonSettings.ColorOverride ?? "";
+        FontFamily = config.CommonSettings.FontFamily ?? "";
 
         _isInitializing = false;
+        EnsureValidFormat();
     }
 
     public void WriteBack()
@@ -506,6 +537,7 @@ public partial class TextSlotItemViewModel : ObservableObject
         Config.CommonSettings.Suffix = string.IsNullOrWhiteSpace(Suffix) ? null : Suffix;
         Config.CommonSettings.FontSizeOverride = FontSizeOverride;
         Config.CommonSettings.ColorOverride = string.IsNullOrWhiteSpace(ColorOverride) ? null : ColorOverride;
+        Config.CommonSettings.FontFamily = string.IsNullOrWhiteSpace(FontFamily) ? null : FontFamily;
     }
 
     private void OnSave()
@@ -523,10 +555,14 @@ public partial class TextSlotItemViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSourceConfigurable));
         OnPropertyChanged(nameof(IsCustomTextRelevant));
         OnPropertyChanged(nameof(IsFormatRelevant));
+        OnPropertyChanged(nameof(FormatPresets));
         OnPropertyChanged(nameof(IsShowSecondsRelevant));
         OnPropertyChanged(nameof(IsDecimalPlacesRelevant));
         OnPropertyChanged(nameof(IsFallbackRelevant));
         OnPropertyChanged(nameof(IsShowTimeRelevant));
+
+        EnsureValidFormat();
+
         OnSave();
     }
     partial void OnCustomTextChanged(string value)
@@ -548,4 +584,17 @@ public partial class TextSlotItemViewModel : ObservableObject
         OnSave();
     }
     partial void OnColorOverrideChanged(string value) => OnSave();
+    partial void OnFontFamilyChanged(string value) => OnSave();
+
+    private void EnsureValidFormat()
+    {
+        var presets = FormatPresets;
+        if (presets.Length > 0 && !presets.Any(p => p.Format == Format))
+            Format = presets[0].Format;
+    }
 }
+
+/// <summary>
+/// 格式预设选项（用于 ComboBox 绑定），不可变 record 确保 WPF 属性路径可访问
+/// </summary>
+public record FormatPresetOption(string Label, string Format);

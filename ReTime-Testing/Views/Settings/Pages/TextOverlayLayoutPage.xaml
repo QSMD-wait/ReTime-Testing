@@ -27,12 +27,14 @@
             <Setter Property="MinWidth" Value="0"/>
         </Style>
 
-        <!-- 组件库 ListViewItem 容器样式：WrapPanel 固定宽度 -->
+        <!-- 组件库 ListViewItem 容器样式：WrapPanel 固定尺寸 -->
         <Style x:Key="ComponentListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="3"/>
             <Setter Property="Width" Value="180"/>
+            <Setter Property="Height" Value="76"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
         </Style>
 
         <!-- 分类筛选 RadioButton 样式 -->
@@ -69,23 +71,23 @@
 
     </FrameworkElement.Resources>
 
-    <Grid Margin="12,8,12,8">
+    <Grid Margin="12,6,12,6">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="4"/>
+            <RowDefinition Height="2"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="插槽布局" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,4"/>
+        <TextBlock Grid.Row="0" Text="插槽布局" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,2"/>
 
         <!-- 插槽组行 -->
-        <ikw:SimpleStackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,2">
+        <ikw:SimpleStackPanel Grid.Row="1" Spacing="2" Margin="0,0,0,1">
 
             <!-- 左组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,8" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -117,15 +119,15 @@
                         </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
-                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,2">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                    <Button FontSize="12" Padding="6" MinWidth="0" MinHeight="0"
                                             VerticalAlignment="Center" Click="OnSlotDeleteClick"
                                             ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
                                             Cursor="Hand">
-                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Delete_24_Regular}" FontSize="14"/>
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -147,7 +149,7 @@
 
             <!-- 中组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,8" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -179,15 +181,15 @@
                         </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
-                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,2">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                    <Button FontSize="12" Padding="6" MinWidth="0" MinHeight="0"
                                             VerticalAlignment="Center" Click="OnSlotDeleteClick"
                                             ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
                                             Cursor="Hand">
-                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Delete_24_Regular}" FontSize="14"/>
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -209,7 +211,7 @@
 
             <!-- 右组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,8" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -241,15 +243,15 @@
                         </ListView.ItemsPanel>
                         <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
-                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,2">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                    <Button FontSize="12" Padding="6" MinWidth="0" MinHeight="0"
                                             VerticalAlignment="Center" Click="OnSlotDeleteClick"
                                             ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
                                             Cursor="Hand">
-                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Delete_24_Regular}" FontSize="14"/>
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -272,20 +274,20 @@
         </ikw:SimpleStackPanel>
 
         <!-- 分隔线 -->
-        <Separator Grid.Row="2" Margin="0,2"/>
+        <Separator Grid.Row="2" Margin="0,1"/>
 
         <!-- Pivot 风格 TabControl -->
         <TabControl Grid.Row="3"
                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
                     Style="{StaticResource TabControlPivotStyle}"
-                    Margin="0,2,0,0">
+                    Margin="0,1,0,0">
 
             <!-- ==================== Tab 1: 组件库 ==================== -->
             <TabItem Header="组件库">
                 <DockPanel LastChildFill="True">
                     <!-- 搜索栏 + 分类筛选 -->
-                    <DockPanel DockPanel.Dock="Top" Margin="4,4,4,2">
-                        <TextBox DockPanel.Dock="Left" Width="160" Height="28"
+                    <DockPanel DockPanel.Dock="Top" Margin="4,2,4,1">
+                        <TextBox DockPanel.Dock="Left" Width="160" Height="26"
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  ui:ControlHelper.PlaceholderText="搜索组件..."
                                  VerticalContentAlignment="Center" Margin="0,0,8,0"/>
@@ -304,7 +306,7 @@
                     </DockPanel>
 
                     <!-- 网格布局：WrapPanel -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,1">
                         <ListView ItemsSource="{Binding FilteredComponents}"
                                   Background="Transparent" BorderThickness="0" Padding="0"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -320,17 +322,22 @@
                             </ListView.ItemsPanel>
                             <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:ComponentLibraryItem}">
-                                    <ikw:SimpleStackPanel Spacing="4" Margin="10,8">
-                                        <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
-                                            <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18"
-                                                         Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                    <Grid Margin="10,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ui:FontIcon Grid.Column="0" Icon="{Binding IconGlyph}" FontSize="24"
+                                                     Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <ikw:SimpleStackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
                                                        VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                       FontSize="10" TextWrapping="Wrap" Height="28"
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </ikw:SimpleStackPanel>
-                                        <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                                   FontSize="10" TextWrapping="Wrap" MaxHeight="32"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                    </ikw:SimpleStackPanel>
+                                    </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
@@ -356,16 +363,16 @@
                                                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Database_24_Regular}"/>
                                             </ui:SettingsExpander.HeaderIcon>
                                             <ComboBox SelectedIndex="{Binding SourceTypeIndex, Mode=TwoWay}" MinWidth="140">
-                                                <ComboBoxItem Content="不显示"/>
+                                                <ComboBoxItem Content="不显示" Visibility="Collapsed"/>
                                                 <ComboBoxItem Content="自定义文本"/>
                                                 <ComboBoxItem Content="当前段名"/>
                                                 <ComboBoxItem Content="剩余时间"/>
                                                 <ComboBoxItem Content="已过时间"/>
                                                 <ComboBoxItem Content="进度百分比"/>
-                                                <ComboBoxItem Content="系统时间"/>
+                                                <ComboBoxItem Content="当前时间"/>
                                                 <ComboBoxItem Content="下一段名"/>
                                                 <ComboBoxItem Content="当前日期"/>
-                                                <ComboBoxItem Content="星期几"/>
+                                                <ComboBoxItem Content="当前星期"/>
                                             </ComboBox>
                                             <ui:SettingsExpander.Items>
                                                 <ui:SettingsCard Header="自定义文本"
@@ -377,10 +384,13 @@
                                                     </ui:SettingsCard.Visibility>
                                                 </ui:SettingsCard>
 
-                                                <ui:SettingsCard Header="格式字符串"
-                                                                 Description="系统时间/日期/星期几的格式">
-                                                    <TextBox Text="{Binding Format, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             MinWidth="180"/>
+                                                <ui:SettingsCard Header="格式预设"
+                                                                 Description="选择常用格式">
+                                                    <ComboBox ItemsSource="{Binding FormatPresets}"
+                                                              DisplayMemberPath="Label"
+                                                              SelectedValuePath="Format"
+                                                              SelectedValue="{Binding Format, Mode=TwoWay}"
+                                                              MinWidth="140"/>
                                                     <ui:SettingsCard.Visibility>
                                                         <Binding Path="IsFormatRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
                                                     </ui:SettingsCard.Visibility>
@@ -397,9 +407,13 @@
 
                                                 <ui:SettingsCard Header="小数位数"
                                                                  Description="进度百分比的小数位数">
-                                                    <ui:NumberBox Value="{Binding DecimalPlaces, Mode=TwoWay}"
-                                                                  SpinButtonPlacementMode="Compact"
-                                                                  Minimum="0" Maximum="4" SmallChange="1" MinWidth="90"/>
+                                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <Slider Value="{Binding DecimalPlaces, Mode=TwoWay}"
+                                                                Minimum="0" Maximum="3" TickFrequency="1"
+                                                                IsSnapToTickEnabled="True" Width="120"/>
+                                                        <TextBlock Text="{Binding DecimalPlaces}" VerticalAlignment="Center"
+                                                                   MinWidth="16" TextAlignment="Center"/>
+                                                    </ikw:SimpleStackPanel>
                                                     <ui:SettingsCard.Visibility>
                                                         <Binding Path="IsDecimalPlacesRelevant" Converter="{StaticResource BoolToVisibilityConverter}"/>
                                                     </ui:SettingsCard.Visibility>
@@ -449,6 +463,16 @@
                                                                  Description="显示在内容之后的文本">
                                                     <TextBox Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              MinWidth="100"/>
+                                                </ui:SettingsCard>
+
+                                                <ui:SettingsCard Header="字体覆盖"
+                                                                 Description="留空使用全局字体">
+                                                    <ComboBox ItemsSource="{Binding Fonts, RelativeSource={RelativeSource AncestorType={x:Type pages:TextOverlayLayoutPage}}}"
+                                                              DisplayMemberPath="Display"
+                                                              SelectedValuePath="Name"
+                                                              SelectedValue="{Binding FontFamily, Mode=TwoWay}"
+                                                              Loaded="FontCombo_Loaded"
+                                                              MinWidth="160"/>
                                                 </ui:SettingsCard>
 
                                                 <ui:SettingsCard Header="字体大小覆盖"

@@ -126,6 +126,12 @@ public class TextSlotCommonSettings
     public string? Suffix { get; set; }
 
     /// <summary>
+    /// 单项字体覆盖（null 表示使用全局字体，值为字体系列名称如 "Microsoft YaHei"）
+    /// </summary>
+    [JsonPropertyName("fontFamily")]
+    public string? FontFamily { get; set; }
+
+    /// <summary>
     /// 单项字体大小覆盖（null 表示使用全局字体大小）
     /// </summary>
     [JsonPropertyName("fontSizeOverride")]

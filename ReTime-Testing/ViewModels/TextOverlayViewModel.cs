@@ -26,11 +26,17 @@ public class TextSlotDisplay
     /// </summary>
     public string? ColorOverride { get; }
 
-    public TextSlotDisplay(string text, double? fontSizeOverride = null, string? colorOverride = null)
+    /// <summary>
+    /// 单项字体系列覆盖（null 表示使用全局字体）
+    /// </summary>
+    public string? FontFamily { get; }
+
+    public TextSlotDisplay(string text, double? fontSizeOverride = null, string? colorOverride = null, string? fontFamily = null)
     {
         Text = text;
         FontSizeOverride = fontSizeOverride;
         ColorOverride = colorOverride;
+        FontFamily = fontFamily;
     }
 }
 
@@ -170,9 +176,10 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
 
             if (oldSlot.Text != text
                 || oldSlot.FontSizeOverride != config.CommonSettings.FontSizeOverride
-                || oldSlot.ColorOverride != config.CommonSettings.ColorOverride)
+                || oldSlot.ColorOverride != config.CommonSettings.ColorOverride
+                || oldSlot.FontFamily != config.CommonSettings.FontFamily)
             {
-                slots[i] = new TextSlotDisplay(text, config.CommonSettings.FontSizeOverride, config.CommonSettings.ColorOverride);
+                slots[i] = new TextSlotDisplay(text, config.CommonSettings.FontSizeOverride, config.CommonSettings.ColorOverride, config.CommonSettings.FontFamily);
             }
         }
     }

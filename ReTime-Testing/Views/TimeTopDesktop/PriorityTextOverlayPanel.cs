@@ -184,7 +184,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
     }
 
     private static List<MeasuredSlot> MeasureGroup(
-        ObservableCollection<TextSlotDisplay>? slots, Typeface typeface, double pixelsPerDip, double baseFontSize, Color baseTextColor, double opacity)
+        ObservableCollection<TextSlotDisplay>? slots, Typeface baseTypeface, double pixelsPerDip, double baseFontSize, Color baseTextColor, double opacity)
     {
         var result = new List<MeasuredSlot>();
         if (slots == null) return result;
@@ -199,9 +199,11 @@ public class PriorityTextOverlayPanel : FrameworkElement
             var itemBrush = new SolidColorBrush(itemColor);
             itemBrush.Freeze();
 
+            var itemTypeface = ResolveTypeface(slot.FontFamily, baseTypeface);
+
             var formattedText = new FormattedText(
                 slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                typeface, fontSize, TextBrush, pixelsPerDip);
+                itemTypeface, fontSize, TextBrush, pixelsPerDip);
 
             result.Add(new MeasuredSlot(slot)
             {
@@ -209,21 +211,43 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 TotalWidth = formattedText.Width,
                 FontSize = fontSize,
                 ItemBrush = itemBrush,
+                Typeface = itemTypeface,
             });
         }
 
         return result;
     }
 
+    /// <summary>
+    /// 解析字体系列名称为 Typeface，无效或为空时回退到全局 typeface
+    /// </summary>
+    private static Typeface ResolveTypeface(string? fontFamilyName, Typeface fallback)
+    {
+        if (string.IsNullOrWhiteSpace(fontFamilyName)) return fallback;
+
+        try
+        {
+            var family = new FontFamily(fontFamilyName);
+            var faces = family.GetTypefaces();
+            if (faces.Any()) return faces.First();
+        }
+        catch
+        {
+            // 字体名称无效时回退
+        }
+        return fallback;
+    }
+
     private static void DrawItem(DrawingContext dc, MeasuredSlot item, double y,
-        Typeface typeface, double pixelsPerDip,
+        Typeface baseTypeface, double pixelsPerDip,
         Brush fallbackBrush, string textEffect)
     {
         var brush = item.ItemBrush ?? fallbackBrush;
+        var itemTypeface = item.Typeface;
 
         var mainText = new FormattedText(
             item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            typeface, item.FontSize, brush, pixelsPerDip);
+            itemTypeface, item.FontSize, brush, pixelsPerDip);
 
         switch (textEffect)
         {
@@ -232,7 +256,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
                 shadowBrush.Freeze();
                 dc.DrawText(new FormattedText(
                     item.Slot.Text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                    typeface, item.FontSize, shadowBrush, pixelsPerDip),
+                    itemTypeface, item.FontSize, shadowBrush, pixelsPerDip),
                     new Point(item.X + 1, y + 1));
                 dc.DrawText(mainText, new Point(item.X, y));
                 break;
@@ -260,6 +284,7 @@ public class PriorityTextOverlayPanel : FrameworkElement
         public bool Visible { get; set; } = true;
         public double FontSize { get; set; }
         public Brush? ItemBrush { get; set; }
+        public Typeface Typeface { get; set; } = SystemFonts.MessageFontFamily.GetTypefaces().First();
 
         public MeasuredSlot(TextSlotDisplay slot) => Slot = slot;
     }
