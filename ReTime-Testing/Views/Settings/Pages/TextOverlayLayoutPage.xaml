@@ -8,6 +8,7 @@
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
              xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
+             xmlns:dd="urn:gong-wpf-dragdrop"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="700">
 
@@ -85,37 +86,6 @@
             </Setter>
         </Style>
 
-        <!-- 添加按钮样式（圆形图标按钮） -->
-        <Style x:Key="AddSlotButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="4"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="ToolTip" Value="添加插槽"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="RootBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <ui:FontIcon x:Name="AddIcon"
-                                         Icon="{x:Static ui:FluentSystemIcons.Add_24_Regular}"
-                                         FontSize="14"
-                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="RootBorder" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
-                                <Setter TargetName="AddIcon" Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
     </FrameworkElement.Resources>
 
     <Grid Margin="12,8,12,8">
@@ -124,7 +94,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="4"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 标题 -->
@@ -140,7 +109,6 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
@@ -150,7 +118,12 @@
                     </ikw:SimpleStackPanel>
 
                     <ItemsControl Grid.Column="1" ItemsSource="{Binding LeftSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}">
+                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
+                                  dd:DragDrop.IsDragSource="True"
+                                  dd:DragDrop.IsDropTarget="True"
+                                  dd:DragDrop.DropHandler="{Binding}"
+                                  dd:DragDrop.UseDefaultDragAdorner="True"
+                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
                                 <Border Style="{StaticResource SlotItemBorderStyle}"
@@ -193,7 +166,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddLeftSlot"/>
                 </Grid>
             </Border>
 
@@ -204,7 +176,6 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
@@ -214,7 +185,12 @@
                     </ikw:SimpleStackPanel>
 
                     <ItemsControl Grid.Column="1" ItemsSource="{Binding CenterSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}">
+                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
+                                  dd:DragDrop.IsDragSource="True"
+                                  dd:DragDrop.IsDropTarget="True"
+                                  dd:DragDrop.DropHandler="{Binding}"
+                                  dd:DragDrop.UseDefaultDragAdorner="True"
+                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
                                 <Border Style="{StaticResource SlotItemBorderStyle}"
@@ -257,7 +233,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddCenterSlot"/>
                 </Grid>
             </Border>
 
@@ -268,7 +243,6 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
@@ -278,7 +252,12 @@
                     </ikw:SimpleStackPanel>
 
                     <ItemsControl Grid.Column="1" ItemsSource="{Binding RightSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}">
+                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
+                                  dd:DragDrop.IsDragSource="True"
+                                  dd:DragDrop.IsDropTarget="True"
+                                  dd:DragDrop.DropHandler="{Binding}"
+                                  dd:DragDrop.UseDefaultDragAdorner="True"
+                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
                                 <Border Style="{StaticResource SlotItemBorderStyle}"
@@ -321,7 +300,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button Grid.Column="2" Style="{StaticResource AddSlotButtonStyle}" Click="OnAddRightSlot"/>
                 </Grid>
             </Border>
 
@@ -361,7 +339,10 @@
 
                     <!-- 网格布局：WrapPanel -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
-                        <ItemsControl ItemsSource="{Binding FilteredComponents}">
+                        <ItemsControl ItemsSource="{Binding FilteredComponents}"
+                                      dd:DragDrop.IsDragSource="True"
+                                      dd:DragDrop.UseDefaultDragAdorner="True"
+                                      dd:DragDrop.DefaultDragAdornerOpacity="0.7">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -371,7 +352,7 @@
                                 <DataTemplate DataType="{x:Type vm:ComponentLibraryItem}">
                                     <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                                             CornerRadius="6" Padding="10,8" Margin="3"
-                                            Cursor="Hand" MouseLeftButtonDown="OnComponentClick"
+                                            Cursor="Hand"
                                             BorderThickness="1" BorderBrush="Transparent"
                                             Width="180">
                                         <Border.Style>
@@ -404,18 +385,11 @@
             </TabItem>
 
             <!-- ==================== Tab 2: 插槽设置 ==================== -->
-            <TabItem Header="插槽设置">
+            <TabItem Header="插槽设置"
+                     Visibility="{Binding SelectedSlot, Converter={StaticResource NotNullToVisibilityConverter}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
                     <Grid>
-                        <!-- 未选中插槽时的提示 -->
-                        <TextBlock x:Name="HintText"
-                                   Text="请在上方插槽组中点击一个插槽进行编辑"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   FontSize="12" Margin="0,30,0,0"/>
-
-                        <!-- 选中插槽后的编辑面板 -->
-                        <ContentControl x:Name="SlotEditor" Content="{Binding SelectedSlot}" Margin="0,4,0,0">
+                        <ContentControl Content="{Binding SelectedSlot}" Margin="0,4,0,0">
                             <ContentControl.ContentTemplate>
                                 <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
                                     <ikw:SimpleStackPanel Spacing="{StaticResource SettingsCardSpacing}">
@@ -593,21 +567,6 @@
             </TabItem>
 
         </TabControl>
-
-        <!-- 底部状态栏 -->
-        <Border Grid.Row="4"
-                Background="{DynamicResource LayerFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource AccentControlElevationBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="4" Padding="10,5" Margin="0,4,0,0">
-            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
-                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Info_24_Regular}" FontSize="12"
-                             Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding StatusMessage}" FontSize="11"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center"/>
-            </ikw:SimpleStackPanel>
-        </Border>
 
     </Grid>
 </pages:SettingsPageBase>

@@ -1,13 +1,15 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using GongSolutions.Wpf.DragDrop;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using ReTime_Testing.Services;
 
 namespace ReTime_Testing.ViewModels;
 
-public partial class TextOverlayLayoutPageViewModel : ObservableObject
+public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTarget
 {
     private readonly ISettingsService _settingsService;
     private readonly IDesktopWindowManager _desktopWindowManager;
@@ -102,13 +104,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
 
     #endregion
 
-    #region 状态提示
-
-    [ObservableProperty]
-    private string _statusMessage = "提示: 在左侧选择插槽后，可在此编辑其属性。";
-
-    #endregion
-
     public TextOverlayLayoutPageViewModel(ISettingsService settingsService, IDesktopWindowManager desktopWindowManager)
     {
         _settingsService = settingsService;
@@ -173,32 +168,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
 
     #region 插槽操作
 
-    public void AddSlot(int groupIndex)
-    {
-        var collection = GetCollection(groupIndex);
-        var newSlot = new Models.TextSlotConfig();
-        var vm = new TextSlotItemViewModel(newSlot, SaveAndRefresh);
-        collection.Add(vm);
-        SelectedSlot = vm;
-        SelectedGroupIndex = groupIndex;
-        SelectedTabIndex = 1;
-        StatusMessage = $"已在{GetGroupName(groupIndex)}添加新插槽";
-        SaveAndRefresh();
-    }
-
-    public void AddSlotFromComponent(int groupIndex, Models.TextSourceType sourceType)
-    {
-        var collection = GetCollection(groupIndex);
-        var newSlot = new Models.TextSlotConfig { Source = sourceType };
-        var vm = new TextSlotItemViewModel(newSlot, SaveAndRefresh);
-        collection.Add(vm);
-        SelectedSlot = vm;
-        SelectedGroupIndex = groupIndex;
-        SelectedTabIndex = 1;
-        StatusMessage = $"已从组件库添加「{sourceType}」到{GetGroupName(groupIndex)}";
-        SaveAndRefresh();
-    }
-
     public void RemoveSlot(int groupIndex, TextSlotItemViewModel item)
     {
         var collection = GetCollection(groupIndex);
@@ -206,7 +175,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
         {
             if (SelectedSlot == item)
                 SelectedSlot = null;
-            StatusMessage = $"已从{GetGroupName(groupIndex)}移除插槽";
             SaveAndRefresh();
         }
     }
@@ -218,7 +186,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
         if (index > 0)
         {
             collection.Move(index, index - 1);
-            StatusMessage = $"已上移插槽";
             SaveAndRefresh();
         }
     }
@@ -230,7 +197,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
         if (index >= 0 && index < collection.Count - 1)
         {
             collection.Move(index, index + 1);
-            StatusMessage = $"已下移插槽";
             SaveAndRefresh();
         }
     }
@@ -240,7 +206,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
         SelectedSlot = item;
         SelectedGroupIndex = groupIndex;
         SelectedTabIndex = 1;
-        StatusMessage = $"正在编辑{GetGroupName(groupIndex)}的「{item.DisplayName}」";
     }
 
     private static string GetGroupName(int index) => index switch { 0 => "左组", 1 => "中组", 2 => "右组", _ => "" };
@@ -252,6 +217,89 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject
         2 => RightSlots,
         _ => LeftSlots
     };
+
+    private int GetGroupIndexForCollection(ObservableCollection<TextSlotItemViewModel> collection) => ReferenceEquals(collection, LeftSlots) ? 0
+        : ReferenceEquals(collection, CenterSlots) ? 1 : 2;
+
+    #endregion
+
+    #region IDropTarget 拖拽实现
+
+    public void DragOver(IDropInfo dropInfo)
+    {
+        var sourceItem = dropInfo.Data;
+        var targetCollection = dropInfo.TargetCollection as ObservableCollection<TextSlotItemViewModel>;
+
+        if (targetCollection == null) return;
+
+        if (sourceItem is TextSlotItemViewModel)
+        {
+            dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
+            dropInfo.Effects = DragDropEffects.Move;
+        }
+        else if (sourceItem is ComponentLibraryItem)
+        {
+            dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
+            dropInfo.Effects = DragDropEffects.Copy;
+        }
+    }
+
+    public void Drop(IDropInfo dropInfo)
+    {
+        var targetCollection = dropInfo.TargetCollection as ObservableCollection<TextSlotItemViewModel>;
+        if (targetCollection == null) return;
+
+        var targetGroupIndex = GetGroupIndexForCollection(targetCollection);
+        var insertIndex = dropInfo.InsertIndex;
+
+        if (dropInfo.Data is TextSlotItemViewModel slotItem)
+        {
+            var sourceCollection = dropInfo.DragInfo?.SourceCollection as ObservableCollection<TextSlotItemViewModel>;
+            if (sourceCollection == null) return;
+
+            var sourceGroupIndex = GetGroupIndexForCollection(sourceCollection);
+            var sourceIndex = sourceCollection.IndexOf(slotItem);
+
+            if (sourceIndex < 0) return;
+
+            if (ReferenceEquals(sourceCollection, targetCollection))
+            {
+                if (sourceIndex < insertIndex)
+                    insertIndex--;
+
+                if (sourceIndex == insertIndex) return;
+
+                sourceCollection.Move(sourceIndex, insertIndex);
+            }
+            else
+            {
+                sourceCollection.RemoveAt(sourceIndex);
+                if (insertIndex > targetCollection.Count)
+                    insertIndex = targetCollection.Count;
+                targetCollection.Insert(insertIndex, slotItem);
+
+                if (SelectedSlot == slotItem)
+                    SelectedGroupIndex = targetGroupIndex;
+            }
+
+            SelectedSlot = slotItem;
+            SelectedGroupIndex = targetGroupIndex;
+            SaveAndRefresh();
+        }
+        else if (dropInfo.Data is ComponentLibraryItem compItem)
+        {
+            var newSlot = new Models.TextSlotConfig { Source = compItem.SourceType };
+            var vm = new TextSlotItemViewModel(newSlot, SaveAndRefresh);
+            if (insertIndex > targetCollection.Count)
+                insertIndex = targetCollection.Count;
+            targetCollection.Insert(insertIndex, vm);
+
+            SelectedSlot = vm;
+            SelectedGroupIndex = targetGroupIndex;
+            SelectedTabIndex = 1;
+            SaveAndRefresh();
+        }
+    }
 
     #endregion
 }
