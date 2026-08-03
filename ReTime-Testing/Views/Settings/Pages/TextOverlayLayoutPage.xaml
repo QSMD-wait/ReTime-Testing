@@ -19,39 +19,20 @@
 
         <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
 
-        <!-- 插槽项样式：卡片风格 + IsSelected 驱动选中高亮 + 常驻删除按钮 -->
-        <Style x:Key="SlotItemBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="Margin" Value="3,2"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-                </Trigger>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource AccentControlElevationBorderBrush}"/>
-                </DataTrigger>
-            </Style.Triggers>
+        <!-- 插槽 ListViewItem 容器样式：水平排列 + 紧凑间距 -->
+        <Style x:Key="SlotListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+            <Setter Property="Padding" Value="2,2"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="MinWidth" Value="0"/>
         </Style>
 
-        <!-- 组行内水平 ItemsControl 样式 -->
-        <Style x:Key="HorizontalSlotItemsControlStyle" TargetType="ItemsControl">
-            <Setter Property="Background" Value="Transparent"/>
+        <!-- 组件库 ListViewItem 容器样式：WrapPanel 固定宽度 -->
+        <Style x:Key="ComponentListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="ItemsPanel">
-                <Setter.Value>
-                    <ItemsPanelTemplate>
-                        <VirtualizingStackPanel Orientation="Horizontal"/>
-                    </ItemsPanelTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Width" Value="180"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         </Style>
 
         <!-- 分类筛选 RadioButton 样式 -->
@@ -117,54 +98,49 @@
                         <TextBlock Text="左组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
                     </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="1" ItemsSource="{Binding LeftSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
-                                  dd:DragDrop.IsDragSource="True"
-                                  dd:DragDrop.IsDropTarget="True"
-                                  dd:DragDrop.DropHandler="{Binding}"
-                                  dd:DragDrop.UseDefaultDragAdorner="True"
-                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
-                        <ItemsControl.ItemTemplate>
+                    <ListView Grid.Column="1" ItemsSource="{Binding LeftSlots}"
+                              SelectedItem="{Binding SelectedLeftSlot, Mode=TwoWay}"
+                              SelectionMode="Single"
+                              Background="Transparent" BorderThickness="0" Padding="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
+                              dd:DragDrop.IsDragSource="True"
+                              dd:DragDrop.IsDropTarget="True"
+                              dd:DragDrop.DropHandler="{Binding}"
+                              dd:DragDrop.UseDefaultDragAdorner="True"
+                              dd:DragDrop.DefaultDragAdornerOpacity="0.7">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border Style="{StaticResource SlotItemBorderStyle}"
-                                        MouseLeftButtonDown="OnSlotClick">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16"
-                                                     x:Name="SlotIcon" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                        <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
-                                                VerticalAlignment="Center" Click="OnSlotDeleteClick"
-                                                ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
-                                                Cursor="Hand">
-                                            <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                            VerticalAlignment="Center" Click="OnSlotDeleteClick"
+                                            ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
+                                            Cursor="Hand">
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </ikw:SimpleStackPanel>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListView.ItemTemplate>
+                    </ListView>
 
                 </Grid>
             </Border>
@@ -184,54 +160,49 @@
                         <TextBlock Text="中组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
                     </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="1" ItemsSource="{Binding CenterSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
-                                  dd:DragDrop.IsDragSource="True"
-                                  dd:DragDrop.IsDropTarget="True"
-                                  dd:DragDrop.DropHandler="{Binding}"
-                                  dd:DragDrop.UseDefaultDragAdorner="True"
-                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
-                        <ItemsControl.ItemTemplate>
+                    <ListView Grid.Column="1" ItemsSource="{Binding CenterSlots}"
+                              SelectedItem="{Binding SelectedCenterSlot, Mode=TwoWay}"
+                              SelectionMode="Single"
+                              Background="Transparent" BorderThickness="0" Padding="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
+                              dd:DragDrop.IsDragSource="True"
+                              dd:DragDrop.IsDropTarget="True"
+                              dd:DragDrop.DropHandler="{Binding}"
+                              dd:DragDrop.UseDefaultDragAdorner="True"
+                              dd:DragDrop.DefaultDragAdornerOpacity="0.7">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border Style="{StaticResource SlotItemBorderStyle}"
-                                        MouseLeftButtonDown="OnSlotClick">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16"
-                                                     x:Name="SlotIcon" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                        <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
-                                                VerticalAlignment="Center" Click="OnSlotDeleteClick"
-                                                ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
-                                                Cursor="Hand">
-                                            <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                            VerticalAlignment="Center" Click="OnSlotDeleteClick"
+                                            ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
+                                            Cursor="Hand">
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </ikw:SimpleStackPanel>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListView.ItemTemplate>
+                    </ListView>
 
                 </Grid>
             </Border>
@@ -251,54 +222,49 @@
                         <TextBlock Text="右组" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
                     </ikw:SimpleStackPanel>
 
-                    <ItemsControl Grid.Column="1" ItemsSource="{Binding RightSlots}"
-                                  Style="{StaticResource HorizontalSlotItemsControlStyle}"
-                                  dd:DragDrop.IsDragSource="True"
-                                  dd:DragDrop.IsDropTarget="True"
-                                  dd:DragDrop.DropHandler="{Binding}"
-                                  dd:DragDrop.UseDefaultDragAdorner="True"
-                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
-                        <ItemsControl.ItemTemplate>
+                    <ListView Grid.Column="1" ItemsSource="{Binding RightSlots}"
+                              SelectedItem="{Binding SelectedRightSlot, Mode=TwoWay}"
+                              SelectionMode="Single"
+                              Background="Transparent" BorderThickness="0" Padding="0"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
+                              dd:DragDrop.IsDragSource="True"
+                              dd:DragDrop.IsDropTarget="True"
+                              dd:DragDrop.DropHandler="{Binding}"
+                              dd:DragDrop.UseDefaultDragAdorner="True"
+                              dd:DragDrop.DefaultDragAdornerOpacity="0.7">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                <Border Style="{StaticResource SlotItemBorderStyle}"
-                                        MouseLeftButtonDown="OnSlotClick">
-                                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16"
-                                                     x:Name="SlotIcon" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis" MaxWidth="120"/>
-                                        <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
-                                                VerticalAlignment="Center" Click="OnSlotDeleteClick"
-                                                ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
-                                                Cursor="Hand">
-                                            <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-                                    </ikw:SimpleStackPanel>
-                                </Border>
+                                <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="4,0">
+                                    <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+                                    <Button FontSize="10" Padding="4" MinWidth="0" MinHeight="0"
+                                            VerticalAlignment="Center" Click="OnSlotDeleteClick"
+                                            ToolTip="移除插槽" Background="Transparent" BorderThickness="0"
+                                            Cursor="Hand">
+                                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Dismiss_12_Regular}" FontSize="10"/>
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </ikw:SimpleStackPanel>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ListView.ItemTemplate>
+                    </ListView>
 
                 </Grid>
             </Border>
@@ -339,47 +305,35 @@
 
                     <!-- 网格布局：WrapPanel -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,2">
-                        <ItemsControl ItemsSource="{Binding FilteredComponents}"
-                                      dd:DragDrop.IsDragSource="True"
-                                      dd:DragDrop.UseDefaultDragAdorner="True"
-                                      dd:DragDrop.DefaultDragAdornerOpacity="0.7">
-                            <ItemsControl.ItemsPanel>
+                        <ListView ItemsSource="{Binding FilteredComponents}"
+                                  Background="Transparent" BorderThickness="0" Padding="0"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  ItemContainerStyle="{StaticResource ComponentListViewItemStyle}"
+                                  dd:DragDrop.IsDragSource="True"
+                                  dd:DragDrop.UseDefaultDragAdorner="True"
+                                  dd:DragDrop.DefaultDragAdornerOpacity="0.7">
+                            <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
                                 </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
+                            </ListView.ItemsPanel>
+                            <ListView.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:ComponentLibraryItem}">
-                                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                                            CornerRadius="6" Padding="10,8" Margin="3"
-                                            Cursor="Hand"
-                                            BorderThickness="1" BorderBrush="Transparent"
-                                            Width="180">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
-                                                        <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <ikw:SimpleStackPanel Spacing="4">
-                                            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
-                                                <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18"
-                                                             Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
-                                                           VerticalAlignment="Center"/>
-                                            </ikw:SimpleStackPanel>
-                                            <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                                       FontSize="10" TextWrapping="Wrap" MaxHeight="32"
-                                                       TextTrimming="CharacterEllipsis"/>
+                                    <ikw:SimpleStackPanel Spacing="4" Margin="10,8">
+                                        <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="6">
+                                            <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18"
+                                                         Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                                       VerticalAlignment="Center"/>
                                         </ikw:SimpleStackPanel>
-                                    </Border>
+                                        <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                   FontSize="10" TextWrapping="Wrap" MaxHeight="32"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </ikw:SimpleStackPanel>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </ScrollViewer>
                 </DockPanel>
             </TabItem>

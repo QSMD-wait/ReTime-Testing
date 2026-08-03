@@ -16,22 +16,6 @@ public partial class TextOverlayLayoutPage : SettingsPageBase
 
     #region 插槽组操作
 
-    private void OnSlotClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (sender is not FrameworkElement fe || fe.DataContext is not TextSlotItemViewModel item || ViewModel == null) return;
-        var groupIndex = DetermineGroupIndex(item);
-        ViewModel.SelectSlot(groupIndex, item);
-    }
-
-    private int DetermineGroupIndex(TextSlotItemViewModel item)
-    {
-        if (ViewModel == null) return 0;
-        if (ViewModel.LeftSlots.Contains(item)) return 0;
-        if (ViewModel.CenterSlots.Contains(item)) return 1;
-        if (ViewModel.RightSlots.Contains(item)) return 2;
-        return ViewModel.SelectedGroupIndex;
-    }
-
     private void OnSlotDeleteClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement fe || ViewModel == null) return;

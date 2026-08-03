@@ -43,10 +43,39 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
     [ObservableProperty]
     private int _selectedTabIndex;
 
+    [ObservableProperty]
+    private TextSlotItemViewModel? _selectedLeftSlot;
+
+    [ObservableProperty]
+    private TextSlotItemViewModel? _selectedCenterSlot;
+
+    [ObservableProperty]
+    private TextSlotItemViewModel? _selectedRightSlot;
+
+    partial void OnSelectedLeftSlotChanged(TextSlotItemViewModel? value) => SyncSelectedSlot(value, 0);
+    partial void OnSelectedCenterSlotChanged(TextSlotItemViewModel? value) => SyncSelectedSlot(value, 1);
+    partial void OnSelectedRightSlotChanged(TextSlotItemViewModel? value) => SyncSelectedSlot(value, 2);
+
+    private void SyncSelectedSlot(TextSlotItemViewModel? value, int groupIndex)
+    {
+        if (value == null) return;
+
+        if (groupIndex != 0) SelectedLeftSlot = null;
+        if (groupIndex != 1) SelectedCenterSlot = null;
+        if (groupIndex != 2) SelectedRightSlot = null;
+
+        SelectedSlot = value;
+        SelectedGroupIndex = groupIndex;
+    }
+
     partial void OnSelectedSlotChanged(TextSlotItemViewModel? value)
     {
-        foreach (var slot in LeftSlots.Concat(CenterSlots).Concat(RightSlots))
-            slot.IsSelected = slot == value;
+        if (value == null)
+        {
+            SelectedLeftSlot = null;
+            SelectedCenterSlot = null;
+            SelectedRightSlot = null;
+        }
     }
 
     #endregion
@@ -203,8 +232,12 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
 
     public void SelectSlot(int groupIndex, TextSlotItemViewModel item)
     {
-        SelectedSlot = item;
-        SelectedGroupIndex = groupIndex;
+        switch (groupIndex)
+        {
+            case 0: SelectedLeftSlot = item; break;
+            case 1: SelectedCenterSlot = item; break;
+            case 2: SelectedRightSlot = item; break;
+        }
         SelectedTabIndex = 1;
     }
 
@@ -277,13 +310,9 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
                 if (insertIndex > targetCollection.Count)
                     insertIndex = targetCollection.Count;
                 targetCollection.Insert(insertIndex, slotItem);
-
-                if (SelectedSlot == slotItem)
-                    SelectedGroupIndex = targetGroupIndex;
             }
 
-            SelectedSlot = slotItem;
-            SelectedGroupIndex = targetGroupIndex;
+            SelectSlot(targetGroupIndex, slotItem);
             SaveAndRefresh();
         }
         else if (dropInfo.Data is ComponentLibraryItem compItem)
@@ -294,9 +323,7 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
                 insertIndex = targetCollection.Count;
             targetCollection.Insert(insertIndex, vm);
 
-            SelectedSlot = vm;
-            SelectedGroupIndex = targetGroupIndex;
-            SelectedTabIndex = 1;
+            SelectSlot(targetGroupIndex, vm);
             SaveAndRefresh();
         }
     }
@@ -331,9 +358,6 @@ public partial class TextSlotItemViewModel : ObservableObject
     private bool _isInitializing = true;
 
     public Models.TextSlotConfig Config { get; }
-
-    [ObservableProperty]
-    private bool _isSelected;
 
     [ObservableProperty]
     private int _sourceTypeIndex;
