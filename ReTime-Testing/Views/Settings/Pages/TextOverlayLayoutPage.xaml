@@ -284,7 +284,7 @@
                                         <!-- ====== 数据源设置 ====== -->
                                         <ui:SettingsExpander Header="数据源设置"
                                                              Description="选择和配置该插槽显示的内容来源"
-                                                             IsExpanded="True">
+                                                             IsExpanded="False">
                                             <ui:SettingsExpander.HeaderIcon>
                                                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Database_24_Regular}"/>
                                             </ui:SettingsExpander.HeaderIcon>
@@ -361,7 +361,7 @@
                                         <!-- ====== 通用设置 ====== -->
                                         <ui:SettingsExpander Header="通用设置"
                                                              Description="可见性、前后缀、字体和颜色覆盖"
-                                                             IsExpanded="True">
+                                                             IsExpanded="False">
                                             <ui:SettingsExpander.HeaderIcon>
                                                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Settings_24_Regular}"/>
                                             </ui:SettingsExpander.HeaderIcon>

@@ -59,6 +59,7 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
 
         SelectedSlot = value;
         SelectedGroupIndex = groupIndex;
+        SelectedTabIndex = 1;
     }
 
     partial void OnSelectedSlotChanged(TextSlotItemViewModel? value)
