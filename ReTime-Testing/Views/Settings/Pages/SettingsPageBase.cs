@@ -37,6 +37,7 @@ public abstract class SettingsPageBase : UserControl
 
     protected SettingsPageBase()
     {
+        DefaultStyleKey = typeof(SettingsPageBase);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }

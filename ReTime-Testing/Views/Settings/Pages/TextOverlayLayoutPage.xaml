@@ -17,8 +17,6 @@
         <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
         <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 
-        <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
-
         <!-- 插槽 ListViewItem 容器样式：水平排列 + 紧凑间距 -->
         <Style x:Key="SlotListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
             <Setter Property="Padding" Value="2,2"/>
@@ -98,7 +96,7 @@
 
     </FrameworkElement.Resources>
 
-    <Grid Margin="12,6,12,6">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -281,7 +279,7 @@
                         <ContentControl Content="{Binding SelectedSlot}" Margin="0,4,0,0">
                             <ContentControl.ContentTemplate>
                                 <DataTemplate DataType="{x:Type vm:TextSlotItemViewModel}">
-                                    <ikw:SimpleStackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                                    <ikw:SimpleStackPanel Spacing="4">
 
                                         <!-- ====== 数据源设置 ====== -->
                                         <ui:SettingsExpander Header="数据源设置"
@@ -465,7 +463,7 @@
             <!-- ==================== Tab 3: 组设置 ==================== -->
             <TabItem Header="组设置">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
-                    <ikw:SimpleStackPanel Spacing="{StaticResource SettingsCardSpacing}" Margin="0,4,0,0">
+                    <ikw:SimpleStackPanel Spacing="4" Margin="0,4,0,0">
                     </ikw:SimpleStackPanel>
                 </ScrollViewer>
             </TabItem>

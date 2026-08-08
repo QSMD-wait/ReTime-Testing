@@ -121,6 +121,11 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
+            <!-- 导航列表底部留白 -->
+            <ui:NavigationView.PaneFooter>
+                <Border Height="16"/>
+            </ui:NavigationView.PaneFooter>
+
             <!-- 内容区域 -->
             <ui:NavigationView.Content>
                 <ContentControl Content="{Binding CurrentPage}"/>

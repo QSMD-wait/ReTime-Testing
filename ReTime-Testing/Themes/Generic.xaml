@@ -3,10 +3,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:ReTime_Testing.Controls"
     xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-    xmlns:models="clr-namespace:ReTime_Testing.Models.UI">
+    xmlns:models="clr-namespace:ReTime_Testing.Models.UI"
+    xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
+    xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf">
 
     <local:ToastSeverityToInfoBarSeverityConverter x:Key="SeverityConverter"/>
     <local:ToastSeverityToBackgroundConverter x:Key="BackgroundConverter"/>
+
+    <Style TargetType="pages:SettingsPageBase">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="pages:SettingsPageBase">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  Padding="20,0">
+                        <ContentPresenter Margin="0,0,0,16"/>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style TargetType="local:ToastOverlay">
         <Setter Property="HorizontalAlignment" Value="Right"/>

@@ -9,19 +9,15 @@
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
-        <Grid>
-            <ikw:SimpleStackPanel MaxWidth="1000"
-                                 HorizontalAlignment="Stretch">
+    <ikw:SimpleStackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Spacing="4">
 
-                <TextBlock Text="关于" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+        <TextBlock Text="关于" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                <TextBlock Text="ReTime - Testing - 开发中"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
-            </ikw:SimpleStackPanel>
-        </Grid>
-    </ScrollViewer>
+        <TextBlock Text="ReTime - Testing - 开发中"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+
+    </ikw:SimpleStackPanel>
 </pages:SettingsPageBase>

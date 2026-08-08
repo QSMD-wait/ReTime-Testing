@@ -9,93 +9,83 @@
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="600">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,0">
-        <FrameworkElement.Resources>
-            <sys:Double x:Key="SettingsCardSpacing" xmlns:sys="clr-namespace:System;assembly=mscorlib">4</sys:Double>
-        </FrameworkElement.Resources>
+    <ikw:SimpleStackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Spacing="4">
 
-        <Grid>
-            <ikw:SimpleStackPanel MaxWidth="1000"
-                                 HorizontalAlignment="Stretch"
-                                 Spacing="{StaticResource SettingsCardSpacing}">
+        <TextBlock Text="时间" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                <TextBlock Text="时间" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+        <!-- 当前时间显示（Hero Card） -->
+        <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
+                CornerRadius="8"
+                BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+                BorderThickness="1"
+                Padding="24,20">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="{Binding CurrentTime}"
+                           FontSize="56"
+                           FontWeight="Bold"
+                           FontFamily="Consolas, Courier New, monospace"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
+                <TextBlock Text="{Binding CurrentDate}"
+                           FontSize="14"
+                           Margin="0,6,0,0"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+            </StackPanel>
+        </Border>
 
-                <!-- 当前时间显示（Hero Card） -->
-                <Border Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}"
-                        CornerRadius="8"
-                        BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
-                        BorderThickness="1"
-                        Padding="24,20">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding CurrentTime}"
-                                   FontSize="56"
-                                   FontWeight="Bold"
-                                   FontFamily="Consolas, Courier New, monospace"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextControlForegroundKey}}"/>
-                        <TextBlock Text="{Binding CurrentDate}"
-                                   FontSize="14"
-                                   Margin="0,6,0,0"
-                                   HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                    </StackPanel>
-                </Border>
+        <!-- 时间校准总开关 -->
+        <ui:SettingsCard Header="启用时间校准"
+                         Description="启用后定期从选定来源获取时间，校准绝对时钟，确保进度条走时准确">
+            <ui:SettingsCard.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ClockToolbox_24_Regular}" />
+            </ui:SettingsCard.HeaderIcon>
+            <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+        </ui:SettingsCard>
 
-                <!-- 时间校准总开关 -->
-                <ui:SettingsCard Header="启用时间校准"
-                                 Description="启用后定期从选定来源获取时间，校准绝对时钟，确保进度条走时准确">
-                    <ui:SettingsCard.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ClockToolbox_24_Regular}" />
-                    </ui:SettingsCard.HeaderIcon>
-                    <ui:ToggleSwitch IsOn="{Binding IsCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+        <!-- 云端时间校准 -->
+        <ui:SettingsExpander Header="启用云端时间校准"
+                             Description="启用后使用NTP协议从云端服务器获取时间，关闭则使用系统时间">
+            <ui:SettingsExpander.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Cloud_24_Regular}" />
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:ToggleSwitch IsOn="{Binding IsCloudCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="云端时间校准源">
+                    <ComboBox ItemsSource="{Binding NtpServers}"
+                              SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
+                              DisplayMemberPath="DisplayName"
+                              MinWidth="180"/>
                 </ui:SettingsCard>
-
-                <!-- 云端时间校准 -->
-                <ui:SettingsExpander Header="启用云端时间校准"
-                                     Description="启用后使用NTP协议从云端服务器获取时间，关闭则使用系统时间">
-                    <ui:SettingsExpander.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Cloud_24_Regular}" />
-                    </ui:SettingsExpander.HeaderIcon>
-                    <ui:ToggleSwitch IsOn="{Binding IsCloudCalibrationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
-                    <ui:SettingsExpander.Items>
-                        <ui:SettingsCard Header="云端时间校准源">
-                            <ComboBox ItemsSource="{Binding NtpServers}"
-                                      SelectedItem="{Binding SelectedNtpServer, Mode=TwoWay}"
-                                      DisplayMemberPath="DisplayName"
-                                      MinWidth="180"/>
-                        </ui:SettingsCard>
-                        <ui:SettingsCard Header="{Binding SyncInfoText}">
-                            <Button Content="立即同步"
-                                    Command="{Binding CalibrateNowCommand}"
-                                    IsEnabled="{Binding IsCloudCalibrationEnabled}"
-                                    MinWidth="80"/>
-                        </ui:SettingsCard>
-                    </ui:SettingsExpander.Items>
-                </ui:SettingsExpander>
-
-                <!-- 时间偏移 -->
-                <ui:SettingsCard Header="时间偏移"
-                                 Description="在标准时间上叠加持续偏移量，正值向前、负值向后">
-                    <ui:SettingsCard.HeaderIcon>
-                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Timer_24_Regular}" />
-                    </ui:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal">
-                        <ui:NumberBox Value="{Binding UserOffsetSeconds, Mode=TwoWay}"
-                                      SpinButtonPlacementMode="Compact"
-                                      Minimum="-86400"
-                                      Maximum="86400"
-                                      SmallChange="1"
-                                      LargeChange="10"
-                                      MinWidth="120"/>
-                        <TextBlock Text="秒(s)"
-                                   VerticalAlignment="Center"
-                                   Margin="8,0,0,0"
-                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
-                    </StackPanel>
+                <ui:SettingsCard Header="{Binding SyncInfoText}">
+                    <Button Content="立即同步"
+                            Command="{Binding CalibrateNowCommand}"
+                            IsEnabled="{Binding IsCloudCalibrationEnabled}"
+                            MinWidth="80"/>
                 </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
 
-            </ikw:SimpleStackPanel>
-        </Grid>
-    </ScrollViewer>
+        <!-- 时间偏移 -->
+        <ui:SettingsCard Header="时间偏移"
+                         Description="在标准时间上叠加持续偏移量，正值向前、负值向后">
+            <ui:SettingsCard.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Timer_24_Regular}" />
+            </ui:SettingsCard.HeaderIcon>
+            <StackPanel Orientation="Horizontal">
+                <ui:NumberBox Value="{Binding UserOffsetSeconds, Mode=TwoWay}"
+                              SpinButtonPlacementMode="Compact"
+                              Minimum="-86400"
+                              Maximum="86400"
+                              SmallChange="1"
+                              LargeChange="10"
+                              MinWidth="120"/>
+                <TextBlock Text="秒(s)"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+            </StackPanel>
+        </ui:SettingsCard>
+
+    </ikw:SimpleStackPanel>
 </pages:SettingsPageBase>
