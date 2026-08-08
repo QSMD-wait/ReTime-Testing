@@ -258,6 +258,22 @@ public class TextOverlayStyleConfig
     public double RightOffset { get; set; } = 0;
 
     /// <summary>
+    /// 创建浅拷贝，确保 WPF DependencyProperty 检测到引用变更
+    /// </summary>
+    public TextOverlayStyleConfig Clone() => new()
+    {
+        FontSize = FontSize,
+        Opacity = Opacity,
+        TextColor = TextColor,
+        ItemSpacing = ItemSpacing,
+        LeftOffset = LeftOffset,
+        CenterOffset = CenterOffset,
+        RightOffset = RightOffset,
+        VerticalOffset = VerticalOffset,
+        TextEffect = TextEffect,
+    };
+
+    /// <summary>
     /// 整体垂直偏移（正→上移，负→下移），不会遮挡进度条
     /// </summary>
     [JsonPropertyName("verticalOffset")]

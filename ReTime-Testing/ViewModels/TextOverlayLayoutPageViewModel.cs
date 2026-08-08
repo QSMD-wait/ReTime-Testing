@@ -192,7 +192,10 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
         if (collection.Remove(item))
         {
             if (SelectedSlot == item)
+            {
                 SelectedSlot = null;
+                SelectedTabIndex = 0;
+            }
             SaveAndRefresh();
         }
     }

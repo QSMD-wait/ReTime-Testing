@@ -19,10 +19,10 @@
                                  HorizontalAlignment="Stretch"
                                  Spacing="{StaticResource SettingsCardSpacing}">
 
-                <TextBlock Text="文字覆盖" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
+                <TextBlock Text="文字栏" FontSize="28" FontWeight="SemiBold" Margin="0,16,0,12"/>
 
                 <!-- 全局开关 -->
-                <ui:SettingsCard Header="启用文字覆盖"
+                <ui:SettingsCard Header="启用文字栏"
                                  Description="在进度条上方显示自定义文字信息">
                     <ui:SettingsCard.HeaderIcon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextT_24_Regular}" />
@@ -35,7 +35,7 @@
                 <TextBlock Text="全局样式" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
 
                 <ui:SettingsCard Header="字体大小"
-                                 Description="文字覆盖的字体大小（像素）">
+                                 Description="文字栏的字体大小（像素）">
                     <ui:SettingsCard.HeaderIcon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextFontSize_24_Regular}" />
                     </ui:SettingsCard.HeaderIcon>
@@ -51,14 +51,19 @@
                 </ui:SettingsCard>
 
                 <ui:SettingsCard Header="文字透明度"
-                                 Description="文字覆盖的整体透明度">
+                                 Description="文字栏的整体透明度">
                     <ui:SettingsCard.HeaderIcon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Eye_24_Regular}" />
                     </ui:SettingsCard.HeaderIcon>
-                    <Slider Value="{Binding Opacity, Mode=TwoWay}"
-                            Minimum="0" Maximum="1"
-                            TickFrequency="0.05" IsSnapToTickEnabled="True"
-                            Width="180" VerticalAlignment="Center"/>
+                    <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Slider Value="{Binding Opacity, Mode=TwoWay}"
+                                Minimum="0" Maximum="1"
+                                TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                Width="140" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Opacity, StringFormat={}{0:P0}}" VerticalAlignment="Center"
+                                   MinWidth="36" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                    </ikw:SimpleStackPanel>
                 </ui:SettingsCard>
 
                 <ui:SettingsCard Header="文字颜色"

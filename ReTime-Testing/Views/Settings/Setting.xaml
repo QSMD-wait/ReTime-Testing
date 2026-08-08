@@ -87,7 +87,7 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItem Content="文字覆盖" Tag="TextOverlay">
+                <ui:NavigationViewItem Content="文字栏" Tag="TextOverlay">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.TextT_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
@@ -97,7 +97,7 @@
                                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Settings_24_Regular}"/>
                             </ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="插槽布局" Tag="TextOverlayLayout">
+                        <ui:NavigationViewItem Content="组件配置" Tag="TextOverlayLayout">
                             <ui:NavigationViewItem.Icon>
                                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Grid_24_Regular}"/>
                             </ui:NavigationViewItem.Icon>

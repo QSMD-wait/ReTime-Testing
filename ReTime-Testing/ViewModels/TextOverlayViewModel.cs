@@ -81,19 +81,13 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
         _resolver = resolver;
         _settingsService = settingsService;
 
-        LoadConfig();
-
-        // 100ms 刷新定时器
         _refreshTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromMilliseconds(100)
         };
         _refreshTimer.Tick += OnRefreshTick;
 
-        if (_config.Enabled)
-        {
-            _refreshTimer.Start();
-        }
+        LoadConfig();
     }
 
     /// <summary>
@@ -104,7 +98,12 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
         var setting = _settingsService.GetTimeTopSetting();
         _config = setting.TextOverlay ?? new TextOverlayConfig();
         IsVisible = _config.Enabled;
-        Style = _config.Style;
+        Style = _config.Style.Clone();
+
+        if (_config.Enabled && !_refreshTimer.IsEnabled)
+            _refreshTimer.Start();
+        else if (!_config.Enabled && _refreshTimer.IsEnabled)
+            _refreshTimer.Stop();
     }
 
     /// <summary>
