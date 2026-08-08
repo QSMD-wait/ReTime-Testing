@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using GongSolutions.Wpf.DragDrop;
 using iNKORE.UI.WPF.Modern.Common.IconKeys;
 using ReTime_Testing.Services;
@@ -15,14 +16,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
     private readonly IDesktopWindowManager _desktopWindowManager;
     private Models.TimeTopSetting _setting;
     private bool _isInitializing = true;
-
-    #region 组可见性
-
-    public bool LeftGroupVisible => true;
-    public bool CenterGroupVisible => true;
-    public bool RightGroupVisible => true;
-
-    #endregion
 
     #region 插槽集合
 
@@ -191,10 +184,6 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
         }
     }
 
-    #region 属性变更回调
-
-    #endregion
-
     #region 插槽操作
 
     public void RemoveSlot(int groupIndex, TextSlotItemViewModel item)
@@ -253,6 +242,47 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
 
     private int GetGroupIndexForCollection(ObservableCollection<TextSlotItemViewModel> collection) => ReferenceEquals(collection, LeftSlots) ? 0
         : ReferenceEquals(collection, CenterSlots) ? 1 : 2;
+
+    #endregion
+
+    #region 命令
+
+    [RelayCommand]
+    private void DeleteSlot(TextSlotItemViewModel? item)
+    {
+        if (item == null) return;
+        RemoveSlot(SelectedGroupIndex, item);
+    }
+
+    [RelayCommand]
+    private void MoveSlotUp(TextSlotItemViewModel? item)
+    {
+        if (item == null) return;
+        MoveSlotUp(SelectedGroupIndex, item);
+    }
+
+    [RelayCommand]
+    private void MoveSlotDown(TextSlotItemViewModel? item)
+    {
+        if (item == null) return;
+        MoveSlotDown(SelectedGroupIndex, item);
+    }
+
+    [RelayCommand]
+    private void RemoveSelectedSlot()
+    {
+        if (SelectedSlot == null) return;
+        RemoveSlot(SelectedGroupIndex, SelectedSlot);
+    }
+
+    #endregion
+
+    #region 数据源选项
+
+    public SourceTypeOption[] SourceTypeOptions { get; } = Enum.GetValues<Models.TextSourceType>()
+        .Where(t => t != Models.TextSourceType.None)
+        .Select(t => new SourceTypeOption(t.GetDisplayName(), t))
+        .ToArray();
 
     #endregion
 
@@ -330,271 +360,3 @@ public partial class TextOverlayLayoutPageViewModel : ObservableObject, IDropTar
 
     #endregion
 }
-
-/// <summary>
-/// 组件库项数据模型
-/// </summary>
-public class ComponentLibraryItem
-{
-    public string Name { get; }
-    public string Description { get; }
-    public FontIconData? IconGlyph { get; }
-    public Models.TextSourceType SourceType { get; }
-    public string Category { get; }
-
-    public ComponentLibraryItem(string name, string description, FontIconData? iconGlyph, Models.TextSourceType sourceType, string category)
-    {
-        Name = name;
-        Description = description;
-        IconGlyph = iconGlyph;
-        SourceType = sourceType;
-        Category = category;
-    }
-}
-
-public partial class TextSlotItemViewModel : ObservableObject
-{
-    private readonly Action? _saveCallback;
-    private bool _isInitializing = true;
-
-    public Models.TextSlotConfig Config { get; }
-
-    [ObservableProperty]
-    private int _sourceTypeIndex;
-
-    [ObservableProperty]
-    private string _customText = "";
-
-    [ObservableProperty]
-    private string _format = "";
-
-    [ObservableProperty]
-    private bool _showSeconds = true;
-
-    [ObservableProperty]
-    private int _decimalPlaces = 1;
-
-    [ObservableProperty]
-    private string _fallback = "";
-
-    [ObservableProperty]
-    private bool _showTime;
-
-    [ObservableProperty]
-    private bool _visible = true;
-
-    [ObservableProperty]
-    private string _prefix = "";
-
-    [ObservableProperty]
-    private string _suffix = "";
-
-    [ObservableProperty]
-    private double? _fontSizeOverride;
-
-    public double FontSizeOverrideValue
-    {
-        get => FontSizeOverride ?? 0;
-        set
-        {
-            if (value <= 0)
-                FontSizeOverride = null;
-            else
-                FontSizeOverride = value;
-        }
-    }
-
-    [ObservableProperty]
-    private string _colorOverride = "";
-
-    [ObservableProperty]
-    private string _fontFamily = "";
-
-    private static readonly Models.TextSourceType[] SourceTypeValues =
-        Enum.GetValues<Models.TextSourceType>();
-
-    public string DisplayName => SourceTypeValues[SourceTypeIndex] switch
-    {
-        Models.TextSourceType.None => "（空）",
-        Models.TextSourceType.CustomText => string.IsNullOrWhiteSpace(CustomText) ? "自定义文本" : CustomText,
-        Models.TextSourceType.SegmentName => "当前段名",
-        Models.TextSourceType.RemainingTime => "剩余时间",
-        Models.TextSourceType.ElapsedTime => "已过时间",
-        Models.TextSourceType.ProgressPercent => "进度百分比",
-        Models.TextSourceType.CurrentTime => "当前时间",
-        Models.TextSourceType.NextSegment => "下一段名",
-        Models.TextSourceType.CurrentDate => "当前日期",
-        Models.TextSourceType.CurrentDayOfWeek => "当前星期",
-        _ => "未知"
-    };
-
-    public string DisplayDescription => SourceTypeValues[SourceTypeIndex] switch
-    {
-        Models.TextSourceType.None => "不显示任何内容",
-        Models.TextSourceType.CustomText => string.IsNullOrWhiteSpace(CustomText) ? "自定义文本" : CustomText,
-        Models.TextSourceType.SegmentName => "当前时间段名称",
-        Models.TextSourceType.RemainingTime => "剩余时间",
-        Models.TextSourceType.ElapsedTime => "已过时间",
-        Models.TextSourceType.ProgressPercent => "进度百分比",
-        Models.TextSourceType.CurrentTime => "当前时间",
-        Models.TextSourceType.NextSegment => "下一段名称",
-        Models.TextSourceType.CurrentDate => "当前日期",
-        Models.TextSourceType.CurrentDayOfWeek => "当前星期",
-        _ => ""
-    };
-
-    public FontIconData? IconGlyph => SourceTypeValues[SourceTypeIndex] switch
-    {
-        Models.TextSourceType.None => FluentSystemIcons.Dismiss_24_Regular,
-        Models.TextSourceType.CustomText => FluentSystemIcons.TextT_24_Regular,
-        Models.TextSourceType.SegmentName => FluentSystemIcons.Tag_24_Regular,
-        Models.TextSourceType.RemainingTime => FluentSystemIcons.Hourglass_24_Regular,
-        Models.TextSourceType.ElapsedTime => FluentSystemIcons.History_24_Regular,
-        Models.TextSourceType.ProgressPercent => FluentSystemIcons.DataUsage_24_Regular,
-        Models.TextSourceType.CurrentTime => FluentSystemIcons.Clock_24_Regular,
-        Models.TextSourceType.NextSegment => FluentSystemIcons.FastForward_24_Regular,
-        Models.TextSourceType.CurrentDate => FluentSystemIcons.Calendar_24_Regular,
-        Models.TextSourceType.CurrentDayOfWeek => FluentSystemIcons.CalendarWeekNumbers_24_Regular,
-        _ => FluentSystemIcons.QuestionCircle_24_Regular
-    };
-
-    public bool IsSourceConfigurable => SourceTypeIndex > 0;
-
-    public bool IsCustomTextRelevant => SourceTypeIndex == 1;
-
-    public bool IsFormatRelevant => SourceTypeIndex is 6 or 8 or 9;
-
-    public bool IsShowSecondsRelevant => SourceTypeIndex is 3 or 4;
-
-    public bool IsDecimalPlacesRelevant => SourceTypeIndex == 5;
-
-    public bool IsFallbackRelevant => SourceTypeIndex is 2 or 7;
-
-    public bool IsShowTimeRelevant => SourceTypeIndex == 7;
-
-    /// <summary>
-    /// 格式预设列表（当前时间/当前日期/当前星期）
-    /// </summary>
-    public FormatPresetOption[] FormatPresets => SourceTypeValues[SourceTypeIndex] switch
-    {
-        Models.TextSourceType.CurrentTime => [
-            new("HH:mm", "HH:mm"),
-            new("HH:mm:ss", "HH:mm:ss"),
-            new("hh:mm tt", "hh:mm tt"),
-            new("HH时mm分", "HH时mm分"),
-        ],
-        Models.TextSourceType.CurrentDate => [
-            new("yyyy-MM-dd", "yyyy-MM-dd"),
-            new("yyyy/MM/dd", "yyyy/MM/dd"),
-            new("yyyy年MM月dd日", "yyyy年MM月dd日"),
-            new("MM月dd日", "MM月dd日"),
-        ],
-        Models.TextSourceType.CurrentDayOfWeek => [
-            new("星期X", "星期X"),
-            new("周X", "周X"),
-            new("dddd", "dddd"),
-            new("ddd", "ddd"),
-        ],
-        _ => []
-    };
-
-    public TextSlotItemViewModel(Models.TextSlotConfig config, Action? saveCallback)
-    {
-        Config = config;
-        _saveCallback = saveCallback;
-
-        SourceTypeIndex = Array.IndexOf(SourceTypeValues, config.Source);
-        CustomText = config.SourceSettings.Text ?? "";
-        Format = config.SourceSettings.Format ?? "";
-        ShowSeconds = config.SourceSettings.ShowSeconds ?? true;
-        DecimalPlaces = config.SourceSettings.DecimalPlaces ?? 1;
-        Fallback = config.SourceSettings.Fallback ?? "";
-        ShowTime = config.SourceSettings.ShowTime ?? false;
-
-        Visible = config.CommonSettings.Visible;
-        Prefix = config.CommonSettings.Prefix ?? "";
-        Suffix = config.CommonSettings.Suffix ?? "";
-        FontSizeOverride = config.CommonSettings.FontSizeOverride;
-        ColorOverride = config.CommonSettings.ColorOverride ?? "";
-        FontFamily = config.CommonSettings.FontFamily ?? "";
-
-        _isInitializing = false;
-        EnsureValidFormat();
-    }
-
-    public void WriteBack()
-    {
-        Config.Source = SourceTypeValues[SourceTypeIndex];
-        Config.SourceSettings.Text = string.IsNullOrWhiteSpace(CustomText) ? null : CustomText;
-        Config.SourceSettings.Format = string.IsNullOrWhiteSpace(Format) ? null : Format;
-        Config.SourceSettings.ShowSeconds = ShowSeconds;
-        Config.SourceSettings.DecimalPlaces = DecimalPlaces;
-        Config.SourceSettings.Fallback = string.IsNullOrWhiteSpace(Fallback) ? null : Fallback;
-        Config.SourceSettings.ShowTime = ShowTime;
-
-        Config.CommonSettings.Visible = Visible;
-        Config.CommonSettings.Prefix = string.IsNullOrWhiteSpace(Prefix) ? null : Prefix;
-        Config.CommonSettings.Suffix = string.IsNullOrWhiteSpace(Suffix) ? null : Suffix;
-        Config.CommonSettings.FontSizeOverride = FontSizeOverride;
-        Config.CommonSettings.ColorOverride = string.IsNullOrWhiteSpace(ColorOverride) ? null : ColorOverride;
-        Config.CommonSettings.FontFamily = string.IsNullOrWhiteSpace(FontFamily) ? null : FontFamily;
-    }
-
-    private void OnSave()
-    {
-        if (_isInitializing) return;
-        WriteBack();
-        _saveCallback?.Invoke();
-    }
-
-    partial void OnSourceTypeIndexChanged(int value)
-    {
-        OnPropertyChanged(nameof(DisplayName));
-        OnPropertyChanged(nameof(DisplayDescription));
-        OnPropertyChanged(nameof(IconGlyph));
-        OnPropertyChanged(nameof(IsSourceConfigurable));
-        OnPropertyChanged(nameof(IsCustomTextRelevant));
-        OnPropertyChanged(nameof(IsFormatRelevant));
-        OnPropertyChanged(nameof(FormatPresets));
-        OnPropertyChanged(nameof(IsShowSecondsRelevant));
-        OnPropertyChanged(nameof(IsDecimalPlacesRelevant));
-        OnPropertyChanged(nameof(IsFallbackRelevant));
-        OnPropertyChanged(nameof(IsShowTimeRelevant));
-
-        EnsureValidFormat();
-
-        OnSave();
-    }
-    partial void OnCustomTextChanged(string value)
-    {
-        OnPropertyChanged(nameof(DisplayName));
-        OnSave();
-    }
-    partial void OnFormatChanged(string value) => OnSave();
-    partial void OnShowSecondsChanged(bool value) => OnSave();
-    partial void OnDecimalPlacesChanged(int value) => OnSave();
-    partial void OnFallbackChanged(string value) => OnSave();
-    partial void OnShowTimeChanged(bool value) => OnSave();
-    partial void OnVisibleChanged(bool value) => OnSave();
-    partial void OnPrefixChanged(string value) => OnSave();
-    partial void OnSuffixChanged(string value) => OnSave();
-    partial void OnFontSizeOverrideChanged(double? value)
-    {
-        OnPropertyChanged(nameof(FontSizeOverrideValue));
-        OnSave();
-    }
-    partial void OnColorOverrideChanged(string value) => OnSave();
-    partial void OnFontFamilyChanged(string value) => OnSave();
-
-    private void EnsureValidFormat()
-    {
-        var presets = FormatPresets;
-        if (presets.Length > 0 && !presets.Any(p => p.Format == Format))
-            Format = presets[0].Format;
-    }
-}
-
-/// <summary>
-/// 格式预设选项（用于 ComboBox 绑定），不可变 record 确保 WPF 属性路径可访问
-/// </summary>
-public record FormatPresetOption(string Label, string Format);
