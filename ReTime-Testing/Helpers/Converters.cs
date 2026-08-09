@@ -175,4 +175,24 @@ namespace ReTime_Testing.Helpers
             return "00:00:00";
         }
     }
+
+    /// <summary>
+    /// 布尔值到主题类型的转换器（内置/第三方）
+    /// </summary>
+    public class BoolToThemeTypeConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isBuiltIn)
+            {
+                return isBuiltIn ? "内置主题" : "第三方主题";
+            }
+            return "未知";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

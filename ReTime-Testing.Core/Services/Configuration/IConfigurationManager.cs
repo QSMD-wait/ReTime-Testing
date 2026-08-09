@@ -50,6 +50,11 @@ public interface IConfigurationManager
     string LogsDirectory { get; }
 
     /// <summary>
+    /// 获取进度条主题目录路径（第三方主题存放位置：data/Config/TimeTopDesktop/Themes）
+    /// </summary>
+    string ProgressBarThemesDirectory { get; }
+
+    /// <summary>
     /// 初始化目录结构（启动时调用）
     /// </summary>
     void InitializeDirectories();

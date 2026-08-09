@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using ReTime_Testing.Core.Services;
 using ReTime_Testing.Services;
 
 namespace ReTime_Testing.ViewModels
@@ -448,12 +449,14 @@ namespace ReTime_Testing.ViewModels
         private const string TAG_TEXT_OVERLAY = "TextOverlay";
         private const string TAG_TEXT_OVERLAY_LAYOUT = "TextOverlayLayout";
         private const string TAG_WINDOW = "Window";
+        private const string TAG_THEME = "Theme";
         private const string TAG_ABOUT = "About";
 
         private readonly ISettingsService _settingsService;
         private readonly IDesktopWindowManager _desktopWindowManager;
         private readonly ITimeService? _timeService;
         private readonly ITimeCalibrationService? _timeCalibrationService;
+        private readonly IProgressBarThemeService? _themeService;
 
         [ObservableProperty]
         private object? _currentPage;
@@ -464,18 +467,21 @@ namespace ReTime_Testing.ViewModels
         private TextOverlayPageViewModel? _textOverlayPage;
         private TextOverlayLayoutPageViewModel? _textOverlayLayoutPage;
         private WindowPageViewModel? _windowPage;
+        private ThemePageViewModel? _themePage;
         private AboutPageViewModel? _aboutPage;
 
         public TimeTopSettingViewModel(
             ISettingsService settingsService,
             IDesktopWindowManager desktopWindowManager,
             ITimeService? timeService = null,
-            ITimeCalibrationService? timeCalibrationService = null)
+            ITimeCalibrationService? timeCalibrationService = null,
+            IProgressBarThemeService? themeService = null)
         {
             _settingsService = settingsService;
             _desktopWindowManager = desktopWindowManager;
             _timeService = timeService;
             _timeCalibrationService = timeCalibrationService;
+            _themeService = themeService;
         }
 
         /// <summary>
@@ -499,6 +505,7 @@ namespace ReTime_Testing.ViewModels
                 TAG_TEXT_OVERLAY => _textOverlayPage ??= new TextOverlayPageViewModel(_settingsService, _desktopWindowManager),
                 TAG_TEXT_OVERLAY_LAYOUT => _textOverlayLayoutPage ??= new TextOverlayLayoutPageViewModel(_settingsService, _desktopWindowManager),
                 TAG_WINDOW => _windowPage ??= new WindowPageViewModel(_settingsService, _desktopWindowManager),
+                TAG_THEME => _themePage ??= CreateThemePageViewModel(),
                 TAG_ABOUT => _aboutPage ??= new AboutPageViewModel(),
                 _ => _basicPage ??= new BasicPageViewModel(_settingsService)
             };
@@ -516,7 +523,14 @@ namespace ReTime_Testing.ViewModels
             _textOverlayPage = null;
             _textOverlayLayoutPage = null;
             _windowPage = null;
+            _themePage = null;
             _aboutPage = null;
+        }
+
+        private ThemePageViewModel? CreateThemePageViewModel()
+        {
+            if (_themeService == null) return null;
+            return new ThemePageViewModel(_themeService);
         }
     }
 }

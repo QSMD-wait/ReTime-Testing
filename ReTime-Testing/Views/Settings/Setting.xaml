@@ -39,6 +39,11 @@
             <pages:WindowPage/>
         </DataTemplate>
 
+        <!-- 数据模板：主题设置 -->
+        <DataTemplate DataType="{x:Type viewModels:ThemePageViewModel}">
+            <pages:ThemePage/>
+        </DataTemplate>
+
         <!-- 数据模板：文字覆盖设置 -->
         <DataTemplate DataType="{x:Type viewModels:TextOverlayPageViewModel}">
             <pages:TextOverlayPage/>
@@ -108,6 +113,12 @@
                 <ui:NavigationViewItem Content="窗口" Tag="Window">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.WindowAd_24_Regular}"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="主题" Tag="Theme">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.PaintBrush_24_Regular}"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>

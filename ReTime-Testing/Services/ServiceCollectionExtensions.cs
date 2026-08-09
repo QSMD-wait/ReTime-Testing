@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ReTime_Testing.Core.Services;
 using ReTime_Testing.ViewModels;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
 
@@ -34,6 +35,7 @@ namespace ReTime_Testing.Services
 
             // ===== UI 服务 =====
             services.AddSingleton<IThemeService, ThemeService>();
+            services.AddSingleton<IProgressBarThemeService, ProgressBarThemeService>();
             services.AddSingleton<IAutoStartService, AutoStartService>();
             services.AddSingleton<ITrayIconService, TrayIconService>();
             services.AddSingleton<IDesktopWindowManager, DesktopWindowManager>();

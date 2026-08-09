@@ -52,6 +52,11 @@ namespace ReTime_Testing.Services
         public string LogsDirectory { get; private set; } = string.Empty;
 
         /// <summary>
+        /// 获取进度条主题目录路径（第三方主题存放位置）
+        /// </summary>
+        public string ProgressBarThemesDirectory { get; private set; } = string.Empty;
+
+        /// <summary>
         /// 构造函数（支持 DI 注入）
         /// </summary>
         public ConfigurationManager()
@@ -76,6 +81,7 @@ namespace ReTime_Testing.Services
                 ScheduleGroupsDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "ScheduleGroups");
                 TimeTopSettingFilePath = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "TimeTopSetting.json");
                 LogsDirectory = Path.Combine(DataDirectory, "Logs");
+                ProgressBarThemesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "Themes");
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
@@ -101,6 +107,7 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(TimeSchedulesDirectory);
                 EnsureDirectoryExists(ScheduleGroupsDirectory);
                 EnsureDirectoryExists(LogsDirectory);
+                EnsureDirectoryExists(ProgressBarThemesDirectory);
 
                 Logger.Info("ReTime_Testing.Services.ConfigurationManager",
                     "目录结构初始化完成");
