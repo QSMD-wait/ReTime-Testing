@@ -19,10 +19,7 @@ public partial class ThemePageViewModel : ObservableObject
     private IReadOnlyList<ProgressBarThemeManifest> _availableThemes = Array.Empty<ProgressBarThemeManifest>();
 
     [ObservableProperty]
-    private string _selectedThemeId = "default";
-
-    [ObservableProperty]
-    private bool _isThirdPartyFeatureEnabled = false;
+    private string _selectedThemeId = ProgressBarThemeManifest.DefaultId;
 
     public ThemePageViewModel(IProgressBarThemeService themeService)
     {

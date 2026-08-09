@@ -10,6 +10,8 @@ public interface IProgressBarThemeService
 
     IReadOnlyList<ProgressBarThemeManifest> AvailableThemes { get; }
 
+    event Action<string>? ThemeChanged;
+
     void ApplyTheme(string themeId);
 
     void LoadAllThemes();

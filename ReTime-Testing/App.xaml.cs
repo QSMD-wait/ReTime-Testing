@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ReTime_Testing.Models;
 using ReTime_Testing.Core.Services;
+using ReTime_Testing.Core.Models.Theme;
 using ReTime_Testing.Services;
 using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
@@ -128,7 +129,7 @@ namespace ReTime_Testing
                 // 初始化进度条主题服务
                 var progressBarThemeService = Services.GetRequiredService<IProgressBarThemeService>();
                 progressBarThemeService.LoadAllThemes();
-                progressBarThemeService.ApplyTheme("default");
+                progressBarThemeService.ApplyTheme(ProgressBarThemeManifest.DefaultId);
                 Logger.Info(GetType().FullName ?? "App", "进度条主题服务已初始化");
 
                 // 应用自启动配置

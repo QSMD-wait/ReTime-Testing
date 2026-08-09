@@ -4,8 +4,10 @@ namespace ReTime_Testing.Core.Models.Theme;
 
 public class ProgressBarThemeManifest
 {
+    public const string DefaultId = "default";
+
     [JsonPropertyName("id")]
-    public string Id { get; set; } = "default";
+    public string Id { get; set; } = DefaultId;
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = "默认";

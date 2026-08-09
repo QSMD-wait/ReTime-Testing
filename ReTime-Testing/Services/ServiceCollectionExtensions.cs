@@ -34,6 +34,7 @@ namespace ReTime_Testing.Services
             services.AddSingleton<IScheduleGroupManager, ScheduleGroupManager>();
 
             // ===== UI 服务 =====
+            services.AddSingleton<IApplicationResourceProvider, ApplicationResourceProvider>();
             services.AddSingleton<IThemeService, ThemeService>();
             services.AddSingleton<IProgressBarThemeService, ProgressBarThemeService>();
             services.AddSingleton<IAutoStartService, AutoStartService>();

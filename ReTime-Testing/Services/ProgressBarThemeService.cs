@@ -19,6 +19,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
     };
 
     private readonly IConfigurationManager _configManager;
+    private readonly IApplicationResourceProvider _resourceProvider;
     private readonly List<ProgressBarThemeManifest> _availableThemes = new();
     private ProgressBarThemeManifest _currentTheme = new();
 
@@ -28,9 +29,12 @@ public class ProgressBarThemeService : IProgressBarThemeService
 
     public IReadOnlyList<ProgressBarThemeManifest> AvailableThemes => _availableThemes.AsReadOnly();
 
-    public ProgressBarThemeService(IConfigurationManager configManager)
+    public event Action<string>? ThemeChanged;
+
+    public ProgressBarThemeService(IConfigurationManager configManager, IApplicationResourceProvider resourceProvider)
     {
         _configManager = configManager;
+        _resourceProvider = resourceProvider;
     }
 
     public void LoadAllThemes()
@@ -51,16 +55,13 @@ public class ProgressBarThemeService : IProgressBarThemeService
         var theme = _availableThemes.FirstOrDefault(t => t.Id == themeId);
         if (theme == null)
         {
-            theme = _availableThemes.FirstOrDefault(t => t.Id == "default")
+            theme = _availableThemes.FirstOrDefault(t => t.Id == ProgressBarThemeManifest.DefaultId)
                    ?? CreateDefaultManifest();
         }
 
         try
         {
-            var app = Application.Current;
-            if (app == null) return;
-
-            var merged = app.Resources.MergedDictionaries;
+            var merged = _resourceProvider.GetMergedDictionaries();
 
             RemoveCurrentThemeResource(merged);
 
@@ -74,10 +75,11 @@ public class ProgressBarThemeService : IProgressBarThemeService
             }
 
             _currentTheme = theme;
+            ThemeChanged?.Invoke(theme.Id);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"应用主题失败: {themeId}, {ex.Message}");
+            Logger.Error(nameof(ProgressBarThemeService), $"应用主题失败: {themeId}", ex);
             _currentTheme = CreateDefaultManifest();
         }
     }
@@ -113,21 +115,21 @@ public class ProgressBarThemeService : IProgressBarThemeService
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"加载第三方主题清单失败: {themeDir}, {ex.Message}");
+                    Logger.Warn(nameof(ProgressBarThemeService), $"加载第三方主题清单失败: {themeDir}, {ex.Message}");
                 }
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"扫描第三方主题目录失败: {ex.Message}");
+            Logger.Warn(nameof(ProgressBarThemeService), $"扫描第三方主题目录失败: {ex.Message}");
         }
     }
 
+    private const string ThemeMarkerKey = "__ReTime_ProgressBarTheme__";
+
     private static void RemoveCurrentThemeResource(IList<ResourceDictionary> merged)
     {
-        var oldTheme = merged.FirstOrDefault(d =>
-            d.Source != null &&
-            d.Source.OriginalString.Contains("ProgressBarThemes"));
+        var oldTheme = merged.FirstOrDefault(d => d.Contains(ThemeMarkerKey));
 
         if (oldTheme != null)
         {
@@ -137,18 +139,19 @@ public class ProgressBarThemeService : IProgressBarThemeService
 
     private static void ApplyBuiltInTheme(ProgressBarThemeManifest theme, IList<ResourceDictionary> merged)
     {
-        if (theme.Id == "default")
+        if (theme.Id == ProgressBarThemeManifest.DefaultId)
             return;
 
         var packUri = $"pack://application:,,,/Themes/ProgressBarThemes/{theme.Id}.xaml";
         try
         {
             var resourceDict = new ResourceDictionary { Source = new Uri(packUri) };
+            resourceDict[ThemeMarkerKey] = theme.Id;
             merged.Add(resourceDict);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"加载内置主题资源失败: {packUri}, {ex.Message}");
+            Logger.Error(nameof(ProgressBarThemeService), $"加载内置主题资源失败: {packUri}, {ex.Message}");
         }
     }
 
@@ -165,11 +168,12 @@ public class ProgressBarThemeService : IProgressBarThemeService
             var xamlContent = File.ReadAllText(themeXamlPath);
             using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(xamlContent));
             var resourceDict = (ResourceDictionary)System.Windows.Markup.XamlReader.Load(stream);
+            resourceDict[ThemeMarkerKey] = theme.Id;
             merged.Add(resourceDict);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"加载第三方主题资源失败: {themeXamlPath}, {ex.Message}");
+            Logger.Error(nameof(ProgressBarThemeService), $"加载第三方主题资源失败: {themeXamlPath}, {ex.Message}");
         }
     }
 
@@ -184,7 +188,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
     {
         return new ProgressBarThemeManifest
         {
-            Id = "default",
+            Id = ProgressBarThemeManifest.DefaultId,
             Name = "默认",
             Author = "ReTime - Testing",
             Version = "1.0.0",
