@@ -120,10 +120,10 @@ namespace ReTime_Testing.Models
         public string Position { get; set; } = "top";
 
         /// <summary>
-        /// 进度条高度（px）
+        /// 进度条整体缩放比例（0.5~3.0，1.0为原始大小）
         /// </summary>
-        [JsonPropertyName("height")]
-        public int Height { get; set; } = 5;
+        [JsonPropertyName("scale")]
+        public double Scale { get; set; } = 1.0;
 
         /// <summary>
         /// 圆角半径（px）

@@ -224,7 +224,7 @@ namespace ReTime_Testing.ViewModels
         private string _selectedTextEffect = "none";
 
         [ObservableProperty]
-        private int _progressBarHeight = 5;
+        private double _progressBarScale = 1.0;
 
         [ObservableProperty]
         private int _cornerRadius;
@@ -261,7 +261,7 @@ namespace ReTime_Testing.ViewModels
             EnableShadow = _setting.ProgressBar.EnableShadow;
             SelectedTextEffect = _setting.TextOverlay.Style.TextEffect ?? "shadow";
 
-            ProgressBarHeight = _setting.ProgressBar.Height;
+            ProgressBarScale = _setting.ProgressBar.Scale;
             CornerRadius = _setting.ProgressBar.CornerRadius;
             GlowEnabled = _setting.ProgressBar.GlowEnabled;
             GlowColor = _setting.ProgressBar.GlowColor ?? "";
@@ -293,11 +293,12 @@ namespace ReTime_Testing.ViewModels
             _desktopWindowManager.RefreshTextOverlay();
         }
 
-        partial void OnProgressBarHeightChanged(int value)
+        partial void OnProgressBarScaleChanged(double value)
         {
             if (_isInitializing) return;
-            _setting.ProgressBar.Height = value;
-            SaveAndRefresh();
+            _setting.ProgressBar.Scale = Math.Clamp(value, 0.5, 3.0);
+            _settingsService.SaveTimeTopSetting(_setting);
+            _desktopWindowManager.RefreshProgressBarScale();
         }
 
         partial void OnCornerRadiusChanged(int value)

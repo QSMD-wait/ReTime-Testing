@@ -21,7 +21,7 @@
             <RotateTransform Angle="-90"/>
         </Grid.LayoutTransform>
 
-        <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" Height="5" Margin="0,-1,0,0"
+        <ui:ProgressBar x:Name="ProgressBar" VerticalAlignment="Top" MinHeight="3" Margin="0,0,0,0"
                        Value="{Binding ProgressValue}"
                        IsIndeterminate="{Binding IsIndeterminate}"
                        Foreground="{Binding Foreground, FallbackValue=Transparent}"
@@ -31,6 +31,9 @@
                        Opacity="{Binding Opacity}"
                        Minimum="{Binding Minimum}"
                        Maximum="{Binding Maximum}">
+            <ui:ProgressBar.LayoutTransform>
+                <ScaleTransform ScaleY="{Binding ProgressBarScale}"/>
+            </ui:ProgressBar.LayoutTransform>
             <ui:ProgressBar.Effect>
                 <Binding Path="EnableShadow" Converter="{StaticResource BooleanToEffectConverter}">
                     <Binding.ConverterParameter>

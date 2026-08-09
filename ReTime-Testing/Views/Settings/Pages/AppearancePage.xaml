@@ -14,23 +14,23 @@
         <TextBlock Text="外观" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
         <!-- 进度条外观 -->
-        <ui:SettingsCard Header="进度条高度"
-                         Description="进度条的像素高度（未实现）"
-                         IsEnabled="False">
+        <ui:SettingsCard Header="进度条缩放"
+                         Description="调整进度条的整体大小比例">
             <ui:SettingsCard.HeaderIcon>
-                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.AlignCenterVertical_24_Regular}" />
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Resize_24_Regular}" />
             </ui:SettingsCard.HeaderIcon>
             <StackPanel Orientation="Horizontal">
-                <ui:NumberBox Value="{Binding ProgressBarHeight, Mode=TwoWay}"
-                              SpinButtonPlacementMode="Compact"
-                              Minimum="1"
-                              Maximum="20"
-                              SmallChange="1"
-                              LargeChange="2"
-                              MinWidth="100"/>
-                <TextBlock Text="px"
+                <Slider Value="{Binding ProgressBarScale, Mode=TwoWay}"
+                        Minimum="0.5"
+                        Maximum="3.0"
+                        SmallChange="0.1"
+                        LargeChange="0.5"
+                        IsSnapToTickEnabled="True"
+                        TickFrequency="0.1"
+                        Width="120"/>
+                <TextBlock Text="{Binding ProgressBarScale, StringFormat={}{0:F1}x}"
                            VerticalAlignment="Center"
-                           Margin="8,0,0,0"
+                           MinWidth="36"
                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
             </StackPanel>
         </ui:SettingsCard>

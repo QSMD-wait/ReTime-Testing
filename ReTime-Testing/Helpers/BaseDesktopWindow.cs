@@ -43,11 +43,6 @@ namespace ReTime_Testing.Helpers
     public static class DesktopWindowHelper
     {
         /// <summary>
-        /// 进度条高度/宽度
-        /// </summary>
-        public const int ProgressBarSize = 5;
-
-        /// <summary>
         /// 窗口扩展高度（用于信息显示）
         /// </summary>
         public const int WindowExtension = 400;

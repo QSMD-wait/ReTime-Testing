@@ -42,4 +42,9 @@ public interface IDesktopWindowManager
     /// 刷新文字覆盖配置
     /// </summary>
     void RefreshTextOverlay();
+
+    /// <summary>
+    /// 刷新进度条缩放比例
+    /// </summary>
+    void RefreshProgressBarScale();
 }

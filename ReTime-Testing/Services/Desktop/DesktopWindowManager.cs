@@ -95,6 +95,20 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 刷新进度条缩放比例
+        /// </summary>
+        public void RefreshProgressBarScale()
+        {
+            if (_currentWindow == null || !_currentWindow.IsLoaded) return;
+
+            if (_currentWindow.DataContext is TimeTopDesktopViewModel vm)
+            {
+                var setting = _settingsService.GetTimeTopSetting();
+                vm.ProgressBarScale = Math.Clamp(setting.ProgressBar.Scale, 0.5, 3.0);
+            }
+        }
+
+        /// <summary>
         /// 获取当前窗口
         /// </summary>
         public Window? CurrentWindow => _currentWindow;

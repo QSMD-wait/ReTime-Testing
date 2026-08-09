@@ -44,6 +44,9 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private bool _enableShadow = true;
 
+        [ObservableProperty]
+        private double _progressBarScale = 1.0;
+
         public TimeTopDesktopViewModel(
             IGlobalTimeTopDesktopService globalService,
             ISettingsService? settingsService = null)
@@ -58,6 +61,7 @@ namespace ReTime_Testing.ViewModels
                 if (setting != null)
                 {
                     EnableShadow = setting.ProgressBar.EnableShadow;
+                    ProgressBarScale = Math.Clamp(setting.ProgressBar.Scale, 0.5, 3.0);
                 }
                 
                 Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");

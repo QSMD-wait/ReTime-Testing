@@ -40,8 +40,8 @@ public class ThemeSupportsSettings
     [JsonPropertyName("gradient")]
     public ThemeGradientSupport Gradient { get; set; } = new() { Enabled = false, StartColor = false, EndColor = false };
 
-    [JsonPropertyName("trackHeight")]
-    public bool TrackHeight { get; set; } = true;
+    [JsonPropertyName("scale")]
+    public bool Scale { get; set; } = true;
 
     [JsonPropertyName("trackColor")]
     public bool TrackColor { get; set; } = true;

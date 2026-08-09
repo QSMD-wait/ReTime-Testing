@@ -285,7 +285,7 @@ namespace ReTime_Testing.Services
                 target.Schedule.Override.ScheduleId = defaults.Schedule.Override.ScheduleId;
 
             target.ProgressBar ??= new ProgressBarConfig();
-            target.ProgressBar.Height = Math.Max(1, target.ProgressBar.Height);
+            target.ProgressBar.Scale = Math.Clamp(target.ProgressBar.Scale, 0.5, 3.0);
             target.ProgressBar.CornerRadius = Math.Max(0, target.ProgressBar.CornerRadius);
 
             target.Behavior ??= new ProgressBarBehaviorConfig();
