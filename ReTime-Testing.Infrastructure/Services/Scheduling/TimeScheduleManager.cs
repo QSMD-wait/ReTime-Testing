@@ -120,22 +120,13 @@ namespace ReTime_Testing.Services
                 {
                     Metadata = new TimeScheduleMetadata
                     {
-                        Name = "默认工作时间",
-                        Description = "标准的 9:00 - 18:00 工作时间",
+                        Name = "默认计划表",
+                        Description = "",
                         CreatedAt = now.ToString("o"),
                         UpdatedAt = now.ToString("o")
                     }
                 },
-                Schedules = new List<TimeScheduleItem>
-                {
-                    new TimeScheduleItem
-                    {
-                        Id = "schedule_001",
-                        Name = "工作时间段",
-                        StartTime = "09:00:00",
-                        EndTime = "18:00:00"
-                    }
-                }
+                Schedules = new List<TimeScheduleItem>()
             };
         }
 
