@@ -1,0 +1,161 @@
+<UserControl x:Class="ReTime_Testing.Views.Testing.Pages.ControlsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+             mc:Ignorable="d"
+             d:DesignWidth="960"
+             d:DesignHeight="600">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" ScrollViewer.PanningMode="VerticalOnly">
+        <StackPanel Margin="24,24,24,24">
+
+            <!-- Toast 通知测试 -->
+            <TextBlock Text="Toast 通知测试"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="测试全局 Toast 通知组件的各种参数和行为"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <TextBlock Text="快捷触发"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="Gray"
+                       Margin="0,0,0,8"/>
+            <WrapPanel Margin="0,0,0,24">
+                <Button Content="ℹ 信息"
+                        Command="{Binding ShowInfoToastCommand}"
+                        Width="100" Height="32" Margin="0,0,8,8"
+                        ToolTip="显示 Informational 级别 Toast"/>
+                <Button Content="✓ 成功"
+                        Command="{Binding ShowSuccessToastTestCommand}"
+                        Width="100" Height="32" Margin="0,0,8,8"
+                        ToolTip="显示 Success 级别 Toast"/>
+                <Button Content="⚠ 警告"
+                        Command="{Binding ShowWarningToastTestCommand}"
+                        Width="100" Height="32" Margin="0,0,8,8"
+                        ToolTip="显示 Warning 级别 Toast"/>
+                <Button Content="✕ 错误"
+                        Command="{Binding ShowErrorToastTestCommand}"
+                        Width="100" Height="32" Margin="0,0,8,8"
+                        ToolTip="显示 Error 级别 Toast"/>
+            </WrapPanel>
+
+            <TextBlock Text="自定义参数"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="Gray"
+                       Margin="0,0,0,8"/>
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="严重度" Foreground="Gray" VerticalAlignment="Center"/>
+                <ComboBox ItemsSource="{Binding ToastSeverityNames}"
+                          SelectedIndex="{Binding SelectedToastSeverityIndex}"
+                          Grid.Column="1"
+                          HorizontalAlignment="Left"
+                          Width="200"/>
+            </Grid>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="标题" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding ToastTitle, UpdateSourceTrigger=PropertyChanged}"
+                         Grid.Column="1"
+                         HorizontalAlignment="Left"
+                         Width="300"/>
+            </Grid>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="消息" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding ToastMessage, UpdateSourceTrigger=PropertyChanged}"
+                         Grid.Column="1"
+                         HorizontalAlignment="Left"
+                         Width="300"/>
+            </Grid>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="持续时间" Foreground="Gray" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <Slider Value="{Binding ToastDurationSeconds}"
+                            Minimum="1"
+                            Maximum="15"
+                            Width="200"
+                            TickFrequency="0.5"
+                            IsSnapToTickEnabled="True"
+                            VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ToastDurationSeconds, StringFormat={}{0:F1}s}"
+                               Width="40"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="自动关闭" Foreground="Gray" VerticalAlignment="Center"/>
+                <ui:ToggleSwitch IsOn="{Binding ToastAutoClose}"
+                                 Grid.Column="1"
+                                 MinWidth="0"/>
+            </Grid>
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="可手动关闭" Foreground="Gray" VerticalAlignment="Center"/>
+                <ui:ToggleSwitch IsOn="{Binding ToastCanUserClose}"
+                                 Grid.Column="1"
+                                 MinWidth="0"/>
+            </Grid>
+
+            <TextBlock Text="场景测试"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Foreground="Gray"
+                       Margin="0,0,0,8"/>
+            <WrapPanel>
+                <Button Content="触发自定义 Toast"
+                        Command="{Binding ShowCustomToastCommand}"
+                        Width="150" Height="32" Margin="0,0,8,8"
+                        Style="{StaticResource AccentButtonStyle}"/>
+                <Button Content="不可关闭 Toast"
+                        Command="{Binding ShowNonClosableToastCommand}"
+                        Width="150" Height="32" Margin="0,0,8,8"
+                        ToolTip="AutoClose=false, CanUserClose=false"/>
+                <Button Content="批量触发 (×4)"
+                        Command="{Binding ShowBurstToastCommand}"
+                        Width="150" Height="32" Margin="0,0,8,8"
+                        ToolTip="连续触发4条不同级别的 Toast"/>
+                <Button Content="带操作按钮"
+                        Command="{Binding ShowActionToastCommand}"
+                        Width="130" Height="32" Margin="0,0,8,8"
+                        ToolTip="Toast 带有右侧操作链接"/>
+                <Button Content="错误+重试"
+                        Command="{Binding ShowErrorActionToastCommand}"
+                        Width="130" Height="32" Margin="0,0,8,8"
+                        ToolTip="Error 级别带重试按钮"/>
+            </WrapPanel>
+
+            <TextBlock Text="Toast 显示在窗口右下角，最多同时显示 5 条，超出自动移除最旧的"
+                       FontSize="12"
+                       Foreground="Orange"
+                       Margin="0,8,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

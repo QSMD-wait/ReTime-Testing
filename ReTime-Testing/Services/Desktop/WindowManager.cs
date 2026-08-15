@@ -18,6 +18,7 @@ namespace ReTime_Testing.Services
         private static Window? _timeTopSetting;
         private static Window? _debugTest;
         private static Window? _timeScheduleEditor;
+        private static Window? _logViewer;
 
         /// <summary>
         /// 获取或创建主窗口（MainWindow）
@@ -102,6 +103,29 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 获取或创建日志查看器窗口（LogViewer）
+        /// </summary>
+        public static Window GetLogViewer()
+        {
+            if (_logViewer == null || !_logViewer.IsLoaded)
+            {
+                _logViewer = new LogViewer();
+                _logViewer.Closed += (s, e) => _logViewer = null;
+            }
+            return _logViewer;
+        }
+
+        /// <summary>
+        /// 显示日志查看器窗口
+        /// </summary>
+        public static void ShowLogViewer()
+        {
+            var window = GetLogViewer();
+            window.Show();
+            window.Activate();
+        }
+
+        /// <summary>
         /// 显示时间计划表编辑器窗口
         /// </summary>
         public static void ShowTimeScheduleEditor()
@@ -120,6 +144,7 @@ namespace ReTime_Testing.Services
             _timeTopSetting?.Close();
             _debugTest?.Close();
             _timeScheduleEditor?.Close();
+            _logViewer?.Close();
         }
 
         /// <summary>
@@ -131,6 +156,7 @@ namespace ReTime_Testing.Services
             _timeTopSetting = null;
             _debugTest = null;
             _timeScheduleEditor = null;
+            _logViewer = null;
         }
     }
 }

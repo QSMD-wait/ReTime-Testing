@@ -1,0 +1,306 @@
+<UserControl x:Class="ReTime_Testing.Views.Testing.Pages.ServiceDebugPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="960"
+             d:DesignHeight="600">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" ScrollViewer.PanningMode="VerticalOnly">
+        <StackPanel Margin="24,24,24,24">
+
+            <!-- 互斥锁调试 -->
+            <TextBlock Text="互斥锁调试"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="测试多实例检测与单实例保护"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="互斥锁状态" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding MutexStatus}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMutexAcquired}" Value="True">
+                                    <Setter Property="Foreground" Value="Green"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsMutexAcquired}" Value="False">
+                                    <Setter Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="互斥锁 ID" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding MutexId}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+            </Grid>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="是否启用" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="启用"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMutexEnabled}" Value="False">
+                                    <Setter Property="Text" Value="禁用"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Button Content="释放互斥锁"
+                        Command="{Binding ReleaseMutexCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"
+                        ToolTip="释放互斥锁，允许新实例启动"/>
+                <Button Content="重新获取"
+                        Command="{Binding ReacquireMutexCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"
+                        ToolTip="重新尝试获取互斥锁"/>
+                <Button Content="切换启用状态"
+                        Command="{Binding ToggleMutexEnabledCommand}"
+                        Width="120" Height="32"
+                        ToolTip="切换互斥锁的启用/禁用状态"/>
+            </StackPanel>
+            <TextBlock Text="修改互斥锁状态后，重新启动应用以验证多实例行为"
+                       FontSize="12"
+                       Foreground="Orange"
+                       Margin="0,0,0,28"/>
+
+            <!-- 进度条位置控制 -->
+            <TextBlock Text="进度条位置控制"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="切换进度条在屏幕上的位置（上、下、左、右）"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <TextBlock Text="当前位置" Foreground="Gray"
+                           Width="140"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding PositionText}"
+                           FontWeight="SemiBold"
+                           Foreground="Blue"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Button Content="顶部"
+                        Command="{Binding SetPositionTopCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"/>
+                <Button Content="底部"
+                        Command="{Binding SetPositionBottomCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"/>
+                <Button Content="左侧"
+                        Command="{Binding SetPositionLeftCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"/>
+                <Button Content="右侧"
+                        Command="{Binding SetPositionRightCommand}"
+                        Width="120" Height="32"/>
+            </StackPanel>
+            <TextBlock Text="切换位置会关闭当前窗口并创建新窗口，位置会持久化到配置"
+                       FontSize="12"
+                       Foreground="Orange"
+                       Margin="0,0,0,28"/>
+
+            <!-- 时间服务调试 -->
+            <TextBlock Text="时间服务调试"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="手动校准用于测试时间跳跃处理功能"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <TextBlock Text="当前时间" Foreground="Gray"
+                           Width="140"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding CurrentTime}"
+                           FontWeight="SemiBold"
+                           Foreground="Blue"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,28">
+                <Button Content="手动校准 (+5秒)"
+                        Command="{Binding CalibrateTimeForwardCommand}"
+                        Width="140" Height="32" Margin="0,0,8,0"
+                        ToolTip="手动校准时间向前5秒"/>
+                <Button Content="手动校准 (-5秒)"
+                        Command="{Binding CalibrateTimeBackwardCommand}"
+                        Width="140" Height="32"
+                        ToolTip="手动校准时间向后5秒"/>
+            </StackPanel>
+
+            <!-- 执行计划调试 -->
+            <TextBlock Text="执行计划调试"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="查看当前执行计划和时间段状态"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="当前时间段" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding CurrentSegmentName}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </Grid>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="当前状态" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding CurrentState}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </Grid>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="下个时间点" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding NextTimePoint}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </Grid>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="活跃状态" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="是"/>
+                            <Setter Property="Foreground" Value="Green"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActiveSegment}" Value="False">
+                                    <Setter Property="Text" Value="否"/>
+                                    <Setter Property="Foreground" Value="Gray"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Button Content="显示执行计划"
+                        Command="{Binding ShowExecutionPlanCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"
+                        ToolTip="在日志中显示完整执行计划"/>
+                <Button Content="应用当前状态"
+                        Command="{Binding ApplyCurrentStateCommand}"
+                        Width="120" Height="32"
+                        ToolTip="重新应用当前状态"/>
+            </StackPanel>
+            <TextBlock Text="执行计划详情会写入日志，可在日志查看器中查看"
+                       FontSize="12"
+                       Foreground="Orange"
+                       Margin="0,0,0,28"/>
+
+            <!-- 调度管理器调试 -->
+            <TextBlock Text="调度管理器调试"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="测试调度管理器的轮询和状态切换功能"
+                       FontSize="12"
+                       Foreground="Gray"
+                       Margin="0,4,0,16"/>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="调度运行中" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="是"/>
+                            <Setter Property="Foreground" Value="Green"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsScheduleManagerRunning}" Value="False">
+                                    <Setter Property="Text" Value="否"/>
+                                    <Setter Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="时间点数量" Foreground="Gray" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding TimePointCount}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Button Content="停止调度"
+                        Command="{Binding StopScheduleManagerCommand}"
+                        Width="120" Height="32" Margin="0,0,8,0"
+                        ToolTip="停止调度管理器"/>
+                <Button Content="重启调度"
+                        Command="{Binding RestartScheduleManagerCommand}"
+                        Width="120" Height="32"
+                        ToolTip="重新启动调度管理器"/>
+            </StackPanel>
+            <TextBlock Text="停止和重启调度会影响所有时间相关的功能"
+                       FontSize="12"
+                       Foreground="Orange"
+                       Margin="0,0,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

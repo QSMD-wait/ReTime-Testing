@@ -225,6 +225,7 @@ namespace ReTime_Testing
 
                 _trayIconService.OpenSettingRequested += OpenSetting;
                 _trayIconService.OpenDebugRequested += OpenDebugTest;
+                _trayIconService.OpenLogViewerRequested += OpenLogViewer;
                 _trayIconService.OpenTimeScheduleEditorRequested += OpenTimeScheduleEditor;
                 _trayIconService.AboutRequested += OpenMainWindow;
                 _trayIconService.RestartRequested += RestartApplication;
@@ -507,6 +508,22 @@ namespace ReTime_Testing
         }
 
         /// <summary>
+        /// 打开日志查看器窗口
+        /// </summary>
+        private void OpenLogViewer()
+        {
+            try
+            {
+                WindowManager.ShowLogViewer();
+                Logger.Info(GetType().FullName ?? "App", "日志查看器窗口已打开");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "打开日志查看器窗口时发生异常", ex);
+            }
+        }
+
+        /// <summary>
         /// 打开时间计划编辑器
         /// </summary>
         private void OpenTimeScheduleEditor()
@@ -593,6 +610,7 @@ namespace ReTime_Testing
             {
                 _trayIconService.OpenSettingRequested -= OpenSetting;
                 _trayIconService.OpenDebugRequested -= OpenDebugTest;
+                _trayIconService.OpenLogViewerRequested -= OpenLogViewer;
                 _trayIconService.OpenTimeScheduleEditorRequested -= OpenTimeScheduleEditor;
                 _trayIconService.AboutRequested -= OpenMainWindow;
                 _trayIconService.RestartRequested -= RestartApplication;

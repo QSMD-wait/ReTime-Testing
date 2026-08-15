@@ -17,6 +17,11 @@ public interface ITrayIconService : IDisposable
     event Action? OpenDebugRequested;
 
     /// <summary>
+    /// 打开日志查看器请求事件
+    /// </summary>
+    event Action? OpenLogViewerRequested;
+
+    /// <summary>
     /// 打开时间计划编辑器请求事件
     /// </summary>
     event Action? OpenTimeScheduleEditorRequested;

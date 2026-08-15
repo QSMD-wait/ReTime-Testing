@@ -54,6 +54,11 @@ namespace ReTime_Testing.Services
         public event Action? OpenDebugRequested;
 
         /// <summary>
+        /// 打开日志查看器请求事件
+        /// </summary>
+        public event Action? OpenLogViewerRequested;
+
+        /// <summary>
         /// 打开时间计划表编辑器请求事件
         /// </summary>
         public event Action? OpenTimeScheduleEditorRequested;
@@ -283,8 +288,10 @@ namespace ReTime_Testing.Services
             // 3. 设置
             contextMenu.Items.Add(CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke(), isDark));
 
-            // 4. 调试
-            contextMenu.Items.Add(CreateMenuItem("调试与测试", "\uE90F", () => OpenDebugRequested?.Invoke(), isDark));
+            // 4. 调试与测试（子菜单）
+            contextMenu.Items.Add(CreateSubMenuItem("调试与测试", "\uE90F", isDark,
+                CreateMenuItem("开发者工具", "\uE90F", () => OpenDebugRequested?.Invoke(), isDark),
+                CreateMenuItem("日志查看器", "\uE8BD", () => OpenLogViewerRequested?.Invoke(), isDark)));
 
             contextMenu.Items.Add(new Separator()
             {
@@ -400,6 +407,42 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 创建带子菜单的菜单项
+        /// </summary>
+        private MenuItem CreateSubMenuItem(string header, string iconGlyph, bool isDark, params MenuItem[] items)
+        {
+            var menuItem = new MenuItem
+            {
+                Padding = new Thickness(8, 6, 8, 6),
+                Background = GetThemeBackgroundBrush(isDark),
+                Foreground = GetThemeForegroundBrush(isDark)
+            };
+
+            var iconTextBlock = new TextBlock
+            {
+                Text = iconGlyph,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"),
+                FontSize = 16,
+                Margin = new Thickness(0, 0, 8, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var stackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            stackPanel.Children.Add(iconTextBlock);
+            stackPanel.Children.Add(new TextBlock { Text = header, VerticalAlignment = VerticalAlignment.Center });
+
+            menuItem.Header = stackPanel;
+            menuItem.CommandTarget = menuItem;
+
+            foreach (var item in items)
+            {
+                menuItem.Items.Add(item);
+            }
+
+            return menuItem;
+        }
+
+        /// <summary>
         /// 创建顶部应用名称菜单项（图标使用应用图标）
         /// </summary>
         private MenuItem CreateAppTitleMenuItem(bool isDark)
@@ -471,7 +514,7 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
-        /// 应用菜单主题
+        /// 应用菜单主题（递归刷新所有层级，包含二级子菜单）
         /// </summary>
         /// <param name="themeName">主题名称；为 null 时使用当前主题服务的值</param>
         private void ApplyMenuTheme(string? themeName)
@@ -486,15 +529,28 @@ namespace ReTime_Testing.Services
 
             foreach (var item in menu.Items)
             {
-                if (item is MenuItem menuItem)
+                ApplyMenuItemTheme(item, isDark);
+            }
+        }
+
+        /// <summary>
+        /// 递归应用菜单项主题（含子菜单）
+        /// </summary>
+        private static void ApplyMenuItemTheme(object item, bool isDark)
+        {
+            if (item is MenuItem menuItem)
+            {
+                menuItem.Background = GetThemeBackgroundBrush(isDark);
+                menuItem.Foreground = GetThemeForegroundBrush(isDark);
+
+                foreach (var child in menuItem.Items)
                 {
-                    menuItem.Background = GetThemeBackgroundBrush(isDark);
-                    menuItem.Foreground = GetThemeForegroundBrush(isDark);
+                    ApplyMenuItemTheme(child, isDark);
                 }
-                else if (item is Separator separator)
-                {
-                    separator.Background = GetThemeSeparatorBrush(isDark);
-                }
+            }
+            else if (item is Separator separator)
+            {
+                separator.Background = GetThemeSeparatorBrush(isDark);
             }
         }
 

@@ -7,6 +7,11 @@ using ReTime_Testing.Models;
 namespace ReTime_Testing.Services
 {
     /// <summary>
+    /// 内存日志条目（供日志查看器使用）
+    /// </summary>
+    public sealed record LogEntryItem(DateTimeOffset Timestamp, LogLevel Level, string Module, string Message);
+
+    /// <summary>
     /// 日志记录器
     /// 优先委托给 SerilogLogService（控制台 + 文件输出），
     /// 若 SerilogLogService 尚未初始化则缓存日志消息，待初始化后回放写入同一文件
@@ -17,6 +22,53 @@ namespace ReTime_Testing.Services
         /// 早期日志缓存条目
         /// </summary>
         private record class CachedEntry(DateTimeOffset Timestamp, LogLevel Level, string Module, string? Message, Exception? Exception);
+
+        /// <summary>
+        /// 内存日志环形缓冲（供日志查看器展示）
+        /// </summary>
+        private static readonly ConcurrentQueue<LogEntryItem> _logBuffer = new();
+
+        /// <summary>
+        /// 内存缓冲最大条数
+        /// </summary>
+        public const int MaxLogBufferCount = 1000;
+
+        /// <summary>
+        /// 新增日志条目事件（日志查看器订阅）
+        /// </summary>
+        public static event Action<LogEntryItem>? LogEntryAdded;
+
+        /// <summary>
+        /// 记录到内存缓冲并触发新增事件
+        /// </summary>
+        private static void RecordToBuffer(LogLevel level, string module, string message)
+        {
+            var item = new LogEntryItem(DateTimeOffset.Now, level, module, message);
+            _logBuffer.Enqueue(item);
+            while (_logBuffer.Count > MaxLogBufferCount && _logBuffer.TryDequeue(out _)) { }
+
+            try
+            {
+                LogEntryAdded?.Invoke(item);
+            }
+            catch
+            {
+                // 订阅者异常不影响日志记录本身
+            }
+        }
+
+        /// <summary>
+        /// 获取内存缓冲中的日志条目快照
+        /// </summary>
+        public static IReadOnlyList<LogEntryItem> GetRecentLogEntries() => _logBuffer.ToArray();
+
+        /// <summary>
+        /// 清空内存日志缓冲
+        /// </summary>
+        public static void ClearLogBuffer()
+        {
+            while (_logBuffer.TryDequeue(out _)) { }
+        }
 
         /// <summary>
         /// Serilog 初始化前的日志缓存（使用 ConcurrentQueue 保证 FIFO 顺序和可预测的枚举行为）
@@ -100,6 +152,8 @@ namespace ReTime_Testing.Services
         /// </summary>
         public static void Log(LogLevel level, string module, string message)
         {
+            RecordToBuffer(level, module, message);
+
             if (TryGetSerilog(out var serilog))
             {
                 switch (level)
@@ -161,6 +215,8 @@ namespace ReTime_Testing.Services
         /// </summary>
         public static void Error(string module, string message, Exception exception)
         {
+            RecordToBuffer(LogLevel.ERR, module, $"{message}{Environment.NewLine}{exception}");
+
             if (TryGetSerilog(out var serilog))
             {
                 serilog.Error(module, message, exception);
