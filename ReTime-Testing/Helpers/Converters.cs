@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Media.Effects;
 
 namespace ReTime_Testing.Helpers
@@ -188,6 +189,60 @@ namespace ReTime_Testing.Helpers
                 return isBuiltIn ? "内置主题" : "第三方主题";
             }
             return "未知";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 日志等级到中文显示的转换器
+    /// </summary>
+    public class LogLevelDisplayConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value switch
+            {
+                ReTime_Testing.Models.LogLevel.TRC => "跟踪",
+                ReTime_Testing.Models.LogLevel.DBG => "调试",
+                ReTime_Testing.Models.LogLevel.INF => "信息",
+                ReTime_Testing.Models.LogLevel.WRN => "警告",
+                ReTime_Testing.Models.LogLevel.ERR => "错误",
+                _ => value?.ToString() ?? string.Empty
+            };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 日志等级到画刷颜色的转换器
+    /// </summary>
+    public class LogLevelToBrushConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush ErrorBrush = new(Color.FromRgb(0xFF, 0x6B, 0x6B));
+        private static readonly SolidColorBrush WarningBrush = new(Color.FromRgb(0xFF, 0xB7, 0x4D));
+        private static readonly SolidColorBrush InfoBrush = new(Color.FromRgb(0x64, 0xB5, 0xF6));
+        private static readonly SolidColorBrush DebugBrush = new(Color.FromRgb(0xB0, 0xBE, 0xC5));
+        private static readonly SolidColorBrush TraceBrush = new(Color.FromRgb(0x90, 0xA4, 0xAE));
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value switch
+            {
+                ReTime_Testing.Models.LogLevel.ERR => ErrorBrush,
+                ReTime_Testing.Models.LogLevel.WRN => WarningBrush,
+                ReTime_Testing.Models.LogLevel.INF => InfoBrush,
+                ReTime_Testing.Models.LogLevel.DBG => DebugBrush,
+                ReTime_Testing.Models.LogLevel.TRC => TraceBrush,
+                _ => Brushes.Black
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

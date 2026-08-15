@@ -39,16 +39,18 @@ namespace ReTime_Testing.ViewModels
         private bool _isInfoFilterEnabled = true;
 
         [ObservableProperty]
-        private bool _isDebugFilterEnabled = true;
+        private bool _isDebugFilterEnabled = false;
 
         [ObservableProperty]
-        private bool _isTraceFilterEnabled = true;
+        private bool _isTraceFilterEnabled = false;
 
         [ObservableProperty]
         private string _keyword = string.Empty;
 
         [ObservableProperty]
         private bool _autoScroll = true;
+
+        public int VisibleCount => Entries.Count;
 
         public LogViewerViewModel()
         {
@@ -89,6 +91,7 @@ namespace ReTime_Testing.ViewModels
                     {
                         Entries.Add(entry);
                         TrimExcess();
+                        OnPropertyChanged(nameof(VisibleCount));
                     }
                 }));
             }
@@ -140,6 +143,7 @@ namespace ReTime_Testing.ViewModels
                 }
             }
             TrimExcess();
+            OnPropertyChanged(nameof(VisibleCount));
         }
 
         private void TrimExcess()

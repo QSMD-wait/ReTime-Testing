@@ -4,56 +4,103 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         mc:Ignorable="d"
         Title="日志查看器"
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:WindowHelper.SystemBackdropType="Mica"
         ui:TitleBar.Height="36"
-        Width="1000"
+        Width="1200"
         Height="640"
         MinWidth="700"
         MinHeight="420">
 
-    <Grid Margin="16,16,16,16">
+    <Window.Resources>
+        <localconv:LogLevelDisplayConverter x:Key="LogLevelDisplayConverter"/>
+        <localconv:LogLevelToBrushConverter x:Key="LogLevelToBrushConverter"/>
+
+        <Style x:Key="LogGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="2,1"/>
+        </Style>
+
+        <Style x:Key="LogGridCellStyle" TargetType="DataGridCell">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="1,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="6,4,6,4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 过滤栏 -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock Text="等级筛选" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <CheckBox Content="错误" IsChecked="{Binding IsErrorFilterEnabled}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <CheckBox Content="警告" IsChecked="{Binding IsWarningFilterEnabled}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <CheckBox Content="信息" IsChecked="{Binding IsInfoFilterEnabled}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <CheckBox Content="调试" IsChecked="{Binding IsDebugFilterEnabled}" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                <CheckBox Content="跟踪" IsChecked="{Binding IsTraceFilterEnabled}" VerticalAlignment="Center"/>
+        <!-- 过滤栏：等级按钮 + 搜索框同行，到边到沿 -->
+        <Grid Grid.Row="0" Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 等级筛选（普通 ToggleButton） -->
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <ToggleButton Content="错误" Height="28" MinWidth="64" Padding="10,0" Margin="0,0,4,0"
+                              IsChecked="{Binding IsErrorFilterEnabled}"/>
+                <ToggleButton Content="警告" Height="28" MinWidth="64" Padding="10,0" Margin="0,0,4,0"
+                              IsChecked="{Binding IsWarningFilterEnabled}"/>
+                <ToggleButton Content="信息" Height="28" MinWidth="64" Padding="10,0" Margin="0,0,4,0"
+                              IsChecked="{Binding IsInfoFilterEnabled}"/>
+                <ToggleButton Content="调试" Height="28" MinWidth="64" Padding="10,0" Margin="0,0,4,0"
+                              IsChecked="{Binding IsDebugFilterEnabled}"/>
+                <ToggleButton Content="跟踪" Height="28" MinWidth="64" Padding="10,0"
+                              IsChecked="{Binding IsTraceFilterEnabled}"/>
             </StackPanel>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="关键字" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <TextBox Grid.Column="1"
+
+            <!-- 搜索框：居右、限制宽度 -->
+            <Grid Grid.Column="1" HorizontalAlignment="Right" Width="220">
+                <TextBox x:Name="SearchBox"
                          Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
                          VerticalContentAlignment="Center"
+                         Height="28"
+                         Padding="6,0"
                          ToolTip="按日志内容或来源模块过滤"/>
+                <TextBlock Text="按日志内容或来源模块过滤..."
+                           Foreground="#666"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"
+                           IsHitTestVisible="False">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Grid>
-        </StackPanel>
+        </Grid>
 
-        <!-- 日志列表（已禁用列排序，标题不可点击） -->
         <DataGrid x:Name="LogGrid"
                   Grid.Row="1"
+                  Margin="0,2,0,2"
                   ItemsSource="{Binding Entries}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserAddRows="False"
                   CanUserResizeRows="False"
+                  CanUserResizeColumns="False"
                   CanUserSortColumns="False"
                   CanUserReorderColumns="False"
+                  ColumnHeaderStyle="{StaticResource LogGridColumnHeaderStyle}"
+                  CellStyle="{StaticResource LogGridCellStyle}"
                   HeadersVisibility="Column"
                   GridLinesVisibility="None"
                   RowHeaderWidth="0"
@@ -63,49 +110,39 @@
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="时间" Width="100" IsReadOnly="True">
+                <DataGridTextColumn Header="时间" Width="180" IsReadOnly="True">
                     <DataGridTextColumn.Binding>
-                        <Binding Path="Timestamp" StringFormat="HH:mm:ss.fff"/>
+                        <Binding Path="Timestamp" StringFormat="yyyy-MM-dd HH:mm:ss.fff"/>
                     </DataGridTextColumn.Binding>
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontFamily" Value="Consolas"/>
-                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="FontSize" Value="10"/>
+                            <Setter Property="TextAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="等级" Width="52" IsReadOnly="True"
-                                    Binding="{Binding Level}">
+                <DataGridTextColumn Header="等级" Width="56" IsReadOnly="True"
+                                    Binding="{Binding Level, Converter={StaticResource LogLevelDisplayConverter}}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="FontSize" Value="12"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Level}" Value="ERR">
-                                    <Setter Property="Foreground" Value="Red"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Level}" Value="WRN">
-                                    <Setter Property="Foreground" Value="Orange"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Level}" Value="INF">
-                                    <Setter Property="Foreground" Value="Green"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Level}" Value="DBG">
-                                    <Setter Property="Foreground" Value="Gray"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Level}" Value="TRC">
-                                    <Setter Property="Foreground" Value="Gray"/>
-                                </DataTrigger>
-                            </Style.Triggers>
+                            <Setter Property="FontSize" Value="10"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="TextAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Foreground" Value="{Binding Level, Converter={StaticResource LogLevelToBrushConverter}}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="来源" Width="160" IsReadOnly="True"
+                <DataGridTextColumn Header="来源" Width="180" IsReadOnly="True"
                                     Binding="{Binding Module}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="FontSize" Value="12"/>
-                            <Setter Property="Foreground" Value="Blue"/>
-                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="FontSize" Value="10"/>
+                            <Setter Property="TextAlignment" Value="Left"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="TextWrapping" Value="Wrap"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
@@ -113,30 +150,50 @@
                                     Binding="{Binding Message}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
-                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="FontSize" Value="10"/>
                             <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- 操作栏 -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0">
-            <CheckBox Content="自动滚动" IsChecked="{Binding AutoScroll}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-            <Button Content="复制选中"
-                    Command="{Binding CopySelectedCommand}"
-                    CommandParameter="{Binding SelectedItems, ElementName=LogGrid}"
-                    Width="100" Height="32" Margin="0,0,8,0"
-                    ToolTip="复制选中日志到剪贴板"/>
-            <Button Content="清空"
-                    Command="{Binding ClearLogsCommand}"
-                    Width="100" Height="32" Margin="0,0,8,0"
-                    ToolTip="清空日志查看器缓冲"/>
-            <Button Content="打开日志目录"
-                    Command="{Binding OpenLogDirectoryCommand}"
-                    Width="120" Height="32"
-                    ToolTip="打开日志文件所在目录"/>
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="0,4,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="{Binding VisibleCount, StringFormat='共 {0} 条'}"
+                       VerticalAlignment="Center"
+                       FontSize="11"
+                       Foreground="#888"
+                       Margin="0,0,8,0"/>
+
+            <CheckBox Grid.Column="1"
+                      Content="自动滚动"
+                      IsChecked="{Binding AutoScroll}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Left"/>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Content="复制选中"
+                        Command="{Binding CopySelectedCommand}"
+                        CommandParameter="{Binding SelectedItems, ElementName=LogGrid}"
+                        Height="26" Padding="10,0" Margin="0,0,6,0"
+                        ToolTip="复制选中日志到剪贴板"/>
+                <Button Content="清空"
+                        Command="{Binding ClearLogsCommand}"
+                        Height="26" Padding="10,0" Margin="0,0,6,0"
+                        ToolTip="清空日志查看器缓冲"/>
+                <Button Content="打开日志目录"
+                        Command="{Binding OpenLogDirectoryCommand}"
+                        Height="26" Padding="10,0"
+                        ToolTip="打开日志文件所在目录"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
