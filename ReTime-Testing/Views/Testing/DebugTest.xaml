@@ -42,6 +42,7 @@
     <Grid>
         <TabControl ItemsSource="{Binding Tabs}"
                     DisplayMemberPath="TabTitle"
+                    SelectedIndex="{Binding SelectedTabIndex}"
                     Style="{StaticResource TabControlPivotStyle}"
                     Padding="0"/>
 

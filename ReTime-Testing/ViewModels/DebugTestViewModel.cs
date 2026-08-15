@@ -13,6 +13,8 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class DebugTestViewModel : ObservableObject
     {
+        [ObservableProperty]
+        private int _selectedTabIndex;
         /// <summary>
         /// 首页：服务状态总览 + 快捷操作
         /// </summary>
