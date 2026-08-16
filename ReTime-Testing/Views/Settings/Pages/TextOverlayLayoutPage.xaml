@@ -19,9 +19,10 @@
 
         <!-- 插槽 ListViewItem 容器样式：水平排列 + 紧凑间距 -->
         <Style x:Key="SlotListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
-            <Setter Property="Padding" Value="2,2"/>
+            <Setter Property="Padding" Value="2,0"/>
             <Setter Property="Margin" Value="1,0"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="MinWidth" Value="0"/>
         </Style>
 
@@ -69,7 +70,7 @@
 
         <!-- 插槽项模板：图标 + 名称 + 删除按钮 -->
         <DataTemplate x:Key="SlotItemTemplate" DataType="{x:Type vm:TextSlotItemViewModel}">
-            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,2">
+            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="6,0">
                 <ui:FontIcon Icon="{Binding IconGlyph}" FontSize="18" VerticalAlignment="Center"/>
                 <TextBlock Text="{Binding DisplayName}" FontSize="14" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis" MaxWidth="120"/>
@@ -112,7 +113,7 @@
 
             <!-- 左组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1" Height="50">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -125,6 +126,7 @@
                     <ListView Grid.Column="1" ItemsSource="{Binding LeftSlots}"
                               SelectedItem="{Binding SelectedLeftSlot, Mode=TwoWay}"
                               SelectionMode="Single" Background="Transparent" BorderThickness="0" Padding="0"
+                              VerticalContentAlignment="Center"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ScrollViewer.VerticalScrollBarVisibility="Disabled"
                               ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
@@ -141,7 +143,7 @@
 
             <!-- 中组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1" Height="50">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -154,6 +156,7 @@
                     <ListView Grid.Column="1" ItemsSource="{Binding CenterSlots}"
                               SelectedItem="{Binding SelectedCenterSlot, Mode=TwoWay}"
                               SelectionMode="Single" Background="Transparent" BorderThickness="0" Padding="0"
+                              VerticalContentAlignment="Center"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ScrollViewer.VerticalScrollBarVisibility="Disabled"
                               ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
@@ -170,7 +173,7 @@
 
             <!-- 右组行 -->
             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1">
+                    CornerRadius="6" Padding="10,5" Margin="0,0,0,1" Height="50">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -183,6 +186,7 @@
                     <ListView Grid.Column="1" ItemsSource="{Binding RightSlots}"
                               SelectedItem="{Binding SelectedRightSlot, Mode=TwoWay}"
                               SelectionMode="Single" Background="Transparent" BorderThickness="0" Padding="0"
+                              VerticalContentAlignment="Center"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ScrollViewer.VerticalScrollBarVisibility="Disabled"
                               ItemContainerStyle="{StaticResource SlotListViewItemStyle}"
