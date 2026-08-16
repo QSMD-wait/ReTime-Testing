@@ -15,6 +15,7 @@ namespace ReTime_Testing.Views.Onboarding
     {
         private WelcomeViewModel? _viewModel;
         private bool _allowClose;
+        private bool _isDialogShowing;
 
         /// <summary>
         /// 引导是否已完整完成
@@ -59,6 +60,11 @@ namespace ReTime_Testing.Views.Onboarding
 
             e.Cancel = true;
 
+            if (_isDialogShowing)
+                return;
+
+            _isDialogShowing = true;
+
             var dialog = new iNKORE.UI.WPF.Modern.Controls.ContentDialog
             {
                 Title = "尚未完成设置",
@@ -82,8 +88,10 @@ namespace ReTime_Testing.Views.Onboarding
             catch (Exception ex)
             {
                 Logger.Warn("WelcomeWindow", $"关闭确认对话框异常: {ex.Message}");
-                _allowClose = true;
-                Close();
+            }
+            finally
+            {
+                _isDialogShowing = false;
             }
         }
     }

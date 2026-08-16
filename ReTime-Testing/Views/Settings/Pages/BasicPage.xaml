@@ -44,6 +44,14 @@
             </ComboBox>
         </ui:SettingsCard>
 
+        <ui:SettingsCard Header="流畅优化"
+                         Description="开启后禁用 Loading 状态进度条阴影，提升应用流畅度">
+            <ui:SettingsCard.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.Rocket_24_Regular}" />
+            </ui:SettingsCard.HeaderIcon>
+            <ui:ToggleSwitch IsOn="{Binding IsSmoothnessOptimizationEnabled, Mode=TwoWay}" OffContent="关闭" OnContent="开启" MinWidth="0"/>
+        </ui:SettingsCard>
+
         <ui:SettingsExpander Header="日志配置"
                              Description="管理应用日志的输出方式和保留策略">
             <ui:SettingsExpander.HeaderIcon>

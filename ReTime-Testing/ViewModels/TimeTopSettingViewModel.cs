@@ -34,6 +34,9 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private int _fileSizeLimitMB = 10;
 
+        [ObservableProperty]
+        private bool _isSmoothnessOptimizationEnabled;
+
         public List<string> LogLevelNames { get; } = new() { "错误 (ERR)", "警告 (WRN)", "信息 (INF)", "调试 (DBG)", "跟踪 (TRC)" };
 
         public BasicPageViewModel(ISettingsService settingsService)
@@ -49,6 +52,7 @@ namespace ReTime_Testing.ViewModels
             SelectedLogLevelIndex = 4 - (int)_setting.Basic.Log.MinimumLevel;
             RetainedDays = _setting.Basic.Log.RetainedDays;
             FileSizeLimitMB = _setting.Basic.Log.FileSizeLimitMB;
+            IsSmoothnessOptimizationEnabled = _setting.Basic.SmoothnessOptimization;
 
             _isInitializing = false;
         }
@@ -99,6 +103,13 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.Basic.Log.FileSizeLimitMB = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnIsSmoothnessOptimizationEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.SmoothnessOptimization = value;
             _settingsService.SaveGlobalSetting(_setting);
         }
     }

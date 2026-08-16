@@ -36,5 +36,11 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("forceShowWelcome")]
         public bool ForceShowWelcome { get; set; } = false;
+
+        /// <summary>
+        /// 流畅优化：开启后禁用 Loading 状态进度条阴影等流畅度优化
+        /// </summary>
+        [JsonPropertyName("smoothnessOptimization")]
+        public bool SmoothnessOptimization { get; set; } = false;
     }
 }

@@ -60,10 +60,19 @@ namespace ReTime_Testing.ViewModels
                 var setting = _settingsService?.GetTimeTopSetting();
                 if (setting != null)
                 {
-                    EnableShadow = setting.ProgressBar.EnableShadow;
                     ProgressBarScale = Math.Clamp(setting.ProgressBar.Scale, 0.5, 3.0);
                 }
-                
+
+                // 初始阴影按当前状态判定（避免窗口创建瞬间闪过阴影）
+                var initialState = _service.GetCurrentConfig()?.StateType ?? ProgressStateType.Loading;
+                UpdateShadowBasedOnState(initialState);
+
+                // 订阅全局配置变更（流畅优化热生效）
+                if (_settingsService != null)
+                {
+                    _settingsService.OnGlobalSettingChanged += OnGlobalSettingChanged;
+                }
+
                 Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");
             }
             catch (Exception ex)
@@ -112,6 +121,13 @@ namespace ReTime_Testing.ViewModels
         /// </summary>
         private void UpdateShadowBasedOnState(ProgressStateType stateType)
         {
+            // 流畅优化：Loading 状态强制关闭阴影（引导时由运行时标志强制，正常模式读配置）
+            if (stateType == ProgressStateType.Loading && IsSmoothnessOptimizationActive)
+            {
+                EnableShadow = false;
+                return;
+            }
+
             // 首先获取全局配置作为基础值
             var globalSetting = _settingsService?.GetTimeTopSetting();
             var baseEnableShadow = globalSetting?.ProgressBar.EnableShadow ?? true;
@@ -136,6 +152,43 @@ namespace ReTime_Testing.ViewModels
         }
 
         /// <summary>
+        /// 流畅优化是否激活：运行时强制标志（引导模式）或配置文件开关
+        /// </summary>
+        private bool IsSmoothnessOptimizationActive
+        {
+            get
+            {
+                if (_service.ForceSmoothnessOptimization)
+                    return true;
+
+                try
+                {
+                    return _settingsService?.GetGlobalSetting()?.Basic.SmoothnessOptimization == true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 全局配置变更回调（流畅优化切换即时生效）
+        /// </summary>
+        private void OnGlobalSettingChanged(Models.GlobalSetting setting)
+        {
+            try
+            {
+                var stateType = _service.GetCurrentConfig()?.StateType ?? ProgressStateType.Loading;
+                UpdateShadowBasedOnState(stateType);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("TimeTopDesktopViewModel", $"全局配置变更重算阴影失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 清理资源
         /// </summary>
         public void Cleanup()
@@ -146,6 +199,11 @@ namespace ReTime_Testing.ViewModels
                 {
                     _service.OnStateChanged -= OnStateChanged;
                     Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "Service 回调已清理");
+                }
+
+                if (_settingsService != null)
+                {
+                    _settingsService.OnGlobalSettingChanged -= OnGlobalSettingChanged;
                 }
             }
             catch (Exception ex)

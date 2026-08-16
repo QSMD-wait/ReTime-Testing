@@ -287,6 +287,11 @@ namespace ReTime_Testing
                 var timeTopSetting = settingsService.GetTimeTopSetting();
                 var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
                 var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
+
+                // 流畅优化：引导期间强制开启（无视配置文件），正常启动后由配置文件决定
+                var globalDesktopService = Services.GetRequiredService<IGlobalTimeTopDesktopService>();
+                globalDesktopService.ForceSmoothnessOptimization = true;
+
                 desktopWindowManager.SetPosition(initialPosition);
 
                 // 引导模式：加载托盘图标（不带右键菜单）

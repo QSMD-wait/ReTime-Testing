@@ -20,6 +20,12 @@ public interface IGlobalTimeTopDesktopService
     event Action<ProgressStateConfig>? OnStateChanged;
 
     /// <summary>
+    /// 流畅优化运行时强制开关（仅运行时生效，不写入配置文件）
+    /// 引导模式下强制开启，正常启动后由配置文件决定
+    /// </summary>
+    bool ForceSmoothnessOptimization { get; set; }
+
+    /// <summary>
     /// 设置为加载状态
     /// </summary>
     void SetLoading();

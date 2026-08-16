@@ -31,6 +31,11 @@ namespace ReTime_Testing.Services
             _stateManager = (ProgressStateManager)stateManager;
         }
         
+        /// <summary>
+        /// 流畅优化运行时强制开关（仅运行时生效，不写入配置文件）
+        /// </summary>
+        public bool ForceSmoothnessOptimization { get; set; } = false;
+
         // ==================== 状态设置 ====================
         
         /// <summary>
