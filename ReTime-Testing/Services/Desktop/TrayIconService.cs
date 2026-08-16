@@ -86,6 +86,7 @@ namespace ReTime_Testing.Services
             public string Title { get; set; } = "ReTime-Testing";
             public string? IconPath { get; set; }       // 外部文件路径
             public string? IconResource { get; set; }   // 内嵌资源名（如 Resources/app.ico）
+            public bool ShowContextMenu { get; set; } = true;   // 是否显示右键菜单（引导模式关闭）
         }
 
         /// <summary>
@@ -144,7 +145,14 @@ namespace ReTime_Testing.Services
                     Visibility = Visibility.Visible
                 };
 
-                SetupContextMenu();
+                if (_config.ShowContextMenu)
+                {
+                    SetupContextMenu();
+                }
+                else
+                {
+                    Logger.Info("TrayIconService", "引导模式下托盘图标不带右键菜单");
+                }
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（无窗口模式）");
             }
@@ -186,7 +194,10 @@ namespace ReTime_Testing.Services
                     Visibility = Visibility.Visible
                 };
 
-                SetupContextMenu();
+                if (_config.ShowContextMenu)
+                {
+                    SetupContextMenu();
+                }
                 _trayIconWindow.Content = _trayIcon;
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（窗口承载模式）");

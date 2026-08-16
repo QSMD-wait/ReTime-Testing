@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Media;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ using ReTime_Testing.Models;
 using ReTime_Testing.Core.Services;
 using ReTime_Testing.Core.Models.Theme;
 using ReTime_Testing.Services;
+using ReTime_Testing.Services.Onboarding;
 using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
 using ReTime_Testing.Views.TimeTopDesktop;
@@ -111,16 +113,28 @@ namespace ReTime_Testing
                 // 通过 DI 获取服务
                 var configManager = Services.GetRequiredService<IConfigurationManager>();
                 var settingsService = Services.GetRequiredService<ISettingsService>();
-                var globalSetting = settingsService.GetGlobalSetting();
 
                 // 初始化目录结构
                 configManager.InitializeDirectories();
+
+                // 记录全局配置文件是否存在（必须在加载自动创建前捕获，用于首次启动判定）
+                var settingFileExisted = File.Exists(configManager.GlobalSettingFilePath);
+
+                var globalSetting = settingsService.GetGlobalSetting();
 
                 // 初始化 Serilog 日志服务
                 var logConfig = new LogServiceConfiguration(globalSetting.Basic.Log, configManager.LogsDirectory);
                 SerilogLogService.Initialize(logConfig);
                 Logger.OnSerilogReady();
                 Logger.Info(GetType().FullName ?? "App", "Serilog 日志服务已初始化");
+
+                // 首次启动：进入欢迎引导模式（不启动调度，完成后重启进入正常启动流程）
+                if (OnboardingFlow.ShouldShowWelcome(settingFileExisted,
+                        globalSetting.Basic.WelcomeShowed, globalSetting.Basic.ForceShowWelcome))
+                {
+                    RunWelcomeFlow();
+                    return;
+                }
 
                 // 应用主题
                 var themeService = Services.GetRequiredService<IThemeService>();
@@ -251,6 +265,57 @@ namespace ReTime_Testing
             catch (Exception ex)
             {
                 Logger.Error(GetType().FullName ?? "App", "启动应用程序时发生异常", ex);
+                Shutdown();
+            }
+        }
+
+        /// <summary>
+        /// 欢迎引导模式：最小化启动（不初始化调度/校准/托盘），完成后重启进入正常启动流程
+        /// </summary>
+        private void RunWelcomeFlow()
+        {
+            try
+            {
+                var settingsService = Services.GetRequiredService<ISettingsService>();
+                var globalSetting = settingsService.GetGlobalSetting();
+
+                // 应用主题（引导窗口正常显示）
+                var themeService = Services.GetRequiredService<IThemeService>();
+                themeService.ApplyTheme(globalSetting.Basic.Theme);
+
+                // 打开进度条窗口，供引导中的位置步骤实时预览
+                var timeTopSetting = settingsService.GetTimeTopSetting();
+                var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
+                var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
+                desktopWindowManager.SetPosition(initialPosition);
+
+                // 引导模式：加载托盘图标（不带右键菜单）
+                _trayIconService = Services.GetRequiredService<ITrayIconService>();
+                _trayIconService.Initialize(new TrayIconService.TrayIconConfig
+                {
+                    Title = "ReTime - Testing",
+                    IconResource = "ReTime-Testing;component/Resources/app.ico",
+                    ShowContextMenu = false
+                });
+
+                Logger.Info(GetType().FullName ?? "App", "进入欢迎引导模式");
+
+                var welcomeWindow = new Views.Onboarding.WelcomeWindow();
+                welcomeWindow.ShowDialog();
+
+                if (!welcomeWindow.IsWizardCompleted)
+                {
+                    Logger.Info(GetType().FullName ?? "App", "欢迎引导未完成，退出应用");
+                    Shutdown();
+                    return;
+                }
+
+                Logger.Info(GetType().FullName ?? "App", "欢迎引导完成，重启进入正常启动流程");
+                RestartApplication();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(GetType().FullName ?? "App", "欢迎引导流程发生异常", ex);
                 Shutdown();
             }
         }

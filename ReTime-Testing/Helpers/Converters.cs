@@ -153,6 +153,25 @@ namespace ReTime_Testing.Helpers
     }
 
     /// <summary>
+    /// 字符串与 ConverterParameter 相等比较转换器
+    /// 用于 RadioButton 选中状态与字符串值的双向绑定
+    /// </summary>
+    public class StringEqualsConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return string.Equals(value as string, parameter as string, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isChecked && isChecked)
+                return parameter as string ?? string.Empty;
+            return Binding.DoNothing;
+        }
+    }
+
+    /// <summary>
     /// 时间字符串 (HH:mm:ss) 与 DateTime 之间的双向转换器
     /// 用于 TimePicker 控件绑定
     /// </summary>

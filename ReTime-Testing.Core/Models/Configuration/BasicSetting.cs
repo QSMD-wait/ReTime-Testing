@@ -24,5 +24,17 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("log")]
         public LogConfig Log { get; set; } = new();
+
+        /// <summary>
+        /// 首次启动欢迎引导是否已完成
+        /// </summary>
+        [JsonPropertyName("welcomeShowed")]
+        public bool WelcomeShowed { get; set; } = false;
+
+        /// <summary>
+        /// Debug：强制显示欢迎引导（无视其他判定）
+        /// </summary>
+        [JsonPropertyName("forceShowWelcome")]
+        public bool ForceShowWelcome { get; set; } = false;
     }
 }
