@@ -30,12 +30,10 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        Margin="0,0,0,24"/>
 
-            <UniformGrid Columns="2" Rows="1" HorizontalAlignment="Center" Margin="0,0,0,12">
-                <!-- 浅色主题卡片 -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
                 <RadioButton GroupName="WelcomeTheme"
                              IsChecked="{Binding SelectedTheme, Converter={StaticResource StringEqualsConverter}, ConverterParameter=light}"
-                             Width="220"
-                             Margin="8"
+                             Margin="20,8"
                              Padding="12">
                     <StackPanel>
                         <TextBlock Text="明亮"
@@ -61,11 +59,9 @@
                     </StackPanel>
                 </RadioButton>
 
-                <!-- 深色主题卡片 -->
                 <RadioButton GroupName="WelcomeTheme"
                              IsChecked="{Binding SelectedTheme, Converter={StaticResource StringEqualsConverter}, ConverterParameter=dark}"
-                             Width="220"
-                             Margin="8"
+                             Margin="20,8"
                              Padding="12">
                     <StackPanel>
                         <TextBlock Text="暗黑"
@@ -90,7 +86,7 @@
                         </Border>
                     </StackPanel>
                 </RadioButton>
-            </UniformGrid>
+            </StackPanel>
 
             <TextBlock Text="选中后界面将立即切换主题预览。"
                        FontSize="12"
