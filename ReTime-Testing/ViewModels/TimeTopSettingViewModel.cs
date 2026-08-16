@@ -1,3 +1,4 @@
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReTime_Testing.Core.Services;
 using ReTime_Testing.Services;
@@ -360,8 +361,31 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class AboutPageViewModel : ObservableObject
     {
+        /// <summary>
+        /// 应用完整版本号（含 alpha 等尾缀），例如 0.1.0-alpha.1
+        /// </summary>
+        public string AppVersion { get; }
+
         public AboutPageViewModel()
         {
+            AppVersion = GetAppVersion();
+        }
+
+        private static string GetAppVersion()
+        {
+            try
+            {
+                var version = Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                    ?.InformationalVersion;
+                if (string.IsNullOrWhiteSpace(version))
+                    version = "0.0.0";
+                return version.Split('+')[0].Trim();
+            }
+            catch
+            {
+                return "0.0.0";
+            }
         }
     }
 
