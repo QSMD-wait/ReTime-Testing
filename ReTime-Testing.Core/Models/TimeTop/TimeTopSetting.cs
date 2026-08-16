@@ -312,7 +312,7 @@ namespace ReTime_Testing.Models
         /// 关闭则全部使用硬编码默认样式
         /// </summary>
         [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get; set; } = false;
 
         /// <summary>
         /// 各状态样式覆盖

@@ -192,22 +192,67 @@ public class TextOverlayGroupConfig
 public class TextOverlayLayoutConfig
 {
     /// <summary>
+    /// 默认左侧组件：日期、星期、时间
+    /// </summary>
+    private static readonly TextSourceType[] DefaultLeftSources =
+        [TextSourceType.CurrentDate, TextSourceType.CurrentDayOfWeek, TextSourceType.CurrentTime];
+
+    /// <summary>
+    /// 默认右侧组件：当前时间段、剩余时间、进度百分比
+    /// </summary>
+    private static readonly TextSourceType[] DefaultRightSources =
+        [TextSourceType.SegmentName, TextSourceType.RemainingTime, TextSourceType.ProgressPercent];
+
+    public TextOverlayLayoutConfig()
+    {
+        Left = CreateGroup(DefaultLeftSources);
+        Center = new TextOverlayGroupConfig();
+        Right = CreateGroup(DefaultRightSources);
+    }
+
+    /// <summary>
+    /// 按数据源列表创建带默认格式的插槽组
+    /// </summary>
+    private static TextOverlayGroupConfig CreateGroup(TextSourceType[] sources)
+    {
+        var group = new TextOverlayGroupConfig();
+        foreach (var source in sources)
+        {
+            group.Slots.Add(new TextSlotConfig
+            {
+                Source = source,
+                SourceSettings = new TextSlotSourceSettings
+                {
+                    Format = source switch
+                    {
+                        TextSourceType.CurrentTime => "HH:mm:ss",
+                        TextSourceType.CurrentDate => "yyyy/MM/dd",
+                        TextSourceType.CurrentDayOfWeek => "星期X",
+                        _ => null
+                    }
+                }
+            });
+        }
+        return group;
+    }
+
+    /// <summary>
     /// 左侧组（从左向右排列，优先级最高）
     /// </summary>
     [JsonPropertyName("left")]
-    public TextOverlayGroupConfig Left { get; set; } = new();
+    public TextOverlayGroupConfig Left { get; set; }
 
     /// <summary>
     /// 中间组（居中排列，优先级最低）
     /// </summary>
     [JsonPropertyName("center")]
-    public TextOverlayGroupConfig Center { get; set; } = new();
+    public TextOverlayGroupConfig Center { get; set; }
 
     /// <summary>
     /// 右侧组（从右向左排列，优先级居中）
     /// </summary>
     [JsonPropertyName("right")]
-    public TextOverlayGroupConfig Right { get; set; } = new();
+    public TextOverlayGroupConfig Right { get; set; }
 }
 
 /// <summary>
@@ -240,10 +285,10 @@ public class TextOverlayStyleConfig
     public double ItemSpacing { get; set; } = 8;
 
     /// <summary>
-    /// 左区域水平偏移（正→右移，负→左移），默认 0（基础边距16px内置）
+    /// 左区域水平偏移（正→右移，负→左移），默认 80（基础边距16px内置）
     /// </summary>
     [JsonPropertyName("leftOffset")]
-    public double LeftOffset { get; set; } = 0;
+    public double LeftOffset { get; set; } = 80;
 
     /// <summary>
     /// 中区域水平偏移（正→右移，负→左移），默认 0
@@ -252,10 +297,10 @@ public class TextOverlayStyleConfig
     public double CenterOffset { get; set; } = 0;
 
     /// <summary>
-    /// 右区域水平偏移（正→右移，负→左移），默认 0（基础边距16px内置）
+    /// 右区域水平偏移（正→右移，负→左移），默认 -80（基础边距16px内置）
     /// </summary>
     [JsonPropertyName("rightOffset")]
-    public double RightOffset { get; set; } = 0;
+    public double RightOffset { get; set; } = -80;
 
     /// <summary>
     /// 创建浅拷贝，确保 WPF DependencyProperty 检测到引用变更
@@ -283,7 +328,7 @@ public class TextOverlayStyleConfig
     /// 文字效果类型：none=无效果，shadow=阴影，outline=描边
     /// </summary>
     [JsonPropertyName("textEffect")]
-    public string TextEffect { get; set; } = "none";
+    public string TextEffect { get; set; } = "shadow";
 }
 
 /// <summary>
@@ -295,7 +340,7 @@ public class TextOverlayConfig
     /// 是否启用文字覆盖
     /// </summary>
     [JsonPropertyName("enabled")]
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// 布局配置
