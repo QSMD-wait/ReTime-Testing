@@ -53,7 +53,7 @@
         <TextBlock Text="扩展" FontSize="20" FontWeight="SemiBold" Margin="0,4,0,4"/>
 
         <ui:SettingsCard Header="导入主题"
-                         Description="从本地文件导入第三方进度条主题（即将推出）"
+                         Description="从本地文件导入第三方进度条主题（未实现）"
                          IsEnabled="False">
             <ui:SettingsCard.HeaderIcon>
                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.FolderOpen_24_Regular}" />
@@ -62,7 +62,7 @@
         </ui:SettingsCard>
 
         <ui:SettingsCard Header="主题市场"
-                         Description="浏览和下载社区主题（即将推出）"
+                         Description="浏览和下载社区主题（早着呢）"
                          IsEnabled="False">
             <ui:SettingsCard.HeaderIcon>
                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.StoreMicrosoft_24_Regular}" />
