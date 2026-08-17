@@ -13,9 +13,9 @@
 
         <TextBlock Text="关于" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-        <!-- 卡片1：应用信息（展开后显示版权信息与许可证协议） -->
+        <!-- 卡片1：应用信息 -->
         <ui:SettingsExpander Header="ReTime - Testing"
-                             Description="桌面时间管理应用">
+                             Description="隐式时间进度条小工具">
             <ui:SettingsExpander.HeaderIcon>
                 <Image Source="pack://application:,,,/ReTime-Testing;component/Resources/app.ico"
                        Width="32" Height="32"/>
@@ -24,15 +24,14 @@
                        VerticalAlignment="Center"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="版权信息"
+                <ui:SettingsCard Header="Copyright © 2025-2026 青色漫地_wait"
                                  Description="许可证协议：GNU General Public License v3.0">
-                    <TextBlock Text="© 2026 青色漫地_wait" VerticalAlignment="Center"/>
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
 
         <!-- 卡片2：项目仓库 -->
-        <ui:SettingsCard Header="项目仓库"
+        <ui:SettingsCard Header="Github 项目仓库"
                          Description="查看源码、反馈问题或参与开发">
             <ui:SettingsCard.HeaderIcon>
                 <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.OpenFolder_24_Regular}" />

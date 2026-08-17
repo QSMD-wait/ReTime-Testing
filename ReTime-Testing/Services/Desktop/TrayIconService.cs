@@ -151,7 +151,7 @@ namespace ReTime_Testing.Services
                 }
                 else
                 {
-                    Logger.Info("TrayIconService", "引导模式下托盘图标不带右键菜单");
+                    Logger.Info("TrayIconService", "当前以引导模式启动，托盘图标不带右键菜单");
                 }
 
                 Logger.Info("TrayIconService", "系统托盘图标初始化成功（无窗口模式）");
@@ -294,10 +294,10 @@ namespace ReTime_Testing.Services
             });
 
             // 2. 编辑时间计划
-            contextMenu.Items.Add(CreateMenuItem("编辑时间计划", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke(), isDark));
+            contextMenu.Items.Add(CreateMenuItem("编辑时间计划…", "\uE787", () => OpenTimeScheduleEditorRequested?.Invoke(), isDark));
 
             // 3. 设置
-            contextMenu.Items.Add(CreateMenuItem("设置", "\uE713", () => OpenSettingRequested?.Invoke(), isDark));
+            contextMenu.Items.Add(CreateMenuItem("设置…", "\uE713", () => OpenSettingRequested?.Invoke(), isDark));
 
             // 4. 调试与测试（子菜单）
             contextMenu.Items.Add(CreateSubMenuItem("调试与测试", "\uE90F", isDark,

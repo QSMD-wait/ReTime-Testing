@@ -76,7 +76,7 @@ namespace ReTime_Testing.Services
                     SetupZOrderHook();
                     
                     Logger.Info("ReTime_Testing.Services.TopmostService",
-                        "层级维持模式: OnDeactivated（Z-order 监听 + 事件监听 + 消息钩子 + 防抖）");
+                        "层级维持模式: OnDeactivated（窗口层级变化时）");
                     break;
 
                 case TopmostMode.Polling:
