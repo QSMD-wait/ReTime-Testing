@@ -65,8 +65,7 @@ public static class ScheduleItemConverter
         if (item.Behavior != null && item.Behavior.HasAnyOverride)
         {
             result.HasBehavior = true;
-            if (item.Behavior.PollingIntervalMs.HasValue)
-                result.PollingIntervalMs = item.Behavior.PollingIntervalMs.Value;
+            result.PollingIntervalMs = item.Behavior.PollingIntervalMs ?? ScheduleBehavior.DefaultPollingIntervalMs;
             if (item.Behavior.ReverseProgress.HasValue)
                 result.ReverseProgress = item.Behavior.ReverseProgress.Value;
         }

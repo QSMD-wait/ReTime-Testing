@@ -71,6 +71,10 @@ namespace ReTime_Testing.Models
         /// </summary>
         public const int DefaultPollingIntervalMs = 1000;
 
+        public const int MinPollingIntervalMs = 10;
+
+        public const int MaxPollingIntervalMs = 10000;
+
         /// <summary>
         /// 默认倒计时模式
         /// </summary>

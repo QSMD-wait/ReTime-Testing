@@ -77,7 +77,7 @@ public partial class ScheduleItemListItem : ObservableObject
     private bool _hasBehavior;
 
     [ObservableProperty]
-    private int _pollingIntervalMs;
+    private int _pollingIntervalMs = ScheduleBehavior.DefaultPollingIntervalMs;
 
     [ObservableProperty]
     private bool _reverseProgress;
@@ -228,7 +228,16 @@ public partial class ScheduleItemListItem : ObservableObject
 
     partial void OnHasBehaviorChanged(bool value) => ItemChanged?.Invoke(this);
 
-    partial void OnPollingIntervalMsChanged(int value) => ItemChanged?.Invoke(this);
+    partial void OnPollingIntervalMsChanged(int value)
+    {
+        var clamped = Math.Clamp(value, ScheduleBehavior.MinPollingIntervalMs, ScheduleBehavior.MaxPollingIntervalMs);
+        if (clamped != value)
+        {
+            PollingIntervalMs = clamped;
+            return;
+        }
+        ItemChanged?.Invoke(this);
+    }
 
     partial void OnReverseProgressChanged(bool value) => ItemChanged?.Invoke(this);
 
