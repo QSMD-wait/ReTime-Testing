@@ -21,7 +21,12 @@
 
         <Style x:Key="LogGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="2,1"/>
+            <Setter Property="Padding" Value="4,6"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style x:Key="LogGridCellStyle" TargetType="DataGridCell">
@@ -102,7 +107,9 @@
                   ColumnHeaderStyle="{StaticResource LogGridColumnHeaderStyle}"
                   CellStyle="{StaticResource LogGridCellStyle}"
                   HeadersVisibility="Column"
-                  GridLinesVisibility="None"
+                  GridLinesVisibility="All"
+                  HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                  VerticalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                   RowHeaderWidth="0"
                   SelectionMode="Extended"
                   BorderThickness="0"
