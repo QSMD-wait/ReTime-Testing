@@ -90,6 +90,13 @@ public class WelcomeViewModelTests
         vm.SelectedPosition.Should().Be("top");
         vm.EnableAutoStart.Should().BeFalse();
         vm.EnableCalibration.Should().BeTrue();
+        vm.EnableSmoothness.Should().BeFalse();
+        vm.ProgressScale.Should().Be(1.0);
+        vm.EnableProgressShadow.Should().BeTrue();
+        vm.EnableTextOverlay.Should().BeTrue();
+        vm.TextFontSize.Should().Be(12);
+        vm.SelectedTextEffect.Should().Be("shadow");
+        vm.HasAcceptedLicense.Should().BeFalse();
         vm.IsCompleted.Should().BeFalse();
     }
 
@@ -104,7 +111,42 @@ public class WelcomeViewModelTests
         vm.CanGoBack.Should().BeFalse();
         vm.CanGoNext.Should().BeTrue();
         vm.IsLastPage.Should().BeFalse();
-        vm.StepText.Should().Be("步骤 1 / 6");
+        vm.StepText.Should().Be("步骤 1 / 7");
+    }
+
+    [Fact]
+    public void 许可页未同意协议_应不可下一步()
+    {
+        // Arrange
+        var vm = CreateViewModel();
+
+        // Act
+        vm.NextCommand.Execute(null);
+
+        // Assert
+        vm.CurrentIndex.Should().Be(1);
+        vm.CanGoNext.Should().BeFalse();
+
+        // 未同意时继续下一步应保持不动
+        vm.NextCommand.Execute(null);
+        vm.CurrentIndex.Should().Be(1);
+    }
+
+    [Fact]
+    public void 许可页同意协议后_应可下一步()
+    {
+        // Arrange
+        var vm = CreateViewModel();
+        vm.NextCommand.Execute(null);
+
+        // Act
+        vm.HasAcceptedLicense = true;
+
+        // Assert
+        vm.CanGoNext.Should().BeTrue();
+
+        vm.NextCommand.Execute(null);
+        vm.CurrentIndex.Should().Be(2);
     }
 
     [Fact]
@@ -112,16 +154,17 @@ public class WelcomeViewModelTests
     {
         // Arrange
         var vm = CreateViewModel();
+        vm.HasAcceptedLicense = true;
 
         // Act
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 6; i++)
             vm.NextCommand.Execute(null);
 
         // Assert
-        vm.CurrentIndex.Should().Be(5);
+        vm.CurrentIndex.Should().Be(6);
         vm.CanGoNext.Should().BeFalse();
         vm.IsLastPage.Should().BeTrue();
-        vm.StepText.Should().Be("步骤 6 / 6");
+        vm.StepText.Should().Be("步骤 7 / 7");
     }
 
     [Fact]
@@ -129,14 +172,15 @@ public class WelcomeViewModelTests
     {
         // Arrange
         var vm = CreateViewModel();
-        for (int i = 0; i < 5; i++)
+        vm.HasAcceptedLicense = true;
+        for (int i = 0; i < 6; i++)
             vm.NextCommand.Execute(null);
 
         // Act
         vm.NextCommand.Execute(null);
 
         // Assert
-        vm.CurrentIndex.Should().Be(5);
+        vm.CurrentIndex.Should().Be(6);
     }
 
     [Fact]
@@ -217,6 +261,43 @@ public class WelcomeViewModelTests
     }
 
     [Fact]
+    public void 切换流畅优化_应保存全局设置()
+    {
+        // Arrange
+        var vm = CreateViewModel();
+
+        // Act
+        vm.EnableSmoothness = true;
+
+        // Assert
+        _mockSettingsService.Verify(x => x.SaveGlobalSetting(It.IsAny<GlobalSetting>()), Times.Once);
+    }
+
+    [Fact]
+    public void 调整外观与文字栏_应保存TimeTop设置()
+    {
+        // Arrange
+        var vm = CreateViewModel();
+
+        // Act
+        vm.ProgressScale = 1.5;
+        vm.EnableProgressShadow = false;
+        vm.EnableTextOverlay = false;
+        vm.TextFontSize = 20;
+        vm.SelectedTextEffect = "outline";
+        vm.EnableCalibration = false;
+
+        // Assert
+        _mockSettingsService.Verify(x => x.SaveTimeTopSetting(It.IsAny<TimeTopSetting>()), Times.Exactly(6));
+        _timeTopSetting.ProgressBar.Scale.Should().Be(1.5);
+        _timeTopSetting.ProgressBar.EnableShadow.Should().BeFalse();
+        _timeTopSetting.TextOverlay.Enabled.Should().BeFalse();
+        _timeTopSetting.TextOverlay.Style.FontSize.Should().Be(20);
+        _timeTopSetting.TextOverlay.Style.TextEffect.Should().Be("outline");
+        _timeTopSetting.Calibration.Enabled.Should().BeFalse();
+    }
+
+    [Fact]
     public void 完成引导_应保存全部设置并标记完成()
     {
         // Arrange
@@ -225,6 +306,12 @@ public class WelcomeViewModelTests
         vm.SelectedPosition = "right";
         vm.EnableAutoStart = true;
         vm.EnableCalibration = false;
+        vm.EnableSmoothness = true;
+        vm.ProgressScale = 2.0;
+        vm.EnableProgressShadow = false;
+        vm.EnableTextOverlay = false;
+        vm.TextFontSize = 24;
+        vm.SelectedTextEffect = "none";
 
         GlobalSetting? savedGlobal = null;
         TimeTopSetting? savedTimeTop = null;
@@ -240,12 +327,18 @@ public class WelcomeViewModelTests
         savedGlobal.Should().NotBeNull();
         savedGlobal!.Basic.Theme.Should().Be("dark");
         savedGlobal.Basic.AutoStart.Enabled.Should().BeTrue();
+        savedGlobal.Basic.SmoothnessOptimization.Should().BeTrue();
         savedGlobal.Basic.WelcomeShowed.Should().BeTrue();
         savedGlobal.Basic.ForceShowWelcome.Should().BeFalse();
 
         savedTimeTop.Should().NotBeNull();
         savedTimeTop!.ProgressBar.Position.Should().Be("right");
+        savedTimeTop.ProgressBar.Scale.Should().Be(2.0);
+        savedTimeTop.ProgressBar.EnableShadow.Should().BeFalse();
         savedTimeTop.Calibration.Enabled.Should().BeFalse();
+        savedTimeTop.TextOverlay.Enabled.Should().BeFalse();
+        savedTimeTop.TextOverlay.Style.FontSize.Should().Be(24);
+        savedTimeTop.TextOverlay.Style.TextEffect.Should().Be("none");
 
         vm.IsCompleted.Should().BeTrue();
     }

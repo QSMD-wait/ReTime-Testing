@@ -12,6 +12,12 @@
                     VerticalAlignment="Center"
                     Spacing="4">
 
+            <Image Source="pack://application:,,,/ReTime-Testing;component/Resources/app.png"
+                   Width="96"
+                   Height="96"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,16"/>
+
             <TextBlock Text="ReTime - Testing"
                        FontSize="26"
                        FontWeight="SemiBold"

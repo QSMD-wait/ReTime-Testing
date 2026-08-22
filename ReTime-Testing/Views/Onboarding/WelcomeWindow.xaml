@@ -45,7 +45,7 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <pages:ThemePage/>
+                                        <pages:LicensePage/>
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -54,7 +54,7 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <pages:AutoStartPage/>
+                                        <pages:ThemePage/>
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -63,7 +63,7 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <pages:CalibrationPage/>
+                                        <pages:BasicSettingsPage/>
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>
@@ -72,12 +72,21 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <pages:ConfirmPage/>
+                                        <pages:AppearanceSettingsPage/>
                                     </DataTemplate>
                                 </Setter.Value>
                             </Setter>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding CurrentIndex}" Value="5">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <pages:TextOverlaySettingsPage/>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentIndex}" Value="6">
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
