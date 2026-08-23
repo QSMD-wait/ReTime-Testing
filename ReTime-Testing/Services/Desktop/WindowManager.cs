@@ -127,10 +127,15 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 显示时间计划表编辑器窗口
+        /// 窗口为常驻隐藏模式：已存在的实例从后台唤起并刷新数据，而不是重建
         /// </summary>
         public static void ShowTimeScheduleEditor()
         {
             var window = GetTimeScheduleEditor();
+            if (window is Views.TimeScheduleEditor.TimeScheduleEditor editor && editor.IsLoaded)
+            {
+                editor.PrepareForShow();
+            }
             window.Show();
             window.Activate();
         }

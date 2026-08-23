@@ -75,15 +75,12 @@ public abstract class SettingsPageBase : UserControl
         OnPageLoaded();
     }
 
-    private void OnUnloaded(object sender, RoutedEventArgs e)
-    {
-        OnPageUnloaded();
-
-        if (DataContext is IDisposable disposable)
+        private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            disposable.Dispose();
+            // 页面实例会被缓存复用，不再在卸载时销毁 ViewModel；
+            // 资源释放统一由设置窗口关闭时的 Cleanup 负责
+            OnPageUnloaded();
         }
-    }
 }
 
 public class SettingsNavigationContext

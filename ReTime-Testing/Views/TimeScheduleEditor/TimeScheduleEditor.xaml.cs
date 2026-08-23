@@ -22,6 +22,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
     {
         private readonly TimeScheduleEditorViewModel _viewModel;
         private bool _isWindowClosing = false;
+        private bool _forceRealClose = false;
+        private bool _isCloseFlowActive = false;
         private ContentDialog? _activeDialog = null;
 
         public TimeScheduleEditor()
@@ -128,80 +130,104 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             return null;
         }
 
+        /// <summary>
+        /// 窗口从后台隐藏状态再次显示前调用：
+        /// 刷新计划表列表保证与磁盘一致；存在未保存更改时跳过刷新以保留编辑现场
+        /// </summary>
+        public void PrepareForShow()
+        {
+            if (!_viewModel.HasAnyUnpersistedChanges)
+            {
+                _viewModel.RefreshScheduleList();
+            }
+        }
+
         private async void OnWindowClosing(object? sender, CancelEventArgs e)
         {
-            _isWindowClosing = true;
-
-            if (_activeDialog != null)
+            // 应用退出（Shutdown 已启动）或强制关闭时放行真正关闭
+            if (_forceRealClose ||
+                (Application.Current?.Dispatcher.HasShutdownStarted ?? false))
             {
-                _activeDialog.Hide();
-                _activeDialog = null;
+                _isWindowClosing = true;
+                return;
             }
+
+            // 常驻后台模式：拦截关闭请求改为隐藏窗口，
+            // 保留实例避免下次打开时重建视觉树并重播列表入场动画（复选框闪烁）
+            e.Cancel = true;
+
+            // 已有弹窗或关闭确认流程进行中时忽略新的关闭请求
+            if (_activeDialog != null || _isCloseFlowActive) return;
 
             if (!_viewModel.HasAnyUnpersistedChanges)
+            {
+                Hide();
                 return;
-
-            e.Cancel = true;
-            _isWindowClosing = false;
-
-            var dialog = new ContentDialog
-            {
-                Title = "保存更改",
-                Content = "您有未持久化的更改，是否保存？",
-                PrimaryButtonText = "保存",
-                SecondaryButtonText = "不保存",
-                CloseButtonText = "取消",
-                DefaultButton = ContentDialogButton.Primary,
-                IsShadowEnabled = false
-            };
-
-            _activeDialog = dialog;
-            var result = await dialog.ShowAsync();
-            _activeDialog = null;
-
-            if (_isWindowClosing) return;
-
-            if (result == ContentDialogResult.Primary)
-            {
-                if (_viewModel.TryAutoSaveAllBeforeLeave())
-                {
-                    this.Close();
-                }
-                else
-                {
-                    var forceDialog = new ContentDialog
-                    {
-                        Title = "验证错误",
-                        Content = "部分计划表存在验证错误，无法自动保存。\n是否强制保存所有更改？",
-                        PrimaryButtonText = "强制保存",
-                        SecondaryButtonText = "丢弃更改",
-                        CloseButtonText = "取消",
-                        DefaultButton = ContentDialogButton.Close,
-                        IsShadowEnabled = false
-                    };
-
-                    _activeDialog = forceDialog;
-                    var forceResult = await forceDialog.ShowAsync();
-                    _activeDialog = null;
-
-                    if (_isWindowClosing) return;
-
-                    if (forceResult == ContentDialogResult.Primary)
-                    {
-                        _viewModel.ForceSaveAll();
-                        this.Close();
-                    }
-                    else if (forceResult == ContentDialogResult.Secondary)
-                    {
-                        _viewModel.DiscardAllUnpersistedChanges();
-                        this.Close();
-                    }
-                }
             }
-            else if (result == ContentDialogResult.Secondary)
+
+            _isCloseFlowActive = true;
+            try
             {
-                _viewModel.DiscardAllUnpersistedChanges();
-                this.Close();
+                var dialog = new ContentDialog
+                {
+                    Title = "保存更改",
+                    Content = "您有未持久化的更改，是否保存？",
+                    PrimaryButtonText = "保存",
+                    SecondaryButtonText = "不保存",
+                    CloseButtonText = "取消",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsShadowEnabled = false
+                };
+
+                _activeDialog = dialog;
+                var result = await dialog.ShowAsync();
+                _activeDialog = null;
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    if (_viewModel.TryAutoSaveAllBeforeLeave())
+                    {
+                        Hide();
+                    }
+                    else
+                    {
+                        var forceDialog = new ContentDialog
+                        {
+                            Title = "验证错误",
+                            Content = "部分计划表存在验证错误，无法自动保存。\n是否强制保存所有更改？",
+                            PrimaryButtonText = "强制保存",
+                            SecondaryButtonText = "丢弃更改",
+                            CloseButtonText = "取消",
+                            DefaultButton = ContentDialogButton.Close,
+                            IsShadowEnabled = false
+                        };
+
+                        _activeDialog = forceDialog;
+                        var forceResult = await forceDialog.ShowAsync();
+                        _activeDialog = null;
+
+                        if (forceResult == ContentDialogResult.Primary)
+                        {
+                            _viewModel.ForceSaveAll();
+                            Hide();
+                        }
+                        else if (forceResult == ContentDialogResult.Secondary)
+                        {
+                            _viewModel.DiscardAllUnpersistedChanges();
+                            Hide();
+                        }
+                    }
+                }
+                else if (result == ContentDialogResult.Secondary)
+                {
+                    _viewModel.DiscardAllUnpersistedChanges();
+                    Hide();
+                }
+                // 取消 → 保持窗口打开
+            }
+            finally
+            {
+                _isCloseFlowActive = false;
             }
         }
 

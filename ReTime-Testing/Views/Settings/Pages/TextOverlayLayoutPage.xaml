@@ -6,9 +6,10 @@
              xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
-             xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
-             xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
-             xmlns:dd="urn:gong-wpf-dragdrop"
+              xmlns:vm="clr-namespace:ReTime_Testing.ViewModels"
+              xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
+              xmlns:dd="urn:gong-wpf-dragdrop"
+              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
              d:DesignHeight="800" d:DesignWidth="700">
 
@@ -16,6 +17,20 @@
         <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <helpers:NotNullToVisibilityConverter x:Key="NotNullToVisibilityConverter"/>
         <helpers:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+        <!-- 页面级 Pivot 紧凑化：仅影响本页的 TabControlPivotStyle，不改动全局 -->
+        <sys:Double x:Key="PivotHeaderItemFontSize">13</sys:Double>
+        <Thickness x:Key="PivotHeaderItemMargin">10,0</Thickness>
+
+        <!-- 头部高度是库样式里的硬编码 Setter，只能派生样式覆盖 -->
+        <Style x:Key="CompactTabItemPivotStyle" TargetType="TabItem"
+               BasedOn="{StaticResource TabItemPivotStyle}">
+            <Setter Property="Height" Value="34"/>
+        </Style>
+        <Style x:Key="CompactTabControlPivotStyle" TargetType="TabControl"
+               BasedOn="{StaticResource TabControlPivotStyle}">
+            <Setter Property="ItemContainerStyle" Value="{StaticResource CompactTabItemPivotStyle}"/>
+        </Style>
 
         <!-- 插槽 ListViewItem 容器样式：水平排列 + 紧凑间距 -->
         <Style x:Key="SlotListViewItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
@@ -206,10 +221,10 @@
         <!-- 分隔线 -->
         <Separator Grid.Row="2" Margin="0,1"/>
 
-        <!-- Pivot 风格 TabControl -->
+        <!-- Pivot 风格 TabControl（紧凑尺寸，见资源中的 Compact 样式） -->
         <TabControl Grid.Row="3"
                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
-                    Style="{StaticResource TabControlPivotStyle}"
+                    Style="{StaticResource CompactTabControlPivotStyle}"
                     Margin="0,1,0,0">
 
             <!-- ==================== Tab 1: 组件库 ==================== -->

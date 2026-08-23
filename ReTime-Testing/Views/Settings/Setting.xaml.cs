@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,12 @@ public partial class Setting : Window
 {
     private TimeTopSettingViewModel? _viewModel;
     private SettingsPageBase? _currentPage;
+
+    /// <summary>
+    /// 页面实例缓存：页面只创建一次，切换导航时复用，
+    /// 避免每次进入页面都重建视觉树并重播控件入场动画（闪烁）
+    /// </summary>
+    private readonly Dictionary<string, SettingsPageBase> _pageCache = new();
 
     public Setting()
     {
@@ -39,52 +46,53 @@ public partial class Setting : Window
         {
             var tagProperty = MainNavigation.SelectedItem.GetType().GetProperty("Tag");
             string tag = tagProperty?.GetValue(MainNavigation.SelectedItem)?.ToString() ?? string.Empty;
-            _viewModel?.NavigateTo(tag);
+            NavigateToPage(tag);
         }
     }
 
-    protected override void OnContentChanged(object oldContent, object newContent)
+    /// <summary>
+    /// 导航到指定页面：ViewModel 与页面实例均缓存复用，仅注入新的导航上下文
+    /// </summary>
+    private void NavigateToPage(string tag)
     {
-        base.OnContentChanged(oldContent, newContent);
-        UpdateCurrentPage();
-    }
+        if (_viewModel == null) return;
 
-    private void UpdateCurrentPage()
-    {
-        if (_currentPage != null)
+        // 确保该页 ViewModel 已创建/缓存
+        _viewModel.NavigateTo(tag);
+
+        if (!_pageCache.TryGetValue(tag, out var page))
+        {
+            page = CreatePageForTag(tag);
+            page.DataContext = _viewModel.CurrentPage;
+            _pageCache[tag] = page;
+        }
+
+        // 通知旧页面离开，再切换内容并通知新页面进入
+        if (_currentPage != null && !ReferenceEquals(_currentPage, page))
         {
             _currentPage.NavigationContext = null;
         }
 
-        _currentPage = FindSettingsPage(this);
+        PageHost.Content = page;
+        _currentPage = page;
 
-        if (_currentPage != null)
+        if (_currentPage.NavigationContext == null)
         {
-            var tag = MainNavigation.SelectedItem?.GetType().GetProperty("Tag")?.GetValue(MainNavigation.SelectedItem)?.ToString() ?? string.Empty;
             _currentPage.NavigationContext = new SettingsNavigationContext { PageTag = tag };
         }
     }
 
-    private static SettingsPageBase? FindSettingsPage(DependencyObject root)
+    private static SettingsPageBase CreatePageForTag(string tag) => tag switch
     {
-        var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-        for (int i = 0; i < count; i++)
-        {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-            if (child is SettingsPageBase page)
-            {
-                return page;
-            }
-
-            var result = FindSettingsPage(child);
-            if (result != null)
-            {
-                return result;
-            }
-        }
-
-        return null;
-    }
+        "Appearance" => new AppearancePage(),
+        "Time" => new TimePage(),
+        "TextOverlay" => new TextOverlayPage(),
+        "TextOverlayLayout" => new TextOverlayLayoutPage(),
+        "Window" => new WindowPage(),
+        "Theme" => new ThemePage(),
+        "About" => new AboutPage(),
+        _ => new BasicPage()
+    };
 
     private async void OnRequestRestart(object sender, ExecutedRoutedEventArgs e)
     {
@@ -118,9 +126,9 @@ public partial class Setting : Window
 
     private void Setting_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (_currentPage != null)
+        foreach (var page in _pageCache.Values)
         {
-            _currentPage.NavigationContext = null;
+            page.NavigationContext = null;
         }
 
         _viewModel?.Cleanup();

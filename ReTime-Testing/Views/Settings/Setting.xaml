@@ -4,8 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:settings="clr-namespace:ReTime_Testing.Views.Settings"
-        xmlns:viewModels="clr-namespace:ReTime_Testing.ViewModels"
-        xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         mc:Ignorable="d"
         Title="设置"
@@ -18,47 +16,8 @@
         MinWidth="600"
         MinHeight="400">
 
-    <Window.Resources>
-        <!-- 数据模板：基本设置 -->
-        <DataTemplate DataType="{x:Type viewModels:BasicPageViewModel}">
-            <pages:BasicPage/>
-        </DataTemplate>
-
-        <!-- 数据模板：外观设置 -->
-        <DataTemplate DataType="{x:Type viewModels:AppearancePageViewModel}">
-            <pages:AppearancePage/>
-        </DataTemplate>
-
-        <!-- 数据模板：时间设置 -->
-        <DataTemplate DataType="{x:Type viewModels:TimePageViewModel}">
-            <pages:TimePage/>
-        </DataTemplate>
-
-        <!-- 数据模板：窗口设置 -->
-        <DataTemplate DataType="{x:Type viewModels:WindowPageViewModel}">
-            <pages:WindowPage/>
-        </DataTemplate>
-
-        <!-- 数据模板：主题设置 -->
-        <DataTemplate DataType="{x:Type viewModels:ThemePageViewModel}">
-            <pages:ThemePage/>
-        </DataTemplate>
-
-        <!-- 数据模板：文字覆盖设置 -->
-        <DataTemplate DataType="{x:Type viewModels:TextOverlayPageViewModel}">
-            <pages:TextOverlayPage/>
-        </DataTemplate>
-
-        <!-- 数据模板：文字覆盖布局设置 -->
-        <DataTemplate DataType="{x:Type viewModels:TextOverlayLayoutPageViewModel}">
-            <pages:TextOverlayLayoutPage/>
-        </DataTemplate>
-
-        <!-- 数据模板：关于 -->
-        <DataTemplate DataType="{x:Type viewModels:AboutPageViewModel}">
-            <pages:AboutPage/>
-        </DataTemplate>
-    </Window.Resources>
+    <!-- 页面实例由代码后置缓存并直接填充到 PageHost，无需按 ViewModel 类型映射的数据模板 -->
+    <Window.Resources/>
 
     <Grid>
         <ui:NavigationView x:Name="MainNavigation"
@@ -137,9 +96,9 @@
                 <Border Height="16"/>
             </ui:NavigationView.PaneFooter>
 
-            <!-- 内容区域 -->
+            <!-- 内容区域：页面实例由代码后置缓存并填充 -->
             <ui:NavigationView.Content>
-                <ContentControl Content="{Binding CurrentPage}"/>
+                <ContentControl x:Name="PageHost"/>
             </ui:NavigationView.Content>
 
         </ui:NavigationView>
