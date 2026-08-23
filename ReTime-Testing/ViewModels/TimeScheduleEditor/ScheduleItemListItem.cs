@@ -77,6 +77,18 @@ public partial class ScheduleItemListItem : ObservableObject
     private bool _hasBehavior;
 
     [ObservableProperty]
+    private bool _isBehaviorExpanded = true;
+
+    [ObservableProperty]
+    private bool _isCustomStyleExpanded = true;
+
+    [ObservableProperty]
+    private bool _isStateChangeExpanded = true;
+
+    [ObservableProperty]
+    private bool _isStyleChangeExpanded = true;
+
+    [ObservableProperty]
     private int _pollingIntervalMs = ScheduleBehavior.DefaultPollingIntervalMs;
 
     [ObservableProperty]
@@ -197,12 +209,14 @@ public partial class ScheduleItemListItem : ObservableObject
 
     partial void OnHasStateChangeChanged(bool value)
     {
+        if (value) IsStateChangeExpanded = true;
         OnPropertyChanged(nameof(HasTypeError));
         ItemChanged?.Invoke(this);
     }
 
     partial void OnHasStyleChangeChanged(bool value)
     {
+        if (value) IsStyleChangeExpanded = true;
         OnPropertyChanged(nameof(HasTypeError));
         if (!value)
         {
@@ -217,16 +231,21 @@ public partial class ScheduleItemListItem : ObservableObject
         {
             HasBackgroundColor = false;
         }
-        if (value && !HasStyleChange)
+        if (value)
         {
-            HasStyleChange = true;
+            IsCustomStyleExpanded = true;
+            if (!HasStyleChange) HasStyleChange = true;
         }
         ItemChanged?.Invoke(this);
     }
 
     partial void OnHasBackgroundColorChanged(bool value) => ItemChanged?.Invoke(this);
 
-    partial void OnHasBehaviorChanged(bool value) => ItemChanged?.Invoke(this);
+    partial void OnHasBehaviorChanged(bool value)
+    {
+        if (value) IsBehaviorExpanded = true;
+        ItemChanged?.Invoke(this);
+    }
 
     partial void OnPollingIntervalMsChanged(int value)
     {

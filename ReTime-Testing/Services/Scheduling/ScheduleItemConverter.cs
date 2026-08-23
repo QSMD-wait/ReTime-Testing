@@ -100,33 +100,32 @@ public static class ScheduleItemConverter
         }
 
         // 加载样式（从 StyleChange 中读取）
-        bool hasStyle = false;
-        if (hasStyleChange && point.StyleChange != null)
+        if (hasStyleChange)
         {
-            if (!string.IsNullOrEmpty(point.StyleChange.ForegroundColor))
+            result.HasCustomStyle = true;
+            if (point.StyleChange != null)
             {
-                var color = ParseColor(point.StyleChange.ForegroundColor);
-                result.ForegroundR = color.R;
-                result.ForegroundG = color.G;
-                result.ForegroundB = color.B;
-                hasStyle = true;
-            }
-            if (!string.IsNullOrEmpty(point.StyleChange.BackgroundColor))
-            {
-                var color = ParseColor(point.StyleChange.BackgroundColor);
-                result.BackgroundR = color.R;
-                result.BackgroundG = color.G;
-                result.BackgroundB = color.B;
-                result.HasBackgroundColor = true;
-                hasStyle = true;
-            }
-            if (point.StyleChange.Opacity.HasValue)
-            {
-                result.Opacity = point.StyleChange.Opacity.Value * 100;
-                hasStyle = true;
+                if (!string.IsNullOrEmpty(point.StyleChange.ForegroundColor))
+                {
+                    var color = ParseColor(point.StyleChange.ForegroundColor);
+                    result.ForegroundR = color.R;
+                    result.ForegroundG = color.G;
+                    result.ForegroundB = color.B;
+                }
+                if (!string.IsNullOrEmpty(point.StyleChange.BackgroundColor))
+                {
+                    var color = ParseColor(point.StyleChange.BackgroundColor);
+                    result.BackgroundR = color.R;
+                    result.BackgroundG = color.G;
+                    result.BackgroundB = color.B;
+                    result.HasBackgroundColor = true;
+                }
+                if (point.StyleChange.Opacity.HasValue)
+                {
+                    result.Opacity = point.StyleChange.Opacity.Value * 100;
+                }
             }
         }
-        result.HasCustomStyle = hasStyle;
 
         return result;
     }
@@ -237,7 +236,7 @@ public static class ScheduleItemConverter
             };
         }
 
-        if (item.HasStyleChange && item.HasCustomStyle)
+        if (item.HasStyleChange)
         {
             tp.StyleChange = new StyleChangeData
             {
@@ -295,19 +294,12 @@ public static class ScheduleItemConverter
                 target.Types.Add(TimePointType.StyleChange);
             }
 
-            if (item.HasCustomStyle)
+            target.StyleChange = new StyleChangeData
             {
-                target.StyleChange = new StyleChangeData
-                {
-                    ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
-                    BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
-                    Opacity = item.Opacity / 100.0
-                };
-            }
-            else
-            {
-                target.StyleChange = null;
-            }
+                ForegroundColor = $"#{item.ForegroundR:X2}{item.ForegroundG:X2}{item.ForegroundB:X2}",
+                BackgroundColor = item.HasBackgroundColor ? $"#{item.BackgroundR:X2}{item.BackgroundG:X2}{item.BackgroundB:X2}" : null,
+                Opacity = item.Opacity / 100.0
+            };
         }
         else
         {
