@@ -47,4 +47,9 @@ public interface IDesktopWindowManager
     /// 刷新进度条缩放比例
     /// </summary>
     void RefreshProgressBarScale();
+
+    /// <summary>
+    /// 刷新阴影配置（进度条阴影开关热重载）
+    /// </summary>
+    void RefreshShadow();
 }

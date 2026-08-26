@@ -288,11 +288,15 @@ namespace ReTime_Testing
                 var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
                 var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
 
+                desktopWindowManager.SetPosition(initialPosition);
+
                 // 流畅优化：引导期间强制开启（无视配置文件），正常启动后由配置文件决定
                 var globalDesktopService = Services.GetRequiredService<IGlobalTimeTopDesktopService>();
                 globalDesktopService.ForceSmoothnessOptimization = true;
 
-                desktopWindowManager.SetPosition(initialPosition);
+                // 向导模式：订阅配置变更事件（热重载）
+                settingsService.OnTimeTopSettingChanged += OnTimeTopSettingChanged;
+                settingsService.OnGlobalSettingChanged += OnGlobalSettingChanged;
 
                 // 引导模式：加载托盘图标（不带右键菜单）
                 _trayIconService = Services.GetRequiredService<ITrayIconService>();
@@ -307,6 +311,10 @@ namespace ReTime_Testing
 
                 var welcomeWindow = new Views.Onboarding.WelcomeWindow();
                 welcomeWindow.ShowDialog();
+
+                // 取消订阅向导模式的配置变更事件
+                settingsService.OnTimeTopSettingChanged -= OnTimeTopSettingChanged;
+                settingsService.OnGlobalSettingChanged -= OnGlobalSettingChanged;
 
                 if (!welcomeWindow.IsWizardCompleted)
                 {
@@ -374,9 +382,11 @@ namespace ReTime_Testing
             {
                 var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
                 desktopWindowManager.RefreshPosition();
+                desktopWindowManager.RefreshProgressBarScale();
+                desktopWindowManager.RefreshShadow();
                 desktopWindowManager.RefreshTextOverlay();
                 desktopWindowManager.ApplyTopmostModeFromConfig();
-                Logger.Info(GetType().FullName ?? "App", "热重载：窗口位置/文字覆盖/层级已刷新");
+                Logger.Info(GetType().FullName ?? "App", "热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
             }
             catch (Exception ex)
             {

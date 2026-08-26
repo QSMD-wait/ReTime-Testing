@@ -109,6 +109,19 @@ namespace ReTime_Testing.Services
         }
 
         /// <summary>
+        /// 刷新阴影配置（进度条阴影开关热重载）
+        /// </summary>
+        public void RefreshShadow()
+        {
+            if (_currentWindow == null || !_currentWindow.IsLoaded) return;
+
+            if (_currentWindow.DataContext is TimeTopDesktopViewModel vm)
+            {
+                vm.RefreshShadow();
+            }
+        }
+
+        /// <summary>
         /// 获取当前窗口
         /// </summary>
         public Window? CurrentWindow => _currentWindow;

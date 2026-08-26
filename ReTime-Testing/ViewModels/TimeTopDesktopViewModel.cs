@@ -189,6 +189,22 @@ namespace ReTime_Testing.ViewModels
         }
 
         /// <summary>
+        /// 重新计算阴影状态（供热重载调用）
+        /// </summary>
+        public void RefreshShadow()
+        {
+            try
+            {
+                var stateType = _service.GetCurrentConfig()?.StateType ?? ProgressStateType.Loading;
+                UpdateShadowBasedOnState(stateType);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("TimeTopDesktopViewModel", $"刷新阴影失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 清理资源
         /// </summary>
         public void Cleanup()
