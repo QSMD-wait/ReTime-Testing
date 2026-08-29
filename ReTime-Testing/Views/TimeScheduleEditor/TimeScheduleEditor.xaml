@@ -64,7 +64,7 @@
                         <ColumnDefinition Width="*" MinWidth="500"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 1. 左侧面板：计划表树形视图 -->
+                    <!-- 1. 左侧面板：计划表列表 -->
                     <Grid Grid.Column="0" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -73,85 +73,77 @@
 
                         <!-- 左侧操作按钮 -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
-                            <ui:AppBarButton Label="添加组" ToolTip="新建计划表组" Command="{Binding AddGroupCommand}">
-                                <ui:AppBarButton.Icon>
-                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"/>
-                                </ui:AppBarButton.Icon>
-                            </ui:AppBarButton>
                             <ui:AppBarButton Label="添加" ToolTip="新建计划表" Command="{Binding AddScheduleCommand}">
                                 <ui:AppBarButton.Icon>
                                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Add}"/>
                                 </ui:AppBarButton.Icon>
                             </ui:AppBarButton>
+                            <ui:AppBarButton Label="复制" ToolTip="复制选中的计划表" Command="{Binding CopyScheduleCommand}">
+                                <ui:AppBarButton.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Copy}"/>
+                                </ui:AppBarButton.Icon>
+                            </ui:AppBarButton>
                         </ui:CommandBar>
 
-                        <!-- 树形视图 -->
-                        <TreeView x:Name="ScheduleTreeView" Grid.Row="1" Margin="4"
-                                  ItemsSource="{Binding ScheduleTree}"
-                                  SelectedItemChanged="OnTreeViewSelectedItemChanged">
-                            <TreeView.Resources>
-                                <!-- 统一节点模板：通过 IsGroup 触发器切换布局 -->
-                                <HierarchicalDataTemplate DataType="{x:Type viewmodels:ScheduleGroupTreeNode}"
-                                                          ItemsSource="{Binding Children}">
-                                    <StackPanel Orientation="Horizontal" Margin="4,2">
-                                        <!-- 表组图标（IsGroup=True 时显示） -->
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"
-                                                     FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center">
-                                            <ui:FontIcon.Style>
-                                                <Style TargetType="ui:FontIcon">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsGroup}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ui:FontIcon.Style>
-                                        </ui:FontIcon>
-                                        <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
-                                                   TextTrimming="CharacterEllipsis">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsScheduleEnabled}" Value="False">
-                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                                            <Setter Property="TextDecorations" Value="Strikethrough"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
+                        <!-- 计划表列表 -->
+                        <ListView x:Name="ScheduleListView" Grid.Row="1" Margin="4" ItemsSource="{Binding Schedules}"
+                                  SelectedItem="{Binding SelectedSchedule, Mode=TwoWay}"
+                                  IsEnabled="True" SelectionMode="Single"
+                                  PreviewMouseRightButtonDown="OnScheduleListPreviewMouseRightButtonDown">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu>
+                                                <MenuItem Header="复制"
+                                                          Command="{Binding Data.CopyScheduleCommand, Source={StaticResource ViewModelProxy}}"/>
+                                                <MenuItem Header="设为活跃"
+                                                          Command="{Binding Data.ActivateScheduleCommand, Source={StaticResource ViewModelProxy}}"
+                                                          CommandParameter="{Binding Id}"/>
+                                                <Separator/>
+                                                <MenuItem Header="删除"
+                                                          Command="{Binding Data.DeleteScheduleCommand, Source={StaticResource ViewModelProxy}}"/>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid HorizontalAlignment="Stretch" Margin="8,6">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding Name}" Grid.Row="0" Grid.Column="0"
+                                                   FontSize="14" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding UpdatedAt, Converter={StaticResource NotNullToVisibilityConverter}}">
+                                            <Run Text="更新: "/><Run Text="{Binding UpdatedAt, StringFormat={}{0:yyyy/MM/dd HH:mm}, Mode=OneWay}"/>
                                         </TextBlock>
-                                        <!-- 轮换信息标签（RotationInfo 非空时显示） -->
-                                        <Border Margin="6,0,0,0" Padding="4,1" CornerRadius="3"
-                                                Background="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}"
-                                                Visibility="{Binding RotationInfo, Converter={StaticResource NotNullToVisibilityConverter}}">
-                                            <TextBlock FontSize="10" Text="{Binding RotationInfo}"
-                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                        </Border>
-                                        <!-- 同日冲突警告（DuplicateDayWarning 非空时显示） -->
-                                        <Border Margin="6,0,0,0" Padding="4,1" CornerRadius="3"
-                                                Background="#33FFAA00"
-                                                Visibility="{Binding DuplicateDayWarning, Converter={StaticResource NotNullToVisibilityConverter}}">
-                                            <TextBlock FontSize="10" Text="{Binding DuplicateDayWarning}"
-                                                       Foreground="#FFFFAA00" FontWeight="SemiBold"/>
-                                        </Border>
-                                        <!-- 组标签（GroupName 非空时显示） -->
-                                        <Border Padding="4,1" CornerRadius="3" Margin="6,0,0,0"
-                                                Background="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}"
-                                                Visibility="{Binding GroupName, Converter={StaticResource NotNullToVisibilityConverter}}">
-                                            <TextBlock Text="{Binding GroupName}" FontSize="10"
-                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                        </Border>
-                                        <!-- 活跃指示（IsActivated=True 时显示） -->
-                                        <Border Width="8" Height="8" CornerRadius="4" Margin="4,0,0,0"
+
+                                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                                Width="8" Height="8" CornerRadius="4"
                                                 Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
-                                                Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                ToolTip="活跃"/>
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-                            </TreeView.Resources>
-                        </TreeView>
+                                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Margin="4,0,0,0"
+                                                ToolTip="此计划表处于活跃状态"
+                                                Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </Grid>
 
                     <!-- 第一个分隔条 -->
@@ -171,7 +163,7 @@
                                          FontSize="48"
                                          HorizontalAlignment="Center"
                                          Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                            <TextBlock Text="请选择一个计划表或表组"
+                            <TextBlock Text="请选择一个计划表"
                                        FontSize="16"
                                        Margin="0,16,0,4"
                                        HorizontalAlignment="Center"
@@ -949,18 +941,128 @@
                     </Grid>
                 </Grid>
             </TabItem>
+
+            <!-- 表组选项 -->
+            <TabItem Header="表组">
+                <Grid Margin="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280" MinWidth="180" MaxWidth="400"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" MinWidth="300"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左侧面板：组列表 -->
+                    <Grid Grid.Column="0" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left">
+                            <ui:AppBarButton Label="添加组" ToolTip="新建计划表组" Command="{Binding AddGroupCommand}">
+                                <ui:AppBarButton.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"/>
+                                </ui:AppBarButton.Icon>
+                            </ui:AppBarButton>
+                        </ui:CommandBar>
+
+                        <ListView Grid.Row="1" Margin="4"
+                                  ItemsSource="{Binding Groups}"
+                                  SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
+                                  SelectionMode="Single">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="8,6">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}">
+                                            <Run Text="成员: "/><Run Text="{Binding MemberCount, Mode=OneWay}"/>
+                                            <Run Text="  "/><Run Text="{Binding RotationInfo, Mode=OneWay}"/>
+                                        </TextBlock>
+
+                                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                                Width="8" Height="8" CornerRadius="4"
+                                                Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Margin="4,0,0,0"
+                                                ToolTip="此组处于激活状态"
+                                                Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+
+                    <GridSplitter Grid.Column="1" Width="6"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
+
+                    <!-- 右侧面板：组详情 -->
+                    <Grid Grid.Column="2" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
+                        <!-- 空状态 -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding SelectedGroup, Converter={StaticResource NullToVisibilityConverter}}">
+                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"
+                                         FontSize="48" HorizontalAlignment="Center"
+                                         Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                            <TextBlock Text="请选择一个表组" FontSize="16" Margin="0,16,0,4"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                            <TextBlock Text="从左侧列表选择或新建一个表组" FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                        </StackPanel>
+
+                        <!-- 组详情 -->
+                        <ScrollViewer Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
+                                      VerticalScrollBarVisibility="Auto" Margin="16">
+                            <StackPanel>
+                                <!-- 组名 -->
+                                <TextBlock Text="组名" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SelectedGroup.Name}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                                <!-- 成员数 -->
+                                <TextBlock Text="成员" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock FontSize="14" Margin="0,0,0,12">
+                                    <Run Text="共"/><Run Text="{Binding SelectedGroup.MemberCount, Mode=OneWay}"/><Run Text="张计划表"/>
+                                </TextBlock>
+
+                                <!-- 轮换状态 -->
+                                <TextBlock Text="轮换状态" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SelectedGroup.RotationInfo, FallbackValue='每周'}" FontSize="14" Margin="0,0,0,16"/>
+
+                                <!-- 操作按钮 -->
+                                <Button Content="激活此组" Command="{Binding ActivateGroupByIdCommand}"
+                                        CommandParameter="{Binding SelectedGroup.Id}"
+                                        HorizontalAlignment="Left" Margin="0,0,0,8"
+                                        Padding="16,6"/>
+                                <Button Content="解散此组" Command="{Binding DisbandGroupCommand}"
+                                        CommandParameter="{Binding SelectedGroup.Id}"
+                                        HorizontalAlignment="Left"
+                                        Padding="16,6"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <ui:CommandBar Grid.Column="1"
                        VerticalAlignment="Top"
                        DefaultLabelPosition="Right"
                        IsOpen="False">
-            <ui:AppBarButton Label="表组" ToolTip="选择并激活计划表组轮换" Click="OnActivateGroupClick">
-                <ui:AppBarButton.Icon>
-                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"/>
-                </ui:AppBarButton.Icon>
-            </ui:AppBarButton>
-            <ui:AppBarSeparator/>
             <ui:AppBarButton Label="加载" Click="OnReloadButtonClick" RenderTransformOrigin="-0.822,0.675">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"/>

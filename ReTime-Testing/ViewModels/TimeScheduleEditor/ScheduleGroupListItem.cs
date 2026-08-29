@@ -38,6 +38,12 @@ public partial class ScheduleGroupListItem : ObservableObject
     private int _memberCount;
 
     /// <summary>
+    /// 是否为当前激活组
+    /// </summary>
+    [ObservableProperty]
+    private bool _isActivated;
+
+    /// <summary>
     /// 轮换信息描述（如 "第1/2周"）
     /// </summary>
     [ObservableProperty]

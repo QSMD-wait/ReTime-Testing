@@ -49,6 +49,9 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private ScheduleGroupTreeNode? _selectedTreeNode;
 
     [ObservableProperty]
+    private ScheduleGroupListItem? _selectedGroup;
+
+    [ObservableProperty]
     private bool _canUndo = false;
 
     [ObservableProperty]
@@ -607,7 +610,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         Schedules.Clear();
 
         var scheduleList = _scheduleManager.GetScheduleList();
-        var currentSelectedId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
+        var effectiveScheduleId = _groupManager.GetEffectiveScheduleId();
 
         var sortedList = scheduleList
             .OrderBy(i => i.CreatedAt ?? DateTime.MaxValue)
@@ -620,7 +623,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 Id = info.Id,
                 Name = info.Name,
                 Description = info.Description,
-                IsActivated = info.Id == currentSelectedId,
+                IsActivated = info.Id == effectiveScheduleId,
                 CreatedAt = info.CreatedAt,
                 UpdatedAt = info.UpdatedAt
             });
@@ -1154,6 +1157,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 Description = group.Metadata.Description,
                 RotationCycleCount = 0,
                 MemberCount = memberSchedules.Count,
+                IsActivated = group.Id == currentActiveGroupId,
                 RotationInfo = _groupManager.GetRotationInfo(group.Id),
                 CreatedAt = DateTime.TryParse(group.Metadata.CreatedAt, out var created) ? created : null,
                 UpdatedAt = DateTime.TryParse(group.Metadata.UpdatedAt, out var updated) ? updated : null
