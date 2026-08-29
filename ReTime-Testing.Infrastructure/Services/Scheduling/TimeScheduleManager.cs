@@ -356,6 +356,11 @@ namespace ReTime_Testing.Services
                     Id = s.Id,
                     Name = s.Settings?.Metadata?.Name ?? s.Id,
                     Description = s.Settings?.Metadata?.Description,
+                    AssociatedGroupId = s.Settings?.Metadata?.AssociatedGroupId ?? ScheduleGroup.DefaultGroupId,
+                    IsEnabled = s.Settings?.Metadata?.IsEnabled ?? true,
+                    DayOfWeek = s.Settings?.Metadata?.DayOfWeek ?? 0,
+                    RotationCycleCount = s.Settings?.Metadata?.RotationCycleCount ?? 1,
+                    RotationWeekIndex = s.Settings?.Metadata?.RotationWeekIndex ?? 0,
                     CreatedAt = TryParseDateTime(s.Settings?.Metadata?.CreatedAt),
                     UpdatedAt = TryParseDateTime(s.Settings?.Metadata?.UpdatedAt)
                 }).ToList();
@@ -388,6 +393,7 @@ namespace ReTime_Testing.Services
                     {
                         Name = name,
                         Description = "",
+                        AssociatedGroupId = ScheduleGroup.DefaultGroupId,
                         CreatedAt = now.ToString("o"),
                         UpdatedAt = now.ToString("o")
                     }

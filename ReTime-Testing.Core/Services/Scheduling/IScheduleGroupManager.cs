@@ -4,15 +4,11 @@ namespace ReTime_Testing.Services;
 
 /// <summary>
 /// 计划表组管理器接口
-/// 职责：管理计划表组配置文件的创建、读取、保存、删除，以及星期轮换解析
+/// 职责：管理计划表组配置文件的创建、读取、保存、删除
+/// 组仅作为归类容器，轮换配置在每个计划表上
 /// </summary>
 public interface IScheduleGroupManager
 {
-    /// <summary>
-    /// 获取计划表组的目录路径
-    /// </summary>
-    string ScheduleGroupsDirectory { get; }
-
     /// <summary>
     /// 计划表组变更事件
     /// </summary>
@@ -24,7 +20,7 @@ public interface IScheduleGroupManager
     event Action<string>? OnGroupDeleted;
 
     /// <summary>
-    /// 初始化计划表组管理器
+    /// 初始化计划表组管理器（确保默认组存在）
     /// </summary>
     void Initialize();
 
@@ -44,14 +40,21 @@ public interface IScheduleGroupManager
     void SaveGroup(ScheduleGroup group);
 
     /// <summary>
-    /// 删除计划表组
-    /// </summary>
-    bool DeleteGroup(string id);
-
-    /// <summary>
-    /// 创建新计划表组（空白）
+    /// 创建新计划表组
     /// </summary>
     ScheduleGroup CreateNewGroup(string id, string name);
+
+    /// <summary>
+    /// 解散计划表组（组内表移到默认组，组被删除）
+    /// 默认组不可解散
+    /// </summary>
+    bool DisbandGroup(string groupId);
+
+    /// <summary>
+    /// 重命名计划表组
+    /// 默认组不可重命名
+    /// </summary>
+    bool RenameGroup(string groupId, string newName);
 
     /// <summary>
     /// 检查计划表组是否存在
@@ -59,27 +62,13 @@ public interface IScheduleGroupManager
     bool GroupExists(string id);
 
     /// <summary>
-    /// 根据指定日期解析当前应生效的计划表ID
-    /// </summary>
-    /// <param name="groupId">组ID</param>
-    /// <param name="date">目标日期</param>
-    /// <returns>计划表ID，null 表示该天没有计划表</returns>
-    string? ResolveScheduleIdForDate(string groupId, DateTime date);
-
-    /// <summary>
     /// 获取当前生效的计划表ID（综合解析 ScheduleConfig）
     /// 优先级：override.enabled > activeGroupId 轮换 > override.scheduleId 默认
     /// </summary>
-    /// <returns>计划表ID，null 表示今天没有计划表</returns>
     string? GetEffectiveScheduleId();
 
     /// <summary>
-    /// 刷新缓存
+    /// 获取组的轮换周描述信息
     /// </summary>
-    void RefreshCache();
-
-    /// <summary>
-    /// 清除指定组的缓存
-    /// </summary>
-    void ClearCache(string id);
+    string GetRotationInfo(string groupId, DateTime? date = null);
 }

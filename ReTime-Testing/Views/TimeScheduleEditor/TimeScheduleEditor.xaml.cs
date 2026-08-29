@@ -12,6 +12,7 @@ using iNKORE.UI.WPF.Modern.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Controls;
 using ReTime_Testing.Helpers;
+using ReTime_Testing.Models;
 using ReTime_Testing.Models.UI;
 using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels.TimeScheduleEditor;
@@ -42,6 +43,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             _viewModel.ForceSaveConfirmRequested += OnForceSaveConfirmRequested;
             _viewModel.ToastRequested += OnToastRequested;
             _viewModel.EditScheduleInfoRequested += OnEditScheduleInfoRequested;
+            _viewModel.CreateGroupNameRequested += OnCreateGroupNameRequested;
 
             this.Closing += OnWindowClosing;
         }
@@ -127,6 +129,137 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     return result;
                 current = System.Windows.Media.VisualTreeHelper.GetParent(current);
             }
+            return null;
+        }
+
+        private void OnTreeViewSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is ScheduleGroupTreeNode treeNode)
+            {
+                _viewModel.SelectedTreeNode = treeNode;
+            }
+            else
+            {
+                _viewModel.SelectedTreeNode = null;
+            }
+        }
+
+        private async void OnActivateGroupClick(object sender, RoutedEventArgs e)
+        {
+            if (_isWindowClosing) return;
+
+            var groups = _viewModel.Groups;
+            if (groups.Count == 0)
+            {
+                var warnDialog = new ContentDialog
+                {
+                    Title = "提示",
+                    Content = "没有可用的计划表组，请先创建一个表组",
+                    CloseButtonText = "确定",
+                    DefaultButton = ContentDialogButton.Close,
+                    IsShadowEnabled = false
+                };
+                _activeDialog = warnDialog;
+                await warnDialog.ShowAsync();
+                _activeDialog = null;
+                return;
+            }
+
+            var listView = new System.Windows.Controls.ListView
+            {
+                ItemsSource = groups,
+                SelectionMode = SelectionMode.Single,
+                MinWidth = 300,
+                MinHeight = 200,
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+
+            listView.ItemTemplate = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(StackPanel));
+            factory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+
+            var icon = new FrameworkElementFactory(typeof(iNKORE.UI.WPF.Modern.Controls.FontIcon));
+            icon.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 8, 0));
+            icon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            factory.AppendChild(icon);
+
+            var textBlock = new FrameworkElementFactory(typeof(TextBlock));
+            textBlock.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            textBlock.SetValue(TextBlock.FontSizeProperty, 14.0);
+            textBlock.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            factory.AppendChild(textBlock);
+
+            listView.ItemTemplate.VisualTree = factory;
+
+            var dialog = new ContentDialog
+            {
+                Title = "选择计划表组",
+                Content = new ScrollViewer
+                {
+                    Content = listView,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    MaxHeight = 300
+                },
+                PrimaryButtonText = "激活",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                IsShadowEnabled = false
+            };
+
+            _activeDialog = dialog;
+            var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            if (_isWindowClosing) return;
+
+            if (result == ContentDialogResult.Primary && listView.SelectedItem is ScheduleGroupListItem selectedGroup)
+            {
+                _viewModel.ActivateGroupByIdCommand.Execute(selectedGroup.Id);
+            }
+        }
+
+        private async Task<string?> OnCreateGroupNameRequested(string defaultName)
+        {
+            if (_isWindowClosing) return null;
+
+            var nameBox = new TextBox
+            {
+                Text = defaultName,
+                MinWidth = 250
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = "新建计划表组",
+                Content = new StackPanel
+                {
+                    Children =
+                    {
+                        new TextBlock { Text = "请输入组名称：", Margin = new Thickness(0, 0, 0, 8) },
+                        nameBox
+                    }
+                },
+                PrimaryButtonText = "创建",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                IsShadowEnabled = false
+            };
+
+            _activeDialog = dialog;
+            var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            if (_isWindowClosing) return null;
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var name = nameBox.Text?.Trim();
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
+            }
+
             return null;
         }
 
@@ -355,11 +488,18 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             var labelBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8B8B8B"));
 
+            // 获取当前自动启用配置
+            var (currentGroupId, currentIsEnabled, currentDayOfWeek, currentCycleCount, currentWeekIndex) = _viewModel.GetScheduleRule(schedule.Id);
+
             string newName = schedule.Name;
             string? newDescription = schedule.Description;
-            bool nameEdited = false;
-            bool descEdited = false;
+            string newGroupId = currentGroupId;
+            bool newIsEnabled = currentIsEnabled;
+            int newDayOfWeek = currentDayOfWeek;
+            int newCycleCount = currentCycleCount;
+            int newWeekIndex = currentWeekIndex;
 
+            // --- 名称 ---
             var nameLabel = new TextBlock { Text = "名称", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
 
             var nameBox = new TextBox
@@ -394,25 +534,19 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 nameBox.Focus();
                 nameBox.SelectAll();
                 nameEditButton.Visibility = Visibility.Collapsed;
-                nameEdited = true;
             };
 
             nameBox.LostFocus += (s, e) =>
             {
                 if (nameBox.IsReadOnly) return;
                 var text = nameBox.Text?.Trim() ?? "";
-                if (!string.IsNullOrEmpty(text))
-                {
-                    newName = text;
-                }
-                else
-                {
-                    nameBox.Text = newName;
-                }
+                if (!string.IsNullOrEmpty(text)) newName = text;
+                else nameBox.Text = newName;
                 nameBox.IsReadOnly = true;
                 nameEditButton.Visibility = Visibility.Visible;
             };
 
+            // --- 描述 ---
             var descLabel = new TextBlock { Text = "描述", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
 
             var descBox = new TextBox
@@ -450,7 +584,6 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 descBox.IsReadOnly = false;
                 descBox.Focus();
                 descEditButton.Visibility = Visibility.Collapsed;
-                descEdited = true;
             };
 
             descBox.LostFocus += (s, e) =>
@@ -461,20 +594,139 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 descEditButton.Visibility = Visibility.Visible;
             };
 
-            var idLabel = new TextBlock { Text = "ID", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 16, 0, 4) };
+            // --- 自动启用 ---
+            var enableLabel = new TextBlock { Text = "自动启用", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+            var enableInfo = new TextBlock { Text = "关闭后此表不会在组轮换中被选中", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
 
-            var idBox = new TextBox
+            var enableToggle = new System.Windows.Controls.CheckBox
             {
-                Text = schedule.Id,
-                IsReadOnly = true,
-                IsEnabled = false
+                Content = "启用",
+                IsChecked = newIsEnabled,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 0, 0, 4)
             };
 
+            enableToggle.Checked += (s, e) => { newIsEnabled = true; };
+            enableToggle.Unchecked += (s, e) => { newIsEnabled = false; };
+
+            // --- 归属组 ---
+            var groupLabel = new TextBlock { Text = "归属组", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+
+            var groups = _viewModel.GetAvailableGroups();
+            var groupComboBox = new ComboBox
+            {
+                DisplayMemberPath = "Name",
+                SelectedValuePath = "Id",
+                MinWidth = 160,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            groupComboBox.ItemsSource = groups;
+            groupComboBox.SelectedValue = newGroupId;
+
+            groupComboBox.SelectionChanged += (s, e) =>
+            {
+                newGroupId = groupComboBox.SelectedValue as string ?? ScheduleGroup.DefaultGroupId;
+            };
+
+            // --- 星期几 ---
+            var dayLabel = new TextBlock { Text = "星期几", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+            var dayInfo = new TextBlock { Text = "此表将在星期几生效", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
+
+            var dayNames = new[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" };
+            var dayComboBox = new ComboBox
+            {
+                MinWidth = 120,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            for (int i = 0; i < dayNames.Length; i++)
+            {
+                dayComboBox.Items.Add(new ComboBoxItem { Content = dayNames[i], Tag = i });
+            }
+            dayComboBox.SelectedIndex = newDayOfWeek;
+
+            dayComboBox.SelectionChanged += (s, e) =>
+            {
+                if (dayComboBox.SelectedIndex >= 0)
+                {
+                    var selectedTag = (dayComboBox.SelectedItem as ComboBoxItem)?.Tag;
+                    if (selectedTag is int idx) newDayOfWeek = idx;
+                }
+            };
+
+            // --- 第几周（先声明，供 UpdateWeekIndexEnabled 使用）---
+            var weekLabel = new TextBlock { Text = "第几周", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+            var weekInfo = new TextBlock { Text = "0=每周, 1=第1周, 2=第2周...", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
+
+            var weekBox = new TextBox
+            {
+                Text = newWeekIndex.ToString(),
+                MinWidth = 60,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            weekBox.LostFocus += (s, e) =>
+            {
+                if (int.TryParse(weekBox.Text, out var val) && val >= 0 && val <= 9)
+                    newWeekIndex = val;
+                else
+                    weekBox.Text = newWeekIndex.ToString();
+            };
+
+            // --- 每N周 ---
+            var cycleLabel = new TextBlock { Text = "每N周", FontSize = 12, Foreground = labelBrush, Margin = new Thickness(0, 12, 0, 4) };
+            var cycleInfo = new TextBlock { Text = "1=每周, 2=每两周, 3=每三周...", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 0, 0, 4) };
+
+            var cycleBox = new TextBox
+            {
+                Text = newCycleCount.ToString(),
+                MinWidth = 60,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            void UpdateWeekIndexEnabled()
+            {
+                bool enabled = newCycleCount > 1;
+                weekBox.IsEnabled = enabled;
+                weekLabel.Foreground = enabled ? labelBrush : Brushes.Gray;
+                weekInfo.Foreground = enabled ? labelBrush : Brushes.Gray;
+            }
+
+            cycleBox.LostFocus += (s, e) =>
+            {
+                if (int.TryParse(cycleBox.Text, out var val) && val >= 1 && val <= 9)
+                    newCycleCount = val;
+                else
+                    cycleBox.Text = newCycleCount.ToString();
+                UpdateWeekIndexEnabled();
+            };
+
+            UpdateWeekIndexEnabled();
+
+            // --- ID ---
+            var idLabel = new TextBlock { Text = "ID", FontSize = 11, Foreground = labelBrush, Margin = new Thickness(0, 16, 0, 4) };
+            var idBox = new TextBox { Text = schedule.Id, IsReadOnly = true, IsEnabled = false };
+
+            // --- 组装面板 ---
             var panel = new StackPanel();
             panel.Children.Add(nameLabel);
             panel.Children.Add(nameRow);
             panel.Children.Add(descLabel);
             panel.Children.Add(descRow);
+            panel.Children.Add(enableLabel);
+            panel.Children.Add(enableInfo);
+            panel.Children.Add(enableToggle);
+            panel.Children.Add(groupLabel);
+            panel.Children.Add(groupComboBox);
+            panel.Children.Add(dayLabel);
+            panel.Children.Add(dayInfo);
+            panel.Children.Add(dayComboBox);
+            panel.Children.Add(cycleLabel);
+            panel.Children.Add(cycleInfo);
+            panel.Children.Add(cycleBox);
+            panel.Children.Add(weekLabel);
+            panel.Children.Add(weekInfo);
+            panel.Children.Add(weekBox);
             panel.Children.Add(idLabel);
             panel.Children.Add(idBox);
 
@@ -485,7 +737,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 {
                     Content = panel,
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    MaxHeight = 400
+                    MaxHeight = 500
                 },
                 PrimaryButtonText = "保存",
                 CloseButtonText = "取消",
@@ -528,18 +780,22 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     return false;
                 }
 
-                if (!nameEdited && !descEdited && newName == schedule.Name && newDescription == schedule.Description)
-                {
-                    return false;
-                }
-
+                // 保存名称和描述
                 var scheduleManager = ((App)Application.Current).Services.GetRequiredService<ITimeScheduleManager>();
                 var success = scheduleManager.UpdateScheduleMetadata(schedule.Id, newName, newDescription);
+
+                // 保存自动启用配置
+                _viewModel.UpdateScheduleRule(schedule.Id, newGroupId, newIsEnabled, newDayOfWeek, newCycleCount, newWeekIndex);
 
                 if (success)
                 {
                     schedule.Name = newName;
                     schedule.Description = newDescription;
+                    schedule.AssociatedGroupId = newGroupId;
+                    schedule.IsEnabled = newIsEnabled;
+                    schedule.DayOfWeek = newDayOfWeek;
+                    schedule.RotationCycleCount = newCycleCount;
+                    schedule.RotationWeekIndex = newWeekIndex;
                     this.ShowToast(new ToastMessage("保存成功", $"计划表 \"{newName}\" 信息已更新")
                     {
                         Severity = ToastSeverity.Success,

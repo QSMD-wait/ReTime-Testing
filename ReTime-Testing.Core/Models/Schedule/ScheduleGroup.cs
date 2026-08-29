@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace ReTime_Testing.Models
 {
     /// <summary>
-    /// 计划表组配置
-    /// 将多个计划表归为一组，支持按星期自动轮换
+    /// 计划表组配置（对齐 ClassIsland 的 ClassPlanGroup）
+    /// 组仅作为归类容器，不持有轮换配置
     /// </summary>
     public class ScheduleGroup
     {
@@ -28,11 +27,9 @@ namespace ReTime_Testing.Models
         public ScheduleGroupMetadata Metadata { get; set; } = new();
 
         /// <summary>
-        /// 星期-计划表映射列表
-        /// weekDay 值与 System.DayOfWeek 枚举一致：0=Sunday, 1=Monday, ..., 6=Saturday
-        /// 未列出的星期表示该天没有计划表
+        /// 默认组ID常量
+        /// 参考 ClassIsland 的 ClassPlanGroup.DefaultGroupGuid
         /// </summary>
-        [JsonPropertyName("weekSchedule")]
-        public List<WeekScheduleItem> WeekSchedule { get; set; } = new();
+        public const string DefaultGroupId = "default";
     }
 }

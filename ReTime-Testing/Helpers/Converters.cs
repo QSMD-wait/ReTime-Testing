@@ -7,6 +7,24 @@ using System.Windows.Media.Effects;
 
 namespace ReTime_Testing.Helpers
 {
+    /// <summary>
+    /// 将 bool 取反
+    /// </summary>
+    public class InverseBoolConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b) return !b;
+            return value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool b) return !b;
+            return value;
+        }
+    }
+
     public class BindingProxy : Freezable
     {
         public static readonly DependencyProperty DataProperty =
@@ -262,6 +280,27 @@ namespace ReTime_Testing.Helpers
                 ReTime_Testing.Models.LogLevel.TRC => TraceBrush,
                 _ => Brushes.Black
             };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// 轮换周索引到可见性转换器
+    /// CycleIndex=0 显示，CycleIndex>0 隐藏（用于默认"每周"视图）
+    /// </summary>
+    public class CycleIndexToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int cycleIndex)
+            {
+                return cycleIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+            return Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

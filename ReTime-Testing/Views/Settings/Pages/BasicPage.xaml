@@ -4,10 +4,16 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:pages="clr-namespace:ReTime_Testing.Views.Settings.Pages"
+             xmlns:helpers="clr-namespace:ReTime_Testing.Helpers"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
+
+    <pages:SettingsPageBase.Resources>
+        <helpers:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <helpers:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+    </pages:SettingsPageBase.Resources>
 
     <ikw:SimpleStackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Spacing="4">
 
@@ -96,6 +102,60 @@
                                    Margin="8,0,0,0"
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
                     </StackPanel>
+                </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+
+        <ui:SettingsExpander Header="轮换设置"
+                             Description="管理多周轮换计划的根日期和偏移量">
+            <ui:SettingsExpander.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ArrowRepeatAll_24_Regular}" />
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="学期开始日期"
+                                 Description="作为多周轮换的计算起点（如 2026-09-01 为第1周周一）">
+                    <DatePicker SelectedDate="{Binding RotationBaseDate, Mode=TwoWay}"
+                                MinWidth="160"/>
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="最大轮换周数"
+                                 Description="允许的最大轮换周期长度（2~9周）">
+                    <ui:NumberBox Value="{Binding MultiWeekRotationMaxCycle, Mode=TwoWay}"
+                                  SpinButtonPlacementMode="Compact"
+                                  Minimum="2"
+                                  Maximum="9"
+                                  SmallChange="1"
+                                  LargeChange="1"
+                                  MinWidth="80"/>
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="双周轮换偏移"
+                                 Description="调整双周轮换的起始偏移量（0=自动计算）">
+                    <ui:NumberBox Value="{Binding Cycle2Offset, Mode=TwoWay}"
+                                  SpinButtonPlacementMode="Compact"
+                                  Minimum="0"
+                                  Maximum="1"
+                                  SmallChange="1"
+                                  LargeChange="1"
+                                  MinWidth="80"/>
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="三周轮换偏移"
+                                 Description="调整三周轮换的起始偏移量（0=自动计算）">
+                    <ui:NumberBox Value="{Binding Cycle3Offset, Mode=TwoWay}"
+                                  SpinButtonPlacementMode="Compact"
+                                  Minimum="0"
+                                  Maximum="2"
+                                  SmallChange="1"
+                                  LargeChange="1"
+                                  MinWidth="80"/>
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="四周轮换偏移"
+                                 Description="调整四周轮换的起始偏移量（0=自动计算）">
+                    <ui:NumberBox Value="{Binding Cycle4Offset, Mode=TwoWay}"
+                                  SpinButtonPlacementMode="Compact"
+                                  Minimum="0"
+                                  Maximum="3"
+                                  SmallChange="1"
+                                  LargeChange="1"
+                                  MinWidth="80"/>
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

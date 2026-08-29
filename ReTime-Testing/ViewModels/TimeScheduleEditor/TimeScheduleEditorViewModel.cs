@@ -15,6 +15,7 @@ namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 public partial class TimeScheduleEditorViewModel : ObservableObject
 {
     private readonly ITimeScheduleManager _scheduleManager;
+    private readonly IScheduleGroupManager _groupManager;
     private readonly ISettingsService _settingsService;
     private readonly ITimeService? _timeService;
     private readonly IScheduleManager? _scheduleRunManager;
@@ -31,6 +32,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     public event Func<string, List<string>, Task<bool>>? ForceSaveConfirmRequested;
     public event Action<ToastMessage>? ToastRequested;
     public event Func<ScheduleListItem, Task<bool>>? EditScheduleInfoRequested;
+    public event Func<string, Task<string?>>? CreateGroupNameRequested;
 
     [ObservableProperty]
     private bool _hasUnpersistedChanges = false;
@@ -44,6 +46,9 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private ScheduleItemListItem? _selectedScheduleItem;
 
     [ObservableProperty]
+    private ScheduleGroupTreeNode? _selectedTreeNode;
+
+    [ObservableProperty]
     private bool _canUndo = false;
 
     [ObservableProperty]
@@ -51,6 +56,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     public ObservableCollection<ScheduleListItem> Schedules { get; } = new();
     public ObservableCollection<ScheduleItemListItem> ScheduleItems => _currentEditingState?.Items ?? _emptyItems;
+    public ObservableCollection<ScheduleGroupTreeNode> ScheduleTree { get; } = new();
+    public ObservableCollection<ScheduleGroupListItem> Groups { get; } = new();
 
     private readonly ObservableCollection<ScheduleItemListItem> _emptyItems = new();
 
@@ -66,13 +73,18 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         new() { Value = ProgressStateType.Paused, DisplayName = "暂停 (Paused)" },
     };
 
+    private const string DEFAULT_GROUP_ID = ScheduleGroup.DefaultGroupId;
+    private const string DEFAULT_GROUP_NAME = "默认";
+
     public TimeScheduleEditorViewModel(
         ITimeScheduleManager scheduleManager,
+        IScheduleGroupManager groupManager,
         ISettingsService settingsService,
         ITimeService? timeService = null,
         IScheduleManager? scheduleRunManager = null)
     {
         _scheduleManager = scheduleManager;
+        _groupManager = groupManager;
         _settingsService = settingsService;
         _timeService = timeService;
         _scheduleRunManager = scheduleRunManager;
@@ -84,6 +96,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         _autoSaveTimer.Tick += OnAutoSaveTimerTick;
 
         RefreshScheduleList();
+        RefreshScheduleTree();
     }
 
     #region 计划表选择切换
@@ -258,20 +271,43 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         if (SelectedSchedule == null) return;
 
         var deletedId = SelectedSchedule.Id;
+        var deletedGroupId = SelectedSchedule.AssociatedGroupId;
 
         if (_scheduleManager.DeleteSchedule(deletedId))
         {
             var setting = _settingsService.GetTimeTopSetting();
+            var needSave = false;
+
+            // 清理覆盖引用
             if (setting.Schedule.Override.ScheduleId == deletedId)
             {
                 setting.Schedule.Override.ScheduleId = "";
                 setting.Schedule.Override.Enabled = false;
-                _settingsService.SaveTimeTopSetting(setting);
+                needSave = true;
             }
+
+            // 如果删除的是当前激活组的最后一张表，清除激活组
+            if (!string.IsNullOrEmpty(deletedGroupId) &&
+                setting.Schedule.ActiveGroupId == deletedGroupId)
+            {
+                var remaining = _scheduleManager.GetScheduleList()
+                    .Count(s => s.AssociatedGroupId == deletedGroupId);
+                if (remaining == 0)
+                {
+                    setting.Schedule.ActiveGroupId = null;
+                    needSave = true;
+                    ToastRequested?.Invoke(new ToastMessage("组已清空", $"组 \"{deletedGroupId}\" 内无计划表，已自动取消激活")
+                    { Severity = ToastSeverity.Warning, Duration = TimeSpan.FromSeconds(3) });
+                }
+            }
+
+            if (needSave)
+                _settingsService.SaveTimeTopSetting(setting);
 
             _editingStates.Remove(deletedId);
 
             RefreshScheduleList();
+            RefreshScheduleTree();
             SelectedSchedule = null;
         }
     }
@@ -295,22 +331,22 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         if (SelectedSchedule == null) return;
 
         if (EditScheduleInfoRequested != null)
+        {
+            var scheduleId = SelectedSchedule.Id;
+            var updated = await EditScheduleInfoRequested(SelectedSchedule);
+            if (updated)
             {
-                var scheduleId = SelectedSchedule.Id;
-                var updated = await EditScheduleInfoRequested(SelectedSchedule);
-                if (updated)
+                RefreshScheduleList();
+                var restored = Schedules.FirstOrDefault(s => s.Id == scheduleId);
+                if (restored != null)
                 {
-                    RefreshScheduleList();
-                    var restored = Schedules.FirstOrDefault(s => s.Id == scheduleId);
-                    if (restored != null)
-                    {
-                        _isSwitchingSchedule = true;
-                        SelectedSchedule = restored;
-                        _isSwitchingSchedule = false;
-                        LoadScheduleForSelection(restored);
-                    }
+                    _isSwitchingSchedule = true;
+                    SelectedSchedule = restored;
+                    _isSwitchingSchedule = false;
+                    LoadScheduleForSelection(restored);
                 }
             }
+        }
     }
 
     #endregion
@@ -1027,6 +1063,220 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 state.ValidationErrors.Add($"[{item.Name}] {item.StartTimeError}");
             if (item.HasEndTimeError)
                 state.ValidationErrors.Add($"[{item.Name}] {item.EndTimeError}");
+        }
+    }
+
+    #endregion
+
+    #region 表组管理
+
+    public void RefreshScheduleTree()
+    {
+        ScheduleTree.Clear();
+        Groups.Clear();
+
+        var groups = _groupManager.LoadAllGroups();
+        var scheduleList = _scheduleManager.GetScheduleList();
+        var currentActiveGroupId = _settingsService.GetTimeTopSetting().Schedule.ActiveGroupId;
+        var currentOverrideScheduleId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
+
+        // 按 AssociatedGroupId 分组
+        var groupScheduleMap = new Dictionary<string, List<ScheduleInfo>>();
+        foreach (var group in groups)
+        {
+            groupScheduleMap[group.Id] = new List<ScheduleInfo>();
+        }
+
+        foreach (var schedule in scheduleList)
+        {
+            var groupId = schedule.AssociatedGroupId;
+            if (string.IsNullOrEmpty(groupId) || !groupScheduleMap.ContainsKey(groupId))
+                groupId = ScheduleGroup.DefaultGroupId;
+
+            if (groupScheduleMap.TryGetValue(groupId, out var list))
+                list.Add(schedule);
+        }
+
+        // 构建树节点
+        foreach (var group in groups.OrderBy(g => g.Id == ScheduleGroup.DefaultGroupId ? 0 : 1).ThenBy(g => g.Metadata.CreatedAt))
+        {
+            var memberSchedules = groupScheduleMap.GetValueOrDefault(group.Id) ?? new List<ScheduleInfo>();
+
+            var groupNode = new ScheduleGroupTreeNode
+            {
+                IsGroup = true,
+                GroupId = group.Id,
+                Name = group.Metadata.Name,
+                IsActivated = group.Id == currentActiveGroupId,
+                IsExpanded = group.Id == ScheduleGroup.DefaultGroupId || group.Id == currentActiveGroupId
+            };
+
+            // 检测同日冲突：同组内多张表设为同一星期几（只用第一张）
+            var dayNames = new[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" };
+            var enabledSchedules = memberSchedules.Where(s => s.IsEnabled).ToList();
+            var duplicateDayGroups = enabledSchedules
+                .GroupBy(s => s.DayOfWeek)
+                .Where(g => g.Count() > 1)
+                .ToList();
+            if (duplicateDayGroups.Any())
+            {
+                var conflictDays = string.Join("、", duplicateDayGroups.Select(g => dayNames[g.Key]));
+                var maxDup = duplicateDayGroups.Max(g => g.Count());
+                groupNode.DuplicateDayWarning = $"同日冲突: {conflictDays} 各{maxDup}张 (仅首张生效)";
+            }
+
+            foreach (var schedule in memberSchedules.OrderBy(s => s.DayOfWeek).ThenBy(s => s.RotationWeekIndex).ThenBy(s => s.Name))
+            {
+                var dayLabel = $" [{dayNames[schedule.DayOfWeek]}]";
+                var cycleLabel = schedule.RotationCycleCount > 1 ? $" [每{schedule.RotationCycleCount}周]" : "";
+                var weekLabel = schedule.RotationWeekIndex > 0 ? $" [第{schedule.RotationWeekIndex}周]" : "";
+                var enabledLabel = schedule.IsEnabled ? "" : " [已禁用]";
+
+                var scheduleNode = new ScheduleGroupTreeNode
+                {
+                    IsGroup = false,
+                    ScheduleId = schedule.Id,
+                    Name = $"{schedule.Name}{dayLabel}{cycleLabel}{weekLabel}{enabledLabel}",
+                    GroupName = group.Metadata.Name,
+                    IsActivated = schedule.Id == currentOverrideScheduleId,
+                    IsScheduleEnabled = schedule.IsEnabled,
+                    UpdatedAt = schedule.UpdatedAt
+                };
+                groupNode.Children.Add(scheduleNode);
+            }
+
+            ScheduleTree.Add(groupNode);
+
+            Groups.Add(new ScheduleGroupListItem
+            {
+                Id = group.Id,
+                Name = group.Metadata.Name,
+                Description = group.Metadata.Description,
+                RotationCycleCount = 0,
+                MemberCount = memberSchedules.Count,
+                RotationInfo = _groupManager.GetRotationInfo(group.Id),
+                CreatedAt = DateTime.TryParse(group.Metadata.CreatedAt, out var created) ? created : null,
+                UpdatedAt = DateTime.TryParse(group.Metadata.UpdatedAt, out var updated) ? updated : null
+            });
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddGroupAsync()
+    {
+        if (CreateGroupNameRequested == null) return;
+
+        var newName = await CreateGroupNameRequested("新计划表组");
+        if (string.IsNullOrWhiteSpace(newName)) return;
+
+        var newId = $"group_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid().ToString("N")[..4]}";
+        var group = _groupManager.CreateNewGroup(newId, newName);
+
+        if (group != null)
+        {
+            Logger.Info("TimeScheduleEditor", $"创建新表组: {newId}");
+            RefreshScheduleTree();
+        }
+    }
+
+    [RelayCommand]
+    private void DisbandGroup(string? groupId)
+    {
+        if (string.IsNullOrEmpty(groupId) || groupId == ScheduleGroup.DefaultGroupId) return;
+
+        // 如果解散的是当前激活的组，取消激活
+        var setting = _settingsService.GetTimeTopSetting();
+        if (setting.Schedule.ActiveGroupId == groupId)
+        {
+            setting.Schedule.ActiveGroupId = null;
+            _settingsService.SaveTimeTopSetting(setting);
+        }
+
+        _groupManager.DisbandGroup(groupId);
+        RefreshScheduleTree();
+        ToastRequested?.Invoke(new ToastMessage("组已解散", "组内计划表已移至默认组") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
+    }
+
+    [RelayCommand]
+    private void ActivateGroupById(string? groupId)
+    {
+        if (string.IsNullOrEmpty(groupId)) return;
+
+        var setting = _settingsService.GetTimeTopSetting();
+        setting.Schedule.ActiveGroupId = groupId;
+        setting.Schedule.Override.Enabled = false;
+        setting.Schedule.Override.ScheduleId = "";
+        _settingsService.SaveTimeTopSetting(setting);
+
+        RefreshScheduleTree();
+
+        var groupName = Groups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
+        ToastRequested?.Invoke(new ToastMessage("表组已激活", $"已激活表组 \"{groupName}\" 的轮换计划") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
+    }
+
+    /// <summary>
+    /// 更新计划表的自动启用配置（从信息对话框调用）
+    /// </summary>
+    public void UpdateScheduleRule(string scheduleId, string groupId, bool isEnabled, int dayOfWeek, int rotationCycleCount, int rotationWeekIndex)
+    {
+        var schedule = _scheduleManager.LoadSchedule(scheduleId);
+        if (schedule == null) return;
+
+        // 输入校验：clamp 到合法范围
+        dayOfWeek = Math.Clamp(dayOfWeek, 0, 6);
+        rotationCycleCount = Math.Clamp(rotationCycleCount, 1, 9);
+        if (rotationCycleCount <= 1)
+            rotationWeekIndex = 0; // 每周时轮换周无意义，强制为0
+        else
+            rotationWeekIndex = Math.Clamp(rotationWeekIndex, 0, rotationCycleCount);
+
+        schedule.Settings ??= new TimeScheduleSettings();
+        schedule.Settings.Metadata ??= new TimeScheduleMetadata();
+        schedule.Settings.Metadata.AssociatedGroupId = groupId;
+        schedule.Settings.Metadata.IsEnabled = isEnabled;
+        schedule.Settings.Metadata.DayOfWeek = dayOfWeek;
+        schedule.Settings.Metadata.RotationCycleCount = rotationCycleCount;
+        schedule.Settings.Metadata.RotationWeekIndex = rotationWeekIndex;
+        schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
+
+        _scheduleManager.SaveSchedule(schedule);
+        RefreshScheduleTree();
+    }
+
+    /// <summary>
+    /// 获取计划表当前的自动启用配置
+    /// </summary>
+    public (string GroupId, bool IsEnabled, int DayOfWeek, int RotationCycleCount, int RotationWeekIndex) GetScheduleRule(string scheduleId)
+    {
+        var schedule = _scheduleManager.LoadSchedule(scheduleId);
+        if (schedule?.Settings?.Metadata == null)
+            return (ScheduleGroup.DefaultGroupId, true, (int)DateTime.Today.DayOfWeek, 1, 0);
+
+        var m = schedule.Settings.Metadata;
+        return (m.AssociatedGroupId, m.IsEnabled, m.DayOfWeek, m.RotationCycleCount, m.RotationWeekIndex);
+    }
+
+    /// <summary>
+    /// 获取所有可用组（用于信息对话框的 ComboBox）
+    /// </summary>
+    public List<ScheduleGroupListItem> GetAvailableGroups() => Groups.ToList();
+
+    /// <summary>
+    /// 判断组是否受保护（默认组不可删除/重命名）
+    /// </summary>
+    public bool IsGroupProtected(string? groupId) => groupId == ScheduleGroup.DefaultGroupId;
+
+    partial void OnSelectedTreeNodeChanged(ScheduleGroupTreeNode? value)
+    {
+        if (value == null || value.IsGroup) return;
+
+        if (!string.IsNullOrEmpty(value.ScheduleId))
+        {
+            var scheduleItem = Schedules.FirstOrDefault(s => s.Id == value.ScheduleId);
+            if (scheduleItem != null)
+            {
+                SelectedSchedule = scheduleItem;
+            }
         }
     }
 

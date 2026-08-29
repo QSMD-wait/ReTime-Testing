@@ -10,8 +10,8 @@ using ReTime_Testing.Models;
 namespace ReTime_Testing.Services
 {
     /// <summary>
-    /// 计划表组管理器实现
-    /// 职责：管理计划表组配置文件的创建、读取、保存、删除，以及星期轮换解析
+    /// 计划表组管理器实现（对齐 ClassIsland 的 ClassPlanGroup 逻辑）
+    /// 组仅作为归类容器，轮换配置在每个计划表上
     /// </summary>
     public class ScheduleGroupManager : IScheduleGroupManager
     {
@@ -28,84 +28,55 @@ namespace ReTime_Testing.Services
         private readonly Dictionary<string, ScheduleGroup> _groupCache = new();
         private readonly IConfigurationManager _configManager;
         private readonly ISettingsService _settingsService;
+        private readonly ITimeScheduleManager _scheduleManager;
         private string _scheduleGroupsDirectory = string.Empty;
 
-        /// <summary>
-        /// 获取计划表组的目录路径
-        /// </summary>
-        public string ScheduleGroupsDirectory => _scheduleGroupsDirectory;
-
-        /// <summary>
-        /// 计划表组变更事件
-        /// </summary>
         public event Action<ScheduleGroup>? OnGroupChanged;
-
-        /// <summary>
-        /// 计划表组删除事件
-        /// </summary>
         public event Action<string>? OnGroupDeleted;
 
-        /// <summary>
-        /// 构造函数（支持 DI 注入）
-        /// </summary>
-        public ScheduleGroupManager(IConfigurationManager configManager, ISettingsService settingsService)
+        public ScheduleGroupManager(IConfigurationManager configManager, ISettingsService settingsService, ITimeScheduleManager scheduleManager)
         {
             _configManager = configManager;
             _settingsService = settingsService;
+            _scheduleManager = scheduleManager;
             _scheduleGroupsDirectory = configManager.ScheduleGroupsDirectory;
-
-            Logger.Info(LOG_MODULE,
-                $"路径初始化完成: ScheduleGroupsDirectory={_scheduleGroupsDirectory}");
         }
 
-        /// <summary>
-        /// 初始化计划表组管理器
-        /// </summary>
         public void Initialize()
         {
-            try
-            {
-                EnsureDirectoryExists(_scheduleGroupsDirectory);
-
-                Logger.Info(LOG_MODULE, "初始化完成");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(LOG_MODULE,
-                    $"初始化失败: {ex.Message}", ex);
-                throw;
-            }
+            EnsureDirectoryExists(_scheduleGroupsDirectory);
+            EnsureDefaultGroupExists();
+            Logger.Info(LOG_MODULE, "初始化完成");
         }
 
-        /// <summary>
-        /// 确保目录存在
-        /// </summary>
         private void EnsureDirectoryExists(string path)
         {
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Logger.Info(LOG_MODULE, $"目录已创建: {path}");
             }
         }
 
-        /// <summary>
-        /// 加载所有计划表组
-        /// </summary>
+        private void EnsureDefaultGroupExists()
+        {
+            if (!GroupExists(ScheduleGroup.DefaultGroupId))
+            {
+                CreateNewGroup(ScheduleGroup.DefaultGroupId, "默认");
+                Logger.Info(LOG_MODULE, "已创建默认组");
+            }
+        }
+
+        #region 组 CRUD
+
         public List<ScheduleGroup> LoadAllGroups()
         {
             try
             {
                 var groups = new List<ScheduleGroup>();
-
                 if (!Directory.Exists(_scheduleGroupsDirectory))
-                {
                     return groups;
-                }
 
-                var files = Directory.GetFiles(_scheduleGroupsDirectory, "*.json");
-
-                foreach (var file in files)
+                foreach (var file in Directory.GetFiles(_scheduleGroupsDirectory, "*.json"))
                 {
                     try
                     {
@@ -118,159 +89,70 @@ namespace ReTime_Testing.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error(LOG_MODULE,
-                            $"读取文件失败: {file}, 错误: {ex.Message}");
+                        Logger.Error(LOG_MODULE, $"读取文件失败: {file}, 错误: {ex.Message}");
                     }
                 }
-
                 return groups;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE,
-                    $"加载所有计划表组失败: {ex.Message}", ex);
+                Logger.Error(LOG_MODULE, $"加载所有计划表组失败: {ex.Message}", ex);
                 return new List<ScheduleGroup>();
             }
         }
 
-        /// <summary>
-        /// 根据指定ID加载计划表组
-        /// </summary>
         public ScheduleGroup? LoadGroup(string id)
         {
             try
             {
-                if (_groupCache.TryGetValue(id, out var cachedGroup))
-                {
-                    return cachedGroup;
-                }
+                if (_groupCache.TryGetValue(id, out var cached))
+                    return cached;
 
                 var filePath = Path.Combine(_scheduleGroupsDirectory, $"{id}.json");
-
                 if (!File.Exists(filePath))
-                {
                     return null;
-                }
 
                 return LoadGroupFromFile(filePath);
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE,
-                    $"加载计划表组失败: {id}, 错误: {ex.Message}", ex);
+                Logger.Error(LOG_MODULE, $"加载计划表组失败: {id}, 错误: {ex.Message}", ex);
                 return null;
             }
         }
 
-        /// <summary>
-        /// 从文件加载计划表组
-        /// </summary>
         private ScheduleGroup? LoadGroupFromFile(string filePath)
         {
             try
             {
-                string jsonContent = File.ReadAllText(filePath);
-                var group = JsonSerializer.Deserialize<ScheduleGroup>(jsonContent, _jsonOptions);
-
+                string json = File.ReadAllText(filePath);
+                var group = JsonSerializer.Deserialize<ScheduleGroup>(json, _jsonOptions);
                 if (group != null)
-                {
                     group.Id = Path.GetFileNameWithoutExtension(filePath);
-                }
-
                 return group;
             }
             catch (JsonException ex)
             {
-                Logger.Error(LOG_MODULE,
-                    $"JSON解析失败: {filePath}, 错误: {ex.Message}");
+                Logger.Error(LOG_MODULE, $"JSON解析失败: {filePath}, 错误: {ex.Message}");
                 return null;
             }
         }
 
-        /// <summary>
-        /// 保存计划表组
-        /// </summary>
         public void SaveGroup(ScheduleGroup group)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(group.Id))
-                {
-                    throw new ArgumentException("计划表组ID不能为空");
-                }
+            if (string.IsNullOrEmpty(group.Id))
+                throw new ArgumentException("计划表组ID不能为空");
 
-                group.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
-
-                var filePath = Path.Combine(_scheduleGroupsDirectory, $"{group.Id}.json");
-                SaveGroupToFile(group, filePath);
-
-                _groupCache[group.Id] = group;
-
-                OnGroupChanged?.Invoke(group);
-
-                Logger.Info(LOG_MODULE, $"计划表组保存成功: {group.Id}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(LOG_MODULE,
-                    $"保存计划表组失败: {group.Id}, 错误: {ex.Message}", ex);
-                throw;
-            }
+            group.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
+            var filePath = Path.Combine(_scheduleGroupsDirectory, $"{group.Id}.json");
+            string json = JsonSerializer.Serialize(group, _jsonOptions);
+            File.WriteAllText(filePath, json);
+            _groupCache[group.Id] = group;
+            OnGroupChanged?.Invoke(group);
         }
 
-        /// <summary>
-        /// 保存计划表组到文件
-        /// </summary>
-        private void SaveGroupToFile(ScheduleGroup group, string filePath)
-        {
-            try
-            {
-                string jsonContent = JsonSerializer.Serialize(group, _jsonOptions);
-                File.WriteAllText(filePath, jsonContent);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(LOG_MODULE,
-                    $"写入文件失败: {filePath}, 错误: {ex.Message}");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// 删除计划表组
-        /// </summary>
-        public bool DeleteGroup(string id)
-        {
-            try
-            {
-                var filePath = Path.Combine(_scheduleGroupsDirectory, $"{id}.json");
-
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                    _groupCache.Remove(id);
-                    OnGroupDeleted?.Invoke(id);
-
-                    Logger.Info(LOG_MODULE, $"计划表组删除成功: {id}");
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(LOG_MODULE,
-                    $"删除计划表组失败: {id}, 错误: {ex.Message}", ex);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 创建新计划表组（空白）
-        /// </summary>
         public ScheduleGroup CreateNewGroup(string id, string name)
         {
-            var now = DateTime.UtcNow;
-
             var group = new ScheduleGroup
             {
                 Id = id,
@@ -279,55 +161,152 @@ namespace ReTime_Testing.Services
                 {
                     Name = name,
                     Description = "",
-                    CreatedAt = now.ToString("o"),
-                    UpdatedAt = now.ToString("o")
-                },
-                WeekSchedule = new List<WeekScheduleItem>()
+                    CreatedAt = DateTime.UtcNow.ToString("o"),
+                    UpdatedAt = DateTime.UtcNow.ToString("o")
+                }
             };
-
             SaveGroup(group);
             return group;
         }
 
-        /// <summary>
-        /// 检查计划表组是否存在
-        /// </summary>
         public bool GroupExists(string id)
         {
             if (_groupCache.ContainsKey(id))
-            {
                 return true;
-            }
-
             var filePath = Path.Combine(_scheduleGroupsDirectory, $"{id}.json");
             return File.Exists(filePath);
         }
 
+        #endregion
+
+        #region 组保护操作
+
         /// <summary>
-        /// 根据指定日期解析当前应生效的计划表ID
+        /// 解散组：组内表移到默认组，组文件删除
         /// </summary>
-        public string? ResolveScheduleIdForDate(string groupId, DateTime date)
+        public bool DisbandGroup(string groupId)
         {
+            if (groupId == ScheduleGroup.DefaultGroupId)
+            {
+                Logger.Warn(LOG_MODULE, "默认组不可解散");
+                return false;
+            }
+
             try
             {
-                var group = LoadGroup(groupId);
-                if (group == null)
+                // 将该组内所有表的 AssociatedGroupId 改为 default
+                var schedules = _scheduleManager.GetScheduleList();
+                foreach (var s in schedules.Where(s => s.AssociatedGroupId == groupId))
                 {
-                    Logger.Warn(LOG_MODULE, $"计划表组不存在: {groupId}");
-                    return null;
+                    var full = _scheduleManager.LoadSchedule(s.Id);
+                    if (full?.Settings?.Metadata != null)
+                    {
+                        full.Settings.Metadata.AssociatedGroupId = ScheduleGroup.DefaultGroupId;
+                        full.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
+                        _scheduleManager.SaveSchedule(full);
+                    }
                 }
 
-                var weekDay = (int)date.DayOfWeek;
-                var mapping = group.WeekSchedule.FirstOrDefault(w => w.WeekDay == weekDay);
+                // 删除组文件
+                var filePath = Path.Combine(_scheduleGroupsDirectory, $"{groupId}.json");
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+                _groupCache.Remove(groupId);
+                OnGroupDeleted?.Invoke(groupId);
 
-                return mapping?.ScheduleId;
+                Logger.Info(LOG_MODULE, $"组已解散: {groupId}，表已移至默认组");
+                return true;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE,
-                    $"解析计划表ID失败: groupId={groupId}, date={date:yyyy-MM-dd}, 错误: {ex.Message}", ex);
-                return null;
+                Logger.Error(LOG_MODULE, $"解散组失败: {groupId}, 错误: {ex.Message}", ex);
+                return false;
             }
+        }
+
+        /// <summary>
+        /// 重命名组
+        /// </summary>
+        public bool RenameGroup(string groupId, string newName)
+        {
+            if (groupId == ScheduleGroup.DefaultGroupId)
+            {
+                Logger.Warn(LOG_MODULE, "默认组不可重命名");
+                return false;
+            }
+
+            var group = LoadGroup(groupId);
+            if (group == null) return false;
+
+            group.Metadata.Name = newName;
+            SaveGroup(group);
+            return true;
+        }
+
+        #endregion
+
+        #region 轮换解析
+
+        /// <summary>
+        /// 计算当前日期在轮换周期中处于第几周（对齐 ClassIsland 的 GetCyclePositionsByDate）
+        /// </summary>
+        private int ResolveCurrentCycle(int cycleCount, DateTime date)
+        {
+            try
+            {
+                var setting = _settingsService.GetTimeTopSetting();
+                var baseDateStr = setting.Schedule.RotationBaseDate;
+                DateTime baseDate;
+
+                if (!string.IsNullOrEmpty(baseDateStr) && DateTime.TryParse(baseDateStr, out var parsed))
+                    baseDate = parsed.Date;
+                else
+                    baseDate = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+
+                var totalElapsedWeeks = (int)Math.Floor((date.Date - baseDate).TotalDays / 7);
+
+                var offsets = setting.Schedule.MultiWeekRotationOffset;
+                int offset = 0;
+                if (cycleCount >= 2 && cycleCount < offsets.Count)
+                    offset = offsets[cycleCount];
+
+                var position = (totalElapsedWeeks + offset) % cycleCount;
+                if (position < 0)
+                    position += cycleCount;
+
+                return position + 1; // 1-based
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(LOG_MODULE, $"计算轮换周失败: {ex.Message}", ex);
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// 检查单个计划表是否在指定日期启用（对齐 ClassIsland 的 CheckClassPlan）
+        /// </summary>
+        private bool CheckSchedule(ScheduleInfo schedule, DateTime date)
+        {
+            // 1. 未启用的表跳过
+            if (!schedule.IsEnabled)
+                return false;
+
+            // 2. 星期几匹配
+            if (schedule.DayOfWeek != (int)date.DayOfWeek)
+                return false;
+
+            // 3. 不轮换（RotationCycleCount <= 1）→ 仅当 RotationWeekIndex == 0 时启用
+            if (schedule.RotationCycleCount <= 1)
+                return schedule.RotationWeekIndex == 0;
+
+            // 4. 轮换周索引为 0 → 每周启用
+            if (schedule.RotationWeekIndex == 0)
+                return true;
+
+            // 5. 计算当前轮换周，与表的 RotationWeekIndex 比较
+            var currentCycle = ResolveCurrentCycle(schedule.RotationCycleCount, date);
+            return schedule.RotationWeekIndex == currentCycle;
         }
 
         /// <summary>
@@ -339,56 +318,77 @@ namespace ReTime_Testing.Services
             try
             {
                 var setting = _settingsService.GetTimeTopSetting();
-                var scheduleConfig = setting.Schedule;
+                var config = setting.Schedule;
 
-                if (!scheduleConfig.Enabled)
-                {
+                if (!config.Enabled)
                     return null;
-                }
 
-                if (scheduleConfig.Override.Enabled)
-                {
-                    return scheduleConfig.Override.ScheduleId;
-                }
+                // 1. 手动覆盖优先
+                if (config.Override.Enabled)
+                    return config.Override.ScheduleId;
 
-                if (!string.IsNullOrEmpty(scheduleConfig.ActiveGroupId))
+                // 2. 激活组轮换
+                if (!string.IsNullOrEmpty(config.ActiveGroupId))
                 {
-                    var resolvedId = ResolveScheduleIdForDate(scheduleConfig.ActiveGroupId, DateTime.Today);
-                    if (resolvedId != null)
+                    var allSchedules = _scheduleManager.GetScheduleList();
+                    var candidates = allSchedules
+                        .Where(s => s.AssociatedGroupId == config.ActiveGroupId)
+                        .OrderByDescending(s => s.IsEnabled)
+                        .ThenBy(s => s.DayOfWeek);
+
+                    foreach (var candidate in candidates)
                     {
-                        return resolvedId;
+                        if (CheckSchedule(candidate, DateTime.Today))
+                            return candidate.Id;
                     }
 
+                    // 组已激活但今日无匹配 → 不生成计划
                     return null;
                 }
 
-                return scheduleConfig.Override.ScheduleId;
+                // 3. 无激活组且无覆盖 → 不生成计划
+                return null;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE,
-                    $"获取生效计划表ID失败: {ex.Message}", ex);
+                Logger.Error(LOG_MODULE, $"获取生效计划表ID失败: {ex.Message}", ex);
                 return null;
             }
         }
 
         /// <summary>
-        /// 刷新缓存
+        /// 获取组的轮换周描述信息
         /// </summary>
-        public void RefreshCache()
+        public string GetRotationInfo(string groupId, DateTime? date = null)
         {
-            _groupCache.Clear();
-            LoadAllGroups();
+            try
+            {
+                var schedules = _scheduleManager.GetScheduleList();
+                var groupSchedules = schedules.Where(s => s.AssociatedGroupId == groupId && s.IsEnabled && s.RotationCycleCount > 1).ToList();
+                if (!groupSchedules.Any())
+                    return "每周";
 
-            Logger.Info(LOG_MODULE, "缓存已刷新");
+                var maxCycle = groupSchedules.Max(s => s.RotationCycleCount);
+                var targetDate = date ?? DateTime.Today;
+                var currentCycle = ResolveCurrentCycle(maxCycle, targetDate);
+                return $"第{currentCycle}/{maxCycle}周";
+            }
+            catch
+            {
+                return "每周";
+            }
         }
 
-        /// <summary>
-        /// 清除指定组的缓存
-        /// </summary>
-        public void ClearCache(string id)
+        private void RefreshCache()
+        {
+            _groupCache.Clear();
+        }
+
+        private void ClearCache(string id)
         {
             _groupCache.Remove(id);
         }
+
+        #endregion
     }
 }

@@ -178,13 +178,16 @@ namespace ReTime_Testing
                 var planGenerator = new ExecutionPlanGenerator();
                 Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
 
+                // 初始化表组管理器（确保默认组存在，与 Enabled 无关）
+                var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
+                scheduleGroupManager.Initialize();
+
                 if (!timeTopSetting.Schedule.Enabled)
                 {
                     Logger.Info(GetType().FullName ?? "App", "时间计划控制已禁用，跳过调度初始化");
                 }
                 else
                 {
-                    var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
                     var effectiveScheduleId = scheduleGroupManager.GetEffectiveScheduleId();
 
                     if (effectiveScheduleId == null)
@@ -387,6 +390,62 @@ namespace ReTime_Testing
                 desktopWindowManager.RefreshTextOverlay();
                 desktopWindowManager.ApplyTopmostModeFromConfig();
                 Logger.Info(GetType().FullName ?? "App", "热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
+
+                // 热重载调度器：重新评估生效计划表并更新执行计划
+                if (setting.Schedule.Enabled)
+                {
+                    try
+                    {
+                        var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
+                        var effectiveScheduleId = scheduleGroupManager.GetEffectiveScheduleId();
+                        var currentPlan = Services.GetRequiredService<IScheduleManager>().CurrentPlan;
+                        var currentScheduleId = currentPlan?.ScheduleId;
+
+                        if (effectiveScheduleId != currentScheduleId)
+                        {
+                            if (effectiveScheduleId == null)
+                            {
+                                Services.GetRequiredService<IScheduleManager>().Stop();
+                                Logger.Info(GetType().FullName ?? "App", "热重载：今日无生效计划表，调度器已停止");
+                            }
+                            else
+                            {
+                                var timeScheduleManager = Services.GetRequiredService<ITimeScheduleManager>();
+                                var newSchedule = timeScheduleManager.LoadSchedule(effectiveScheduleId);
+                                if (newSchedule != null)
+                                {
+                                    var timeService = Services.GetRequiredService<ITimeService>();
+                                    var planGenerator = new ExecutionPlanGenerator();
+                                    var now = timeService.GetCurrentTime();
+                                    var newPlan = planGenerator.GenerateSafe(newSchedule, DateTime.Today, now);
+                                    if (newPlan != null)
+                                    {
+                                        var scheduleMgr = Services.GetRequiredService<IScheduleManager>();
+                                        if (currentPlan != null)
+                                            scheduleMgr.RegenerateExecutionPlan(newPlan);
+                                        else
+                                            scheduleMgr.Initialize(newPlan);
+                                        Logger.Info(GetType().FullName ?? "App", $"热重载：执行计划已切换至 {effectiveScheduleId}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(GetType().FullName ?? "App", $"热重载调度器失败: {ex.Message}", ex);
+                    }
+                }
+                else
+                {
+                    // 时间计划控制已禁用，停止调度器
+                    var scheduleMgr = Services.GetRequiredService<IScheduleManager>();
+                    if (scheduleMgr.CurrentPlan != null)
+                    {
+                        scheduleMgr.Stop();
+                        Logger.Info(GetType().FullName ?? "App", "热重载：时间计划控制已禁用，调度器已停止");
+                    }
+                }
             }
             catch (Exception ex)
             {
