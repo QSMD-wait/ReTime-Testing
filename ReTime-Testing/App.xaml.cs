@@ -22,11 +22,17 @@ namespace ReTime_Testing
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
+    /// <remarks>
+    /// App 仅负责：Host 构建、应用生命周期（启动/退出）、互斥锁与全局异常兜底；
+    /// 启动编排见 <see cref="AppBootstrapper"/>，调度编排见 <see cref="IScheduleOrchestrator"/>，
+    /// 托盘事件路由见 <see cref="TrayIconController"/>。
+    /// </remarks>
     public partial class App : Application
     {
         private IHost? _host;
         private IMutexManager? _mutexManager;
         private ITrayIconService? _trayIconService;
+        private TrayIconController? _trayIconController;
 
         /// <summary>
         /// DI 服务提供者（供非 DI 管理的代码获取服务）
@@ -110,159 +116,38 @@ namespace ReTime_Testing
         {
             try
             {
-                // 通过 DI 获取服务
-                var configManager = Services.GetRequiredService<IConfigurationManager>();
-                var settingsService = Services.GetRequiredService<ISettingsService>();
-
-                // 初始化目录结构
-                configManager.InitializeDirectories();
-
-                // 记录全局配置文件是否存在（必须在加载自动创建前捕获，用于首次启动判定）
-                var settingFileExisted = File.Exists(configManager.GlobalSettingFilePath);
-
-                var globalSetting = settingsService.GetGlobalSetting();
-
-                // 初始化 Serilog 日志服务
-                var logConfig = new LogServiceConfiguration(globalSetting.Basic.Log, configManager.LogsDirectory);
-                SerilogLogService.Initialize(logConfig);
-                Logger.OnSerilogReady();
-                Logger.Info(GetType().FullName ?? "App", "Serilog 日志服务已初始化");
+                // 执行启动编排（日志/主题/校准/调度/桌面窗口初始化）
+                var bootstrapper = Services.GetRequiredService<AppBootstrapper>();
+                var result = bootstrapper.RunStartup();
 
                 // 首次启动：进入欢迎引导模式（不启动调度，完成后重启进入正常启动流程）
-                if (OnboardingFlow.ShouldShowWelcome(settingFileExisted,
-                        globalSetting.Basic.WelcomeShowed, globalSetting.Basic.ForceShowWelcome))
+                if (result.NeedsWelcomeFlow)
                 {
                     RunWelcomeFlow();
                     return;
                 }
 
-                // 应用主题
-                var themeService = Services.GetRequiredService<IThemeService>();
-                themeService.ApplyTheme(globalSetting.Basic.Theme);
-
-                // 初始化进度条主题服务
-                var progressBarThemeService = Services.GetRequiredService<IProgressBarThemeService>();
-                progressBarThemeService.LoadAllThemes();
-                progressBarThemeService.ApplyTheme(ProgressBarThemeManifest.DefaultId);
-                Logger.Info(GetType().FullName ?? "App", "进度条主题服务已初始化");
-
-                // 应用自启动配置
-                var autoStartService = Services.GetRequiredService<IAutoStartService>();
-                autoStartService.InitializeFromConfig(globalSetting.Basic.AutoStart);
-
-                // 初始化时间计划管理器
-                var timeScheduleManager = Services.GetRequiredService<ITimeScheduleManager>();
-                timeScheduleManager.Initialize();
-
-                // 初始化时间服务
-                var timeService = Services.GetRequiredService<ITimeService>();
-                Logger.Info(GetType().FullName ?? "App", "单调时钟服务已初始化");
-
-                // 初始化时间校准服务
-                var timeTopSetting = settingsService.GetTimeTopSetting();
-                var timeCalibrationService = Services.GetRequiredService<ITimeCalibrationService>();
-                timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
-                Logger.Info(GetType().FullName ?? "App", "时间校准服务已初始化");
-
-                // 恢复用户时间偏移
-                var userOffsetSeconds = timeTopSetting.Calibration.UserOffsetSeconds;
-                if (double.IsNaN(userOffsetSeconds) || double.IsInfinity(userOffsetSeconds))
-                    userOffsetSeconds = 0;
-                if (userOffsetSeconds != 0)
+                if (result.ScheduleValidationError != null)
                 {
-                    timeService.ApplyUserOffset(TimeSpan.FromSeconds(userOffsetSeconds));
+                    ShowValidationErrorDialog(result.ScheduleValidationError);
                 }
 
-                // 初始化调度管理器
-                var scheduleManager = Services.GetRequiredService<IScheduleManager>();
-                var planGenerator = new ExecutionPlanGenerator();
-                Logger.Info(GetType().FullName ?? "App", "执行计划生成器已初始化");
+                var timeTopSetting = result.TimeTopSetting!;
 
-                // 初始化表组管理器（确保默认组存在，与 Enabled 无关）
-                var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
-                scheduleGroupManager.Initialize();
-
-                if (!timeTopSetting.Schedule.Enabled)
-                {
-                    Logger.Info(GetType().FullName ?? "App", "时间计划控制已禁用，跳过调度初始化");
-                }
-                else
-                {
-                    var effectiveScheduleId = scheduleGroupManager.GetEffectiveScheduleId();
-
-                    if (effectiveScheduleId == null)
-                    {
-                        Logger.Info(GetType().FullName ?? "App", "今日无生效计划表，保持空闲状态");
-                    }
-                    else
-                    {
-                        var selectedSchedule = timeScheduleManager.LoadSchedule(effectiveScheduleId);
-
-                        if (selectedSchedule == null)
-                        {
-                            Logger.Error(GetType().FullName ?? "App",
-                                $"生效计划表无效或不存在: {effectiveScheduleId}，保持空闲状态");
-                            ShowValidationErrorDialog(
-                                $"计划表 \"{effectiveScheduleId}\" 无效或不存在。\n\n请检查计划表组配置或计划表文件是否完整。");
-                        }
-                        else
-                        {
-                            var currentTime = timeService.GetCurrentTime();
-                            var executionPlan = planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
-
-                            if (executionPlan == null)
-                            {
-                                Logger.Warn(GetType().FullName ?? "App", "时间计划验证失败，保持空闲状态");
-                                ShowValidationErrorDialog("时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
-                            }
-                            else
-                            {
-                                Logger.Info(GetType().FullName ?? "App", $"执行计划已生成: {executionPlan}");
-                                scheduleManager.Initialize(executionPlan);
-                                Logger.Info(GetType().FullName ?? "App", "调度管理器已启动");
-                            }
-                        }
-                    }
-                }
-
-                // 启动时间校准服务
-                timeCalibrationService.Start();
-                Logger.Info(GetType().FullName ?? "App", "时间校准服务已启动");
-
-                // 初始化全局服务
-                var globalService = Services.GetRequiredService<IGlobalTimeTopDesktopService>();
-
-                // 初始化系统托盘图标服务
+                // 初始化系统托盘图标（含事件路由）
                 _trayIconService = Services.GetRequiredService<ITrayIconService>();
-                _trayIconService.Initialize(new TrayIconService.TrayIconConfig
-                {
-                    Title = "ReTime - Testing",
-                    IconResource = "ReTime-Testing;component/Resources/app.ico"
-                });
-
-                _trayIconService.OpenSettingRequested += OpenSetting;
-                _trayIconService.OpenDebugRequested += OpenDebugTest;
-                _trayIconService.OpenLogViewerRequested += OpenLogViewer;
-                _trayIconService.OpenTimeScheduleEditorRequested += OpenTimeScheduleEditor;
-                _trayIconService.AboutRequested += OpenMainWindow;
-                _trayIconService.RestartRequested += RestartApplication;
-                _trayIconService.ExitRequested += ExitApplication;
+                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication);
+                _trayIconController.Initialize();
 
                 // 订阅配置变更事件（热重载）
+                var settingsService = Services.GetRequiredService<ISettingsService>();
                 settingsService.OnGlobalSettingChanged += OnGlobalSettingChanged;
                 settingsService.OnTimeTopSettingChanged += OnTimeTopSettingChanged;
-
-                // 打开进度条窗口
-                var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
-                var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
-                desktopWindowManager.SetPosition(initialPosition);
-
-                Logger.Info(GetType().FullName ?? "App", "应用程序启动成功");
 
                 // 首次校准（非阻塞：UI已就绪，校准在后台执行，不阻塞启动流程）
                 if (timeTopSetting.Calibration.Enabled)
                 {
-                    _ = PerformFirstCalibrationAsync(timeCalibrationService);
+                    _ = PerformFirstCalibrationAsync(Services.GetRequiredService<ITimeCalibrationService>());
                 }
             }
             catch (Exception ex)
@@ -273,29 +158,17 @@ namespace ReTime_Testing
         }
 
         /// <summary>
-        /// 欢迎引导模式：最小化启动（不初始化调度/校准/托盘），完成后重启进入正常启动流程
+        /// 欢迎引导模式：最小化启动（不初始化调度/校准），完成后重启进入正常启动流程
         /// </summary>
         private void RunWelcomeFlow()
         {
             try
             {
                 var settingsService = Services.GetRequiredService<ISettingsService>();
-                var globalSetting = settingsService.GetGlobalSetting();
 
-                // 应用主题（引导窗口正常显示）
-                var themeService = Services.GetRequiredService<IThemeService>();
-                themeService.ApplyTheme(globalSetting.Basic.Theme);
-
-                // 打开进度条窗口，供引导中的位置步骤实时预览
-                var timeTopSetting = settingsService.GetTimeTopSetting();
-                var desktopWindowManager = Services.GetRequiredService<IDesktopWindowManager>();
-                var initialPosition = ParsePosition(timeTopSetting.ProgressBar.Position);
-
-                desktopWindowManager.SetPosition(initialPosition);
-
-                // 流畅优化：引导期间强制开启（无视配置文件），正常启动后由配置文件决定
-                var globalDesktopService = Services.GetRequiredService<IGlobalTimeTopDesktopService>();
-                globalDesktopService.ForceSmoothnessOptimization = true;
+                // 准备引导环境（主题/进度条窗口位置/流畅优化）
+                var bootstrapper = Services.GetRequiredService<AppBootstrapper>();
+                bootstrapper.PrepareWelcomeEnvironment();
 
                 // 向导模式：订阅配置变更事件（热重载）
                 settingsService.OnTimeTopSettingChanged += OnTimeTopSettingChanged;
@@ -303,12 +176,8 @@ namespace ReTime_Testing
 
                 // 引导模式：加载托盘图标（不带右键菜单）
                 _trayIconService = Services.GetRequiredService<ITrayIconService>();
-                _trayIconService.Initialize(new TrayIconService.TrayIconConfig
-                {
-                    Title = "ReTime - Testing",
-                    IconResource = "ReTime-Testing;component/Resources/app.ico",
-                    ShowContextMenu = false
-                });
+                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication);
+                _trayIconController.Initialize(showContextMenu: false);
 
                 Logger.Info(GetType().FullName ?? "App", "进入欢迎引导模式");
 
@@ -392,60 +261,7 @@ namespace ReTime_Testing
                 Logger.Info(GetType().FullName ?? "App", "热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
 
                 // 热重载调度器：重新评估生效计划表并更新执行计划
-                if (setting.Schedule.Enabled)
-                {
-                    try
-                    {
-                        var scheduleGroupManager = Services.GetRequiredService<IScheduleGroupManager>();
-                        var effectiveScheduleId = scheduleGroupManager.GetEffectiveScheduleId();
-                        var currentPlan = Services.GetRequiredService<IScheduleManager>().CurrentPlan;
-                        var currentScheduleId = currentPlan?.ScheduleId;
-
-                        if (effectiveScheduleId != currentScheduleId)
-                        {
-                            if (effectiveScheduleId == null)
-                            {
-                                Services.GetRequiredService<IScheduleManager>().Stop();
-                                Logger.Info(GetType().FullName ?? "App", "热重载：今日无生效计划表，调度器已停止");
-                            }
-                            else
-                            {
-                                var timeScheduleManager = Services.GetRequiredService<ITimeScheduleManager>();
-                                var newSchedule = timeScheduleManager.LoadSchedule(effectiveScheduleId);
-                                if (newSchedule != null)
-                                {
-                                    var timeService = Services.GetRequiredService<ITimeService>();
-                                    var planGenerator = new ExecutionPlanGenerator();
-                                    var now = timeService.GetCurrentTime();
-                                    var newPlan = planGenerator.GenerateSafe(newSchedule, DateTime.Today, now);
-                                    if (newPlan != null)
-                                    {
-                                        var scheduleMgr = Services.GetRequiredService<IScheduleManager>();
-                                        if (currentPlan != null)
-                                            scheduleMgr.RegenerateExecutionPlan(newPlan);
-                                        else
-                                            scheduleMgr.Initialize(newPlan);
-                                        Logger.Info(GetType().FullName ?? "App", $"热重载：执行计划已切换至 {effectiveScheduleId}");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error(GetType().FullName ?? "App", $"热重载调度器失败: {ex.Message}", ex);
-                    }
-                }
-                else
-                {
-                    // 时间计划控制已禁用，停止调度器
-                    var scheduleMgr = Services.GetRequiredService<IScheduleManager>();
-                    if (scheduleMgr.CurrentPlan != null)
-                    {
-                        scheduleMgr.Stop();
-                        Logger.Info(GetType().FullName ?? "App", "热重载：时间计划控制已禁用，调度器已停止");
-                    }
-                }
+                Services.GetRequiredService<IScheduleOrchestrator>().ApplyScheduleConfig(setting.Schedule.Enabled);
             }
             catch (Exception ex)
             {
@@ -599,86 +415,6 @@ namespace ReTime_Testing
         }
 
         /// <summary>
-        /// 打开设置窗口
-        /// </summary>
-        private void OpenSetting()
-        {
-            try
-            {
-                WindowManager.ShowTimeTopSetting();
-                Logger.Info(GetType().FullName ?? "App", "设置窗口已打开");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(GetType().FullName ?? "App", "打开设置窗口时发生异常", ex);
-            }
-        }
-
-        /// <summary>
-        /// 打开主窗口（关于窗口）
-        /// </summary>
-        private void OpenMainWindow()
-        {
-            try
-            {
-                WindowManager.ShowMainWindow();
-                Logger.Info(GetType().FullName ?? "App", "主窗口已打开");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(GetType().FullName ?? "App", "打开主窗口时发生异常", ex);
-            }
-        }
-
-        /// <summary>
-        /// 打开调试测试窗口
-        /// </summary>
-        private void OpenDebugTest()
-        {
-            try
-            {
-                WindowManager.ShowDebugTest();
-                Logger.Info(GetType().FullName ?? "App", "调试测试窗口已打开");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(GetType().FullName ?? "App", "打开调试测试窗口时发生异常", ex);
-            }
-        }
-
-        /// <summary>
-        /// 打开日志查看器窗口
-        /// </summary>
-        private void OpenLogViewer()
-        {
-            try
-            {
-                WindowManager.ShowLogViewer();
-                Logger.Info(GetType().FullName ?? "App", "日志查看器窗口已打开");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(GetType().FullName ?? "App", "打开日志查看器窗口时发生异常", ex);
-            }
-        }
-
-        /// <summary>
-        /// 打开时间计划编辑器
-        /// </summary>
-        private void OpenTimeScheduleEditor()
-        {
-            try
-            {
-                WindowManager.ShowTimeScheduleEditor();
-                Logger.Info(GetType().FullName ?? "App", "时间计划编辑器已打开");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(GetType().FullName ?? "App", "打开时间计划编辑器时发生异常", ex);
-            }
-        }
-
-        /// <summary>
         /// 重启应用程序
         /// </summary>
         private async void RestartApplication()
@@ -738,24 +474,14 @@ namespace ReTime_Testing
                 timeCalibrationService?.Stop();
             }
 
-            // 释放托盘图标
+            // 释放托盘图标及事件订阅
+            _trayIconController?.Dispose();
             _trayIconService?.Dispose();
 
             // 释放互斥锁
             _mutexManager?.Release();
 
-            // 取消事件订阅
-            if (_trayIconService != null)
-            {
-                _trayIconService.OpenSettingRequested -= OpenSetting;
-                _trayIconService.OpenDebugRequested -= OpenDebugTest;
-                _trayIconService.OpenLogViewerRequested -= OpenLogViewer;
-                _trayIconService.OpenTimeScheduleEditorRequested -= OpenTimeScheduleEditor;
-                _trayIconService.AboutRequested -= OpenMainWindow;
-                _trayIconService.RestartRequested -= RestartApplication;
-                _trayIconService.ExitRequested -= ExitApplication;
-            }
-
+            // 取消互斥锁事件订阅
             if (_mutexManager != null)
             {
                 _mutexManager.OnConflictDetected -= OnMutexConflictDetected;
@@ -779,20 +505,6 @@ namespace ReTime_Testing
             _host?.Dispose();
 
             base.OnExit(e);
-        }
-
-        /// <summary>
-        /// 将配置字符串解析为 ProgressBarPosition 枚举
-        /// </summary>
-        private static ProgressBarPosition ParsePosition(string position)
-        {
-            return position?.ToLowerInvariant() switch
-            {
-                "bottom" => ProgressBarPosition.Bottom,
-                "left" => ProgressBarPosition.Left,
-                "right" => ProgressBarPosition.Right,
-                _ => ProgressBarPosition.Top
-            };
         }
     }
 }

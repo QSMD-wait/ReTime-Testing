@@ -32,6 +32,11 @@ namespace ReTime_Testing.Services
             services.AddSingleton<IScheduleManager, ScheduleManager>();
             services.AddSingleton<ITimeScheduleManager, TimeScheduleManager>();
             services.AddSingleton<IScheduleGroupManager, ScheduleGroupManager>();
+            services.AddSingleton<ExecutionPlanGenerator>();
+            services.AddSingleton<IScheduleOrchestrator, ScheduleOrchestrator>();
+
+            // ===== 应用编排 =====
+            services.AddSingleton<AppBootstrapper>();
 
             // ===== UI 服务 =====
             services.AddSingleton<IApplicationResourceProvider, ApplicationResourceProvider>();
