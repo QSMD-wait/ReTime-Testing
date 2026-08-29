@@ -46,9 +46,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private ScheduleItemListItem? _selectedScheduleItem;
 
     [ObservableProperty]
-    private ScheduleGroupTreeNode? _selectedTreeNode;
-
-    [ObservableProperty]
     private ScheduleGroupListItem? _selectedGroup;
 
     [ObservableProperty]
@@ -59,7 +56,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     public ObservableCollection<ScheduleListItem> Schedules { get; } = new();
     public ObservableCollection<ScheduleItemListItem> ScheduleItems => _currentEditingState?.Items ?? _emptyItems;
-    public ObservableCollection<ScheduleGroupTreeNode> ScheduleTree { get; } = new();
     public ObservableCollection<ScheduleGroupListItem> Groups { get; } = new();
 
     private readonly ObservableCollection<ScheduleItemListItem> _emptyItems = new();
@@ -99,7 +95,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         _autoSaveTimer.Tick += OnAutoSaveTimerTick;
 
         RefreshScheduleList();
-        RefreshScheduleTree();
+        RefreshGroups();
     }
 
     #region 计划表选择切换
@@ -310,7 +306,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             _editingStates.Remove(deletedId);
 
             RefreshScheduleList();
-            RefreshScheduleTree();
+            RefreshGroups();
             SelectedSchedule = null;
         }
     }
@@ -1073,15 +1069,13 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     #region 表组管理
 
-    public void RefreshScheduleTree()
+    public void RefreshGroups()
     {
-        ScheduleTree.Clear();
         Groups.Clear();
 
         var groups = _groupManager.LoadAllGroups();
         var scheduleList = _scheduleManager.GetScheduleList();
         var currentActiveGroupId = _settingsService.GetTimeTopSetting().Schedule.ActiveGroupId;
-        var currentOverrideScheduleId = _settingsService.GetTimeTopSetting().Schedule.Override.ScheduleId;
 
         // 按 AssociatedGroupId 分组
         var groupScheduleMap = new Dictionary<string, List<ScheduleInfo>>();
@@ -1100,19 +1094,9 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 list.Add(schedule);
         }
 
-        // 构建树节点
         foreach (var group in groups.OrderBy(g => g.Id == ScheduleGroup.DefaultGroupId ? 0 : 1).ThenBy(g => g.Metadata.CreatedAt))
         {
             var memberSchedules = groupScheduleMap.GetValueOrDefault(group.Id) ?? new List<ScheduleInfo>();
-
-            var groupNode = new ScheduleGroupTreeNode
-            {
-                IsGroup = true,
-                GroupId = group.Id,
-                Name = group.Metadata.Name,
-                IsActivated = group.Id == currentActiveGroupId,
-                IsExpanded = group.Id == ScheduleGroup.DefaultGroupId || group.Id == currentActiveGroupId
-            };
 
             // 检测同日冲突：同组内多张表设为同一星期几（只用第一张）
             var dayNames = new[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" };
@@ -1121,34 +1105,13 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 .GroupBy(s => s.DayOfWeek)
                 .Where(g => g.Count() > 1)
                 .ToList();
+            string? duplicateDayWarning = null;
             if (duplicateDayGroups.Any())
             {
                 var conflictDays = string.Join("、", duplicateDayGroups.Select(g => dayNames[g.Key]));
                 var maxDup = duplicateDayGroups.Max(g => g.Count());
-                groupNode.DuplicateDayWarning = $"同日冲突: {conflictDays} 各{maxDup}张 (仅首张生效)";
+                duplicateDayWarning = $"同日冲突: {conflictDays} 各{maxDup}张 (仅首张生效)";
             }
-
-            foreach (var schedule in memberSchedules.OrderBy(s => s.DayOfWeek).ThenBy(s => s.RotationWeekIndex).ThenBy(s => s.Name))
-            {
-                var dayLabel = $" [{dayNames[schedule.DayOfWeek]}]";
-                var cycleLabel = schedule.RotationCycleCount > 1 ? $" [每{schedule.RotationCycleCount}周]" : "";
-                var weekLabel = schedule.RotationWeekIndex > 0 ? $" [第{schedule.RotationWeekIndex}周]" : "";
-                var enabledLabel = schedule.IsEnabled ? "" : " [已禁用]";
-
-                var scheduleNode = new ScheduleGroupTreeNode
-                {
-                    IsGroup = false,
-                    ScheduleId = schedule.Id,
-                    Name = $"{schedule.Name}{dayLabel}{cycleLabel}{weekLabel}{enabledLabel}",
-                    GroupName = group.Metadata.Name,
-                    IsActivated = schedule.Id == currentOverrideScheduleId,
-                    IsScheduleEnabled = schedule.IsEnabled,
-                    UpdatedAt = schedule.UpdatedAt
-                };
-                groupNode.Children.Add(scheduleNode);
-            }
-
-            ScheduleTree.Add(groupNode);
 
             Groups.Add(new ScheduleGroupListItem
             {
@@ -1158,6 +1121,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 RotationCycleCount = 0,
                 MemberCount = memberSchedules.Count,
                 IsActivated = group.Id == currentActiveGroupId,
+                DuplicateDayWarning = duplicateDayWarning,
                 RotationInfo = _groupManager.GetRotationInfo(group.Id),
                 CreatedAt = DateTime.TryParse(group.Metadata.CreatedAt, out var created) ? created : null,
                 UpdatedAt = DateTime.TryParse(group.Metadata.UpdatedAt, out var updated) ? updated : null
@@ -1179,7 +1143,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         if (group != null)
         {
             Logger.Info("TimeScheduleEditor", $"创建新表组: {newId}");
-            RefreshScheduleTree();
+            RefreshGroups();
         }
     }
 
@@ -1197,7 +1161,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
 
         _groupManager.DisbandGroup(groupId);
-        RefreshScheduleTree();
+        RefreshGroups();
+        UpdateScheduleListActivation(_groupManager.GetEffectiveScheduleId() ?? "");
         ToastRequested?.Invoke(new ToastMessage("组已解散", "组内计划表已移至默认组") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
     }
 
@@ -1212,7 +1177,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         setting.Schedule.Override.ScheduleId = "";
         _settingsService.SaveTimeTopSetting(setting);
 
-        RefreshScheduleTree();
+        RefreshGroups();
+        UpdateScheduleListActivation(_groupManager.GetEffectiveScheduleId() ?? "");
 
         var groupName = Groups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
         ToastRequested?.Invoke(new ToastMessage("表组已激活", $"已激活表组 \"{groupName}\" 的轮换计划") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
@@ -1244,7 +1210,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
 
         _scheduleManager.SaveSchedule(schedule);
-        RefreshScheduleTree();
+        RefreshGroups();
     }
 
     /// <summary>
@@ -1269,20 +1235,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     /// 判断组是否受保护（默认组不可删除/重命名）
     /// </summary>
     public bool IsGroupProtected(string? groupId) => groupId == ScheduleGroup.DefaultGroupId;
-
-    partial void OnSelectedTreeNodeChanged(ScheduleGroupTreeNode? value)
-    {
-        if (value == null || value.IsGroup) return;
-
-        if (!string.IsNullOrEmpty(value.ScheduleId))
-        {
-            var scheduleItem = Schedules.FirstOrDefault(s => s.Id == value.ScheduleId);
-            if (scheduleItem != null)
-            {
-                SelectedSchedule = scheduleItem;
-            }
-        }
-    }
 
     #endregion
 }

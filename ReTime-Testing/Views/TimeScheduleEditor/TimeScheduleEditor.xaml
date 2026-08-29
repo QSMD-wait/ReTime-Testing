@@ -1043,6 +1043,22 @@
                                 <TextBlock Text="轮换状态" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
                                 <TextBlock Text="{Binding SelectedGroup.RotationInfo, FallbackValue='每周'}" FontSize="14" Margin="0,0,0,16"/>
 
+                                <!-- 同日冲突警告 -->
+                                <Border Background="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCriticalBackgroundBrushKey}}"
+                                        CornerRadius="4" Padding="8,6" Margin="0,0,0,16"
+                                        Visibility="{Binding SelectedGroup.DuplicateDayWarning, Converter={StaticResource NotNullToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding SelectedGroup.DuplicateDayWarning}" FontSize="12" TextWrapping="Wrap"
+                                               Foreground="#C42B1C"/>
+                                </Border>
+
+                                <!-- 描述 -->
+                                <TextBlock Text="描述" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SelectedGroup.Description, FallbackValue='—'}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                                <!-- 创建时间 -->
+                                <TextBlock Text="创建时间" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SelectedGroup.CreatedAt, StringFormat={}{0:yyyy/MM/dd HH:mm}, FallbackValue='—'}" FontSize="14" Margin="0,0,0,16"/>
+
                                 <!-- 操作按钮 -->
                                 <Button Content="激活此组" Command="{Binding ActivateGroupByIdCommand}"
                                         CommandParameter="{Binding SelectedGroup.Id}"
