@@ -20,6 +20,7 @@ using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
 using ReTime_Testing.Views.TimeTopDesktop;
 using ReTime_Testing.Helpers;
+using ReTime_Testing.Views.CrashWindow;
 using Serilog;
 
 namespace ReTime_Testing
@@ -35,6 +36,7 @@ namespace ReTime_Testing
     public partial class App : Application
     {
         private readonly ILogger<App> _logger = AppLog.For<App>();
+        private readonly CrashReportService _crashService = new();
         private IHost? _host;
         private IMutexManager? _mutexManager;
         private ITrayIconService? _trayIconService;
@@ -48,28 +50,85 @@ namespace ReTime_Testing
         public App()
         {
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+            DispatcherUnhandledException += OnDispatcherUnhandledException;
+            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         }
 
         /// <summary>
-        /// 全局未处理异常捕获
+        /// AppDomain 全局未处理异常捕获（最早捕获点）
         /// </summary>
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             var ex = e.ExceptionObject as Exception;
-            var message = ex?.Message ?? "未知错误";
             if (ex != null)
             {
-                _logger.LogError(ex, "全局未处理异常: {Message}", message);
+                _logger.LogError(ex, "AppDomain 未处理异常: {Message}", ex.Message);
             }
             else
             {
-                _logger.LogError("全局未处理异常: {Message}", message);
+                _logger.LogError("AppDomain 未处理异常（无 Exception 对象）");
             }
 
             if (e.IsTerminating)
             {
-                ShowWarningAndExit($"应用程序发生未处理异常：\n{message}\n\n程序将退出。");
+                try
+                {
+                    var crashInfo = _crashService.BuildCrashReport(ex ?? new Exception("未知错误"));
+                    _crashService.SaveCrashLog(crashInfo);
+                    _crashService.ShowCrashWindow(crashInfo, isTerminating: true);
+                }
+                catch
+                {
+                    // 崩溃窗口显示失败时静默退出
+                }
+
+                Environment.Exit(1);
             }
+        }
+
+        /// <summary>
+        /// WPF Dispatcher UI 线程未处理异常
+        /// </summary>
+        private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            _logger.LogError(e.Exception, "Dispatcher 未处理异常: {Message}", e.Exception.Message);
+
+            try
+            {
+                var crashInfo = _crashService.BuildCrashReport(e.Exception);
+                _crashService.SaveCrashLog(crashInfo);
+                _crashService.ShowCrashWindow(crashInfo, isTerminating: false);
+            }
+            catch
+            {
+                // 崩溃窗口显示失败时兜底
+            }
+
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// TaskScheduler 未观察异常（后台 Task 中未 await 的异常）
+        /// </summary>
+        private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            _logger.LogError(e.Exception, "TaskScheduler 未观察异常: {Message}", e.Exception.Message);
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                try
+                {
+                    var crashInfo = _crashService.BuildCrashReport(e.Exception);
+                    _crashService.SaveCrashLog(crashInfo);
+                    _crashService.ShowCrashWindow(crashInfo, isTerminating: false);
+                }
+                catch
+                {
+                    // 崩溃窗口显示失败时兜底
+                }
+            });
+
+            e.SetObserved();
         }
 
         // 公共属性（过渡期保留，供 View code-behind 使用）
@@ -166,7 +225,16 @@ namespace ReTime_Testing
             catch (Exception ex)
             {
                 _logger.LogError(ex, "启动应用程序时发生异常");
-                Shutdown();
+                try
+                {
+                    var crashInfo = _crashService.BuildCrashReport(ex);
+                    _crashService.SaveCrashLog(crashInfo);
+                    _crashService.ShowCrashWindow(crashInfo, isTerminating: false);
+                }
+                catch
+                {
+                    Shutdown();
+                }
             }
         }
 
@@ -214,7 +282,16 @@ namespace ReTime_Testing
             catch (Exception ex)
             {
                 _logger.LogError(ex, "欢迎引导流程发生异常");
-                Shutdown();
+                try
+                {
+                    var crashInfo = _crashService.BuildCrashReport(ex);
+                    _crashService.SaveCrashLog(crashInfo);
+                    _crashService.ShowCrashWindow(crashInfo, isTerminating: false);
+                }
+                catch
+                {
+                    Shutdown();
+                }
             }
         }
 
@@ -398,24 +475,32 @@ namespace ReTime_Testing
         }
 
         /// <summary>
-        /// 显示警告并退出程序
+        /// 显示崩溃窗口并退出程序
         /// </summary>
         private void ShowWarningAndExit(string message)
         {
             try
             {
-                iNKORE.UI.WPF.Modern.Controls.MessageBox.Show(
-                    message,
-                    "配置无效",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning,
-                    MessageBoxResult.OK
-                );
+                var crashInfo = _crashService.BuildCrashReport(new Exception(message));
+                _crashService.SaveCrashLog(crashInfo);
+                _crashService.ShowCrashWindow(crashInfo, isTerminating: true);
             }
             catch
             {
-                MessageBox.Show(message, "配置无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                try
+                {
+                    iNKORE.UI.WPF.Modern.Controls.MessageBox.Show(
+                        message,
+                        "ReTime - Testing 崩溃",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+                catch
+                {
+                    // 最终兜底
+                }
             }
+
             Environment.Exit(1);
         }
 

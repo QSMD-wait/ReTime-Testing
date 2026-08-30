@@ -42,6 +42,11 @@
         <DataTemplate DataType="{x:Type viewModels:DrawerTestViewModel}">
             <pages:DrawerTestPage/>
         </DataTemplate>
+
+        <!-- 数据模板：错误模拟测试 -->
+        <DataTemplate DataType="{x:Type viewModels:ErrorSimulatorViewModel}">
+            <pages:ErrorSimulatorPage/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

@@ -1,0 +1,104 @@
+<Window x:Class="ReTime_Testing.Views.CrashWindow.CrashReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
+        mc:Ignorable="d"
+        Title="ReTime - Testing 崩溃报告"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:WindowHelper.SystemBackdropType="Mica"
+        ui:TitleBar.Height="36"
+        Width="720"
+        Height="480"
+        MinWidth="560"
+        MinHeight="360"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 顶部标题区域 -->
+        <StackPanel Grid.Row="0" Margin="24,16,24,10">
+            <TextBlock Text="ReTime - Testing 发生了未处理异常"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <TextBlock Text="应用遇到了意外错误，以下是崩溃详情："
+                       FontSize="13"
+                       Margin="0,4,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
+
+        <!-- 崩溃信息文本框 -->
+        <Border Grid.Row="1"
+                Margin="24,0,24,10"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="12">
+                <TextBox x:Name="CrashInfoTextBox"
+                         Text="{Binding CrashInfo, RelativeSource={RelativeSource AncestorType=Window}}"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         FontFamily="Consolas"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 底部按钮栏 -->
+        <Border Grid.Row="2"
+                Padding="24,10"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 左侧：复制 + 保存日志 -->
+                <ikw:SimpleStackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <Button Content="复制"
+                            MinWidth="72"
+                            Click="OnCopyClick"
+                            ToolTip="复制崩溃信息到剪贴板"/>
+                    <Button Content="保存日志"
+                            MinWidth="72"
+                            Click="OnSaveLogClick"
+                            ToolTip="将崩溃日志保存到文件"/>
+                </ikw:SimpleStackPanel>
+
+                <!-- 右侧：忽略 + 重启 + 退出 -->
+                <ikw:SimpleStackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                      HorizontalAlignment="Right">
+                    <Button x:Name="IgnoreButton"
+                            Content="忽略"
+                            MinWidth="72"
+                            Click="OnIgnoreClick"
+                            ToolTip="忽略此异常，继续运行"
+                            Visibility="Collapsed"/>
+                    <Button Content="重启应用"
+                            MinWidth="80"
+                            Click="OnRestartClick"
+                            Style="{StaticResource AccentButtonStyle}"/>
+                    <Button Content="退出应用"
+                            MinWidth="80"
+                            Click="OnExitClick"/>
+                </ikw:SimpleStackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

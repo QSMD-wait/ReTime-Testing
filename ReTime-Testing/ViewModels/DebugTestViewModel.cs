@@ -48,6 +48,11 @@ namespace ReTime_Testing.ViewModels
         public DrawerTestViewModel DrawerTest { get; }
 
         /// <summary>
+        /// 错误模拟测试：全局异常处理与崩溃窗口
+        /// </summary>
+        public ErrorSimulatorViewModel ErrorSimulator { get; }
+
+        /// <summary>
         /// Tab 集合（供 TabControl 绑定，Header 使用各页 TabTitle）
         /// </summary>
         public IReadOnlyList<object> Tabs { get; }
@@ -79,8 +84,9 @@ namespace ReTime_Testing.ViewModels
             Controls.ToastRequested += OnControlsToastRequested;
 
             DrawerTest = new DrawerTestViewModel();
+            ErrorSimulator = new ErrorSimulatorViewModel();
 
-            Tabs = new object[] { HomePage, MainFeature, ServiceDebug, Controls, DrawerTest };
+            Tabs = new object[] { HomePage, MainFeature, ServiceDebug, Controls, DrawerTest, ErrorSimulator };
         }
 
         private void OnControlsToastRequested(ToastMessage message)
