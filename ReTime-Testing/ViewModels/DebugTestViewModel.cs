@@ -14,8 +14,6 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class DebugTestViewModel : ObservableObject
     {
-        private bool _syncing;
-
         [ObservableProperty]
         private int _selectedTabIndex;
 
@@ -81,33 +79,6 @@ namespace ReTime_Testing.ViewModels
             Controls.ToastRequested += OnControlsToastRequested;
 
             DrawerTest = new DrawerTestViewModel();
-            DrawerTest.PropertyChanged += (_, e) =>
-            {
-                if (_syncing) return;
-                _syncing = true;
-                try
-                {
-                    if (e.PropertyName == nameof(DrawerTestViewModel.IsDrawerOpen))
-                        IsDrawerOpen = DrawerTest.IsDrawerOpen;
-                    if (e.PropertyName == nameof(DrawerTestViewModel.DrawerWidth))
-                        DrawerWidth = DrawerTest.DrawerWidth;
-                }
-                finally { _syncing = false; }
-            };
-
-            PropertyChanged += (_, e) =>
-            {
-                if (_syncing) return;
-                _syncing = true;
-                try
-                {
-                    if (e.PropertyName == nameof(IsDrawerOpen))
-                        DrawerTest.IsDrawerOpen = IsDrawerOpen;
-                    if (e.PropertyName == nameof(DrawerWidth))
-                        DrawerTest.DrawerWidth = DrawerWidth;
-                }
-                finally { _syncing = false; }
-            };
 
             Tabs = new object[] { HomePage, MainFeature, ServiceDebug, Controls, DrawerTest };
         }

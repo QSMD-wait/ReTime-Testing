@@ -45,7 +45,8 @@
     </Window.Resources>
 
     <Grid>
-        <controls:DrawerHost IsDrawerOpen="{Binding IsDrawerOpen, Mode=TwoWay}"
+        <controls:DrawerHost x:Name="MainDrawerHost"
+                             IsDrawerOpen="{Binding IsDrawerOpen, Mode=TwoWay}"
                              DrawerWidth="{Binding DrawerWidth}">
             <TabControl ItemsSource="{Binding Tabs}"
                         DisplayMemberPath="TabTitle"

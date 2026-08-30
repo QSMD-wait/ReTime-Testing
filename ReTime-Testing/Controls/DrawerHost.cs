@@ -10,6 +10,19 @@ using System.Windows.Media.Animation;
 namespace ReTime_Testing.Controls;
 
 /// <summary>
+/// 抽屉状态变更事件参数
+/// </summary>
+public sealed class DrawerStateChangedEventArgs : RoutedEventArgs
+{
+    public bool IsOpen { get; }
+
+    public DrawerStateChangedEventArgs(bool isOpen) : base()
+    {
+        IsOpen = isOpen;
+    }
+}
+
+/// <summary>
 /// 整数索引转可见性转换器：参数为索引值，当绑定值等于参数时返回 Visible，否则 Collapsed。
 /// </summary>
 public sealed class IndexToVisibilityConverter : IValueConverter
@@ -39,6 +52,11 @@ public class DrawerHost : ContentControl
 {
     public static readonly IndexToVisibilityConverter IndexToVisibilityConverterInstance =
         IndexToVisibilityConverter.Instance;
+
+    /// <summary>
+    /// 抽屉状态变更时触发，无论变更来源是绑定、Escape 还是点击遮罩。
+    /// </summary>
+    public event EventHandler<DrawerStateChangedEventArgs>? DrawerStateChanged;
 
     private Border? _drawerBorder;
     private Border? _overlayBorder;
@@ -130,7 +148,10 @@ public class DrawerHost : ContentControl
     private static void OnIsDrawerOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is DrawerHost host)
+        {
             host.SyncToState();
+            host.DrawerStateChanged?.Invoke(host, new DrawerStateChangedEventArgs((bool)e.NewValue));
+        }
     }
 
     /// <summary>
