@@ -73,6 +73,7 @@ public class WelcomeViewModelTests
     private WelcomeViewModel CreateViewModel()
     {
         return new WelcomeViewModel(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WelcomeViewModel>.Instance,
             _mockSettingsService.Object,
             _mockThemeService.Object,
             _mockDesktopWindowManager.Object,

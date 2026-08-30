@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.Testing
 {
@@ -15,8 +16,13 @@ namespace ReTime_Testing.ViewModels.Testing
     /// </summary>
     public partial class ControlsViewModel : ObservableObject
     {
-        private const string LOG_TAG = "ControlsViewModel";
 
+        public ControlsViewModel(ILogger<ControlsViewModel> logger)
+        {
+            _logger = logger;
+        }
+
+        private readonly ILogger<ControlsViewModel> _logger;
         public string TabTitle => "控件";
 
         [ObservableProperty]
@@ -145,7 +151,7 @@ namespace ReTime_Testing.ViewModels.Testing
                     Content = "查看详情",
                     Command = new RelayCommand(() =>
                     {
-                        Logger.Info(LOG_TAG, "用户点击了 Toast 操作按钮：查看详情");
+                        _logger.LogInformation("用户点击了 Toast 操作按钮：查看详情");
                     })
                 }
             };
@@ -164,7 +170,7 @@ namespace ReTime_Testing.ViewModels.Testing
                     Content = "重试",
                     Command = new RelayCommand(() =>
                     {
-                        Logger.Info(LOG_TAG, "用户点击了重试按钮");
+                        _logger.LogInformation("用户点击了重试按钮");
                     })
                 }
             };

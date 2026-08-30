@@ -1,5 +1,6 @@
 using ReTime_Testing.Models;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -10,8 +11,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class SettingsService : ISettingsService
     {
-        private const string LOG_MODULE = "SettingsService";
-
+        private readonly ILogger<SettingsService> _logger;
         private readonly JsonConfigProvider _provider;
         private readonly IConfigurationManager _configManager;
 
@@ -32,10 +32,11 @@ namespace ReTime_Testing.Services
         /// 构造函数（支持 DI 注入）
         /// </summary>
         /// <param name="configManager">配置管理器</param>
-        public SettingsService(IConfigurationManager configManager)
+        public SettingsService(IConfigurationManager configManager, ILogger<SettingsService> logger)
         {
             _provider = new JsonConfigProvider();
             _configManager = configManager;
+            _logger = logger;
         }
 
         #region GlobalSetting
@@ -63,13 +64,13 @@ namespace ReTime_Testing.Services
                 _provider.Write(_configManager.GlobalSettingFilePath, setting);
                 _cachedGlobalSetting = setting;
 
-                Logger.Info(LOG_MODULE, "全局配置保存成功");
+                _logger.LogInformation("全局配置保存成功");
 
                 OnGlobalSettingChanged?.Invoke(setting);
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"全局配置保存失败: {ex.Message}", ex);
+                _logger.LogError(ex, "全局配置保存失败: {Message}", ex.Message);
                 throw new ConfigurationException("全局配置保存失败", ex);
             }
         }
@@ -82,7 +83,7 @@ namespace ReTime_Testing.Services
             var defaultSetting = new GlobalSetting();
             SaveGlobalSetting(defaultSetting);
 
-            Logger.Info(LOG_MODULE, "全局配置已重置为默认值");
+            _logger.LogInformation("全局配置已重置为默认值");
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace ReTime_Testing.Services
 
                 if (!_provider.FileExists(filePath))
                 {
-                    Logger.Warn(LOG_MODULE, "全局配置文件不存在，创建默认配置");
+                    _logger.LogWarning("全局配置文件不存在，创建默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
                     return newSetting;
@@ -114,7 +115,7 @@ namespace ReTime_Testing.Services
 
                 if (jsonContent == null)
                 {
-                    Logger.Info(LOG_MODULE, "全局配置文件为空，写入默认配置");
+                    _logger.LogInformation("全局配置文件为空，写入默认配置");
                     var newSetting = new GlobalSetting();
                     SaveGlobalSetting(newSetting);
                     return newSetting;
@@ -127,7 +128,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(LOG_MODULE, $"全局配置文件 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                    _logger.LogError(ex, "全局配置文件 JSON 语法错误: {Message}，使用默认配置（不覆盖原文件）", ex.Message);
                     return new GlobalSetting();
                 }
 
@@ -142,13 +143,13 @@ namespace ReTime_Testing.Services
                 result.Basic.Log.RetainedDays = Math.Max(1, result.Basic.Log.RetainedDays);
                 result.Basic.Log.FileSizeLimitMB = Math.Max(1, result.Basic.Log.FileSizeLimitMB);
 
-                Logger.Info(LOG_MODULE, "全局配置加载成功");
+                _logger.LogInformation("全局配置加载成功");
 
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"全局配置加载失败: {ex.Message}，使用默认配置（不覆盖原文件）");
+                _logger.LogError(ex, "全局配置加载失败: {Message}，使用默认配置（不覆盖原文件）", ex.Message);
                 return new GlobalSetting();
             }
         }
@@ -180,13 +181,13 @@ namespace ReTime_Testing.Services
                 _provider.Write(_configManager.TimeTopSettingFilePath, setting);
                 _cachedTimeTopSetting = setting;
 
-                Logger.Info(LOG_MODULE, "TimeTop设置保存成功");
+                _logger.LogInformation("TimeTop设置保存成功");
 
                 OnTimeTopSettingChanged?.Invoke(setting);
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"保存TimeTop设置失败: {ex.Message}", ex);
+                _logger.LogError(ex, "保存TimeTop设置失败: {Message}", ex.Message);
                 throw;
             }
         }
@@ -210,7 +211,7 @@ namespace ReTime_Testing.Services
 
                 if (!_provider.FileExists(filePath))
                 {
-                    Logger.Info(LOG_MODULE, "TimeTop设置文件不存在，创建默认配置");
+                    _logger.LogInformation("TimeTop设置文件不存在，创建默认配置");
                     var newSetting = new TimeTopSetting();
                     SaveTimeTopSetting(newSetting);
                     return newSetting;
@@ -220,7 +221,7 @@ namespace ReTime_Testing.Services
 
                 if (jsonContent == null)
                 {
-                    Logger.Info(LOG_MODULE, "TimeTop设置文件为空，创建默认配置");
+                    _logger.LogInformation("TimeTop设置文件为空，创建默认配置");
                     var newSetting = new TimeTopSetting();
                     SaveTimeTopSetting(newSetting);
                     return newSetting;
@@ -233,7 +234,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(LOG_MODULE, $"TimeTop设置 JSON 语法错误: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                    _logger.LogError(ex, "TimeTop设置 JSON 语法错误: {Message}，使用默认配置（不覆盖原文件）", ex.Message);
                     return new TimeTopSetting();
                 }
 
@@ -254,19 +255,19 @@ namespace ReTime_Testing.Services
 
                 if (string.IsNullOrEmpty(result.Version) || result.Version != "1.0.0")
                 {
-                    Logger.Warn(LOG_MODULE, $"TimeTop设置版本不匹配: {result.Version}，填充默认值");
+                    _logger.LogWarning("TimeTop设置版本不匹配: {Version}，填充默认值", result.Version);
                 }
 
                 var defaults = new TimeTopSetting();
                 result = FillMissingFields(result, defaults);
 
-                Logger.Info(LOG_MODULE, "TimeTop设置加载成功");
+                _logger.LogInformation("TimeTop设置加载成功");
 
                 return result;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"加载TimeTop设置失败: {ex.Message}，使用默认配置（不覆盖原文件）", ex);
+                _logger.LogError(ex, "加载TimeTop设置失败: {Message}，使用默认配置（不覆盖原文件）", ex.Message);
                 return new TimeTopSetting();
             }
         }

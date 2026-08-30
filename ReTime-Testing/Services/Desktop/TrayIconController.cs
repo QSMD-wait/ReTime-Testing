@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace ReTime_Testing.Services;
 
 /// <summary>
@@ -6,17 +8,17 @@ namespace ReTime_Testing.Services;
 /// </summary>
 public sealed class TrayIconController : IDisposable
 {
-    private const string Source = nameof(TrayIconController);
-
     private readonly ITrayIconService _trayService;
     private readonly Action _onRestart;
     private readonly Action _onExit;
+    private readonly ILogger<TrayIconController> _logger;
 
-    public TrayIconController(ITrayIconService trayService, Action onRestart, Action onExit)
+    public TrayIconController(ITrayIconService trayService, Action onRestart, Action onExit, ILogger<TrayIconController> logger)
     {
         _trayService = trayService;
         _onRestart = onRestart;
         _onExit = onExit;
+        _logger = logger;
 
         _trayService.OpenSettingRequested += OnOpenSetting;
         _trayService.OpenDebugRequested += OnOpenDebugTest;
@@ -46,11 +48,11 @@ public sealed class TrayIconController : IDisposable
         try
         {
             WindowManager.ShowTimeTopSetting();
-            Logger.Info(Source, "设置窗口已打开");
+            _logger.LogInformation("设置窗口已打开");
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "打开设置窗口时发生异常", ex);
+            _logger.LogError(ex, "打开设置窗口时发生异常");
         }
     }
 
@@ -59,11 +61,11 @@ public sealed class TrayIconController : IDisposable
         try
         {
             WindowManager.ShowMainWindow();
-            Logger.Info(Source, "主窗口已打开");
+            _logger.LogInformation("主窗口已打开");
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "打开主窗口时发生异常", ex);
+            _logger.LogError(ex, "打开主窗口时发生异常");
         }
     }
 
@@ -72,11 +74,11 @@ public sealed class TrayIconController : IDisposable
         try
         {
             WindowManager.ShowDebugTest();
-            Logger.Info(Source, "调试测试窗口已打开");
+            _logger.LogInformation("调试测试窗口已打开");
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "打开调试测试窗口时发生异常", ex);
+            _logger.LogError(ex, "打开调试测试窗口时发生异常");
         }
     }
 
@@ -85,11 +87,11 @@ public sealed class TrayIconController : IDisposable
         try
         {
             WindowManager.ShowLogViewer();
-            Logger.Info(Source, "日志查看器窗口已打开");
+            _logger.LogInformation("日志查看器窗口已打开");
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "打开日志查看器窗口时发生异常", ex);
+            _logger.LogError(ex, "打开日志查看器窗口时发生异常");
         }
     }
 
@@ -98,11 +100,11 @@ public sealed class TrayIconController : IDisposable
         try
         {
             WindowManager.ShowTimeScheduleEditor();
-            Logger.Info(Source, "时间计划编辑器已打开");
+            _logger.LogInformation("时间计划编辑器已打开");
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "打开时间计划编辑器时发生异常", ex);
+            _logger.LogError(ex, "打开时间计划编辑器时发生异常");
         }
     }
 
@@ -110,12 +112,12 @@ public sealed class TrayIconController : IDisposable
     {
         try
         {
-            Logger.Info(Source, "应用程序重启请求");
+            _logger.LogInformation("应用程序重启请求");
             _onRestart();
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "重启应用程序时发生异常", ex);
+            _logger.LogError(ex, "重启应用程序时发生异常");
         }
     }
 
@@ -123,12 +125,12 @@ public sealed class TrayIconController : IDisposable
     {
         try
         {
-            Logger.Info(Source, "应用程序退出请求");
+            _logger.LogInformation("应用程序退出请求");
             _onExit();
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, "退出应用程序时发生异常", ex);
+            _logger.LogError(ex, "退出应用程序时发生异常");
         }
     }
 

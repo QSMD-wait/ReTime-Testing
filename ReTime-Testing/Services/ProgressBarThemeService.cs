@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Core.Models.Theme;
 using ReTime_Testing.Core.Services;
 
@@ -11,6 +12,7 @@ namespace ReTime_Testing.Services;
 
 public class ProgressBarThemeService : IProgressBarThemeService
 {
+        private readonly ILogger<ProgressBarThemeService> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -31,8 +33,9 @@ public class ProgressBarThemeService : IProgressBarThemeService
 
     public event Action<string>? ThemeChanged;
 
-    public ProgressBarThemeService(IConfigurationManager configManager, IApplicationResourceProvider resourceProvider)
+    public ProgressBarThemeService(IConfigurationManager configManager, IApplicationResourceProvider resourceProvider, ILogger<ProgressBarThemeService> logger)
     {
+        _logger = logger;
         _configManager = configManager;
         _resourceProvider = resourceProvider;
     }
@@ -79,7 +82,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
         }
         catch (Exception ex)
         {
-            Logger.Error(nameof(ProgressBarThemeService), $"应用主题失败: {themeId}", ex);
+            _logger.LogError(ex, "应用主题失败: {ThemeId}", themeId);
             _currentTheme = CreateDefaultManifest();
         }
     }
@@ -115,13 +118,13 @@ public class ProgressBarThemeService : IProgressBarThemeService
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn(nameof(ProgressBarThemeService), $"加载第三方主题清单失败: {themeDir}, {ex.Message}");
+                    _logger.LogWarning(ex, "加载第三方主题清单失败: {ThemeDir}, {Message}", themeDir, ex.Message);
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.Warn(nameof(ProgressBarThemeService), $"扫描第三方主题目录失败: {ex.Message}");
+            _logger.LogWarning(ex, "扫描第三方主题目录失败: {Message}", ex.Message);
         }
     }
 
@@ -137,7 +140,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
         }
     }
 
-    private static void ApplyBuiltInTheme(ProgressBarThemeManifest theme, IList<ResourceDictionary> merged)
+    private void ApplyBuiltInTheme(ProgressBarThemeManifest theme, IList<ResourceDictionary> merged)
     {
         if (theme.Id == ProgressBarThemeManifest.DefaultId)
             return;
@@ -151,7 +154,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
         }
         catch (Exception ex)
         {
-            Logger.Error(nameof(ProgressBarThemeService), $"加载内置主题资源失败: {packUri}, {ex.Message}");
+            _logger.LogError(ex, "加载内置主题资源失败: {PackUri}, {Message}", packUri, ex.Message);
         }
     }
 
@@ -173,7 +176,7 @@ public class ProgressBarThemeService : IProgressBarThemeService
         }
         catch (Exception ex)
         {
-            Logger.Error(nameof(ProgressBarThemeService), $"加载第三方主题资源失败: {themeXamlPath}, {ex.Message}");
+            _logger.LogError(ex, "加载第三方主题资源失败: {ThemeXamlPath}, {Message}", themeXamlPath, ex.Message);
         }
     }
 

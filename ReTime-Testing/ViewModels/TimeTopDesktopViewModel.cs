@@ -3,11 +3,13 @@ using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels
 {
     public partial class TimeTopDesktopViewModel : ObservableObject
     {
+        private readonly ILogger<TimeTopDesktopViewModel> _logger;
         private readonly IGlobalTimeTopDesktopService _service;
         private readonly ISettingsService? _settingsService;
 
@@ -48,9 +50,12 @@ namespace ReTime_Testing.ViewModels
         private double _progressBarScale = 1.0;
 
         public TimeTopDesktopViewModel(
+            ILogger<TimeTopDesktopViewModel> logger,
             IGlobalTimeTopDesktopService globalService,
             ISettingsService? settingsService = null)
         {
+            // 赋值在 try 之外，确保 catch 块中日志器可用
+            _logger = logger;
             try
             {
                 _service = globalService;
@@ -73,11 +78,11 @@ namespace ReTime_Testing.ViewModels
                     _settingsService.OnGlobalSettingChanged += OnGlobalSettingChanged;
                 }
 
-                Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化完成");
+                _logger.LogInformation("ViewModel 初始化完成");
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "ViewModel 初始化失败", ex);
+                _logger.LogError(ex, "ViewModel 初始化失败");
                 throw;
             }
         }
@@ -91,11 +96,11 @@ namespace ReTime_Testing.ViewModels
             {
                 if (config == null)
                 {
-                    Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "OnStateChanged: 配置为 null");
+                    _logger.LogError("OnStateChanged: 配置为 null");
                     return;
                 }
 
-                Logger.Trace("TimeTopDesktopViewModel", $"UI更新: State={config.StateType}, Foreground={config.Foreground}, Background={config.Background}");
+                _logger.LogTrace("UI更新: State={StateType}, Foreground={Foreground}, Background={Background}", config.StateType, config.Foreground, config.Background);
 
                 ProgressValue = config.Value;
                 IsIndeterminate = config.IsIndeterminate;
@@ -112,7 +117,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "OnStateChanged: 更新属性时发生异常", ex);
+                _logger.LogError(ex, "OnStateChanged: 更新属性时发生异常");
             }
         }
 
@@ -184,7 +189,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("TimeTopDesktopViewModel", $"全局配置变更重算阴影失败: {ex.Message}");
+                _logger.LogWarning("全局配置变更重算阴影失败: {Error}", ex.Message);
             }
         }
 
@@ -200,7 +205,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("TimeTopDesktopViewModel", $"刷新阴影失败: {ex.Message}");
+                _logger.LogWarning("刷新阴影失败: {Error}", ex.Message);
             }
         }
 
@@ -214,7 +219,7 @@ namespace ReTime_Testing.ViewModels
                 if (_service != null)
                 {
                     _service.OnStateChanged -= OnStateChanged;
-                    Logger.Info("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "Service 回调已清理");
+                    _logger.LogInformation("Service 回调已清理");
                 }
 
                 if (_settingsService != null)
@@ -224,7 +229,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.ViewModels.TimeTopDesktopViewModel" ?? "TimeTopDesktopViewModel", "清理资源时发生异常", ex);
+                _logger.LogError(ex, "清理资源时发生异常");
             }
         }
     }

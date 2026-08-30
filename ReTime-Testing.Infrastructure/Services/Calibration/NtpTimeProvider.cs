@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -10,6 +11,7 @@ namespace ReTime_Testing.Services;
 /// </summary>
 public class NtpTimeProvider : ITimeProvider
 {
+        private static readonly ILogger<NtpTimeProvider> _logger = AppLog.For<NtpTimeProvider>();
     private readonly string[] _serverAddresses;
     private const int NtpPort = 123;
     private const int NtpPacketSize = 48;
@@ -33,19 +35,17 @@ public class NtpTimeProvider : ITimeProvider
                 var result = await GetNtpTimeWithRttAsync(serverAddress, perServerTimeout);
                 if (result != null)
                 {
-                    Logger.Debug("NtpTimeProvider",
-                        $"成功从 {serverAddress} 获取NTP时间: UTC={result.UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
+                    _logger.LogDebug("成功从 {ServerAddress} 获取NTP时间: UTC={UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={Rtt:F1}ms", serverAddress, result.UtcTime, result.RoundTripTime.TotalMilliseconds);
                     return result;
                 }
             }
             catch (Exception ex)
             {
-                Logger.Warn("NtpTimeProvider",
-                    $"从 {serverAddress} 获取NTP时间失败: {ex.Message}");
+                _logger.LogWarning(ex, "从 {ServerAddress} 获取NTP时间失败", serverAddress);
             }
         }
 
-        Logger.Error("NtpTimeProvider", "所有NTP服务器都失败");
+        _logger.LogError("所有NTP服务器都失败");
 
         return null;
     }
@@ -68,7 +68,7 @@ public class NtpTimeProvider : ITimeProvider
             var dnsResult = await Dns.GetHostEntryAsync(serverAddress).ConfigureAwait(false);
             if (dnsResult.AddressList.Length == 0)
             {
-                Logger.Warn("NtpTimeProvider", $"DNS解析无结果: {serverAddress}");
+                _logger.LogWarning("DNS解析无结果: {ServerAddress}", serverAddress);
                 return null;
             }
 
@@ -83,7 +83,7 @@ public class NtpTimeProvider : ITimeProvider
 
             if (completedTask != receiveTask)
             {
-                Logger.Warn("NtpTimeProvider", $"NTP请求超时: 服务器={serverAddress}, 超时={timeout.TotalMilliseconds:F0}ms");
+                _logger.LogWarning("NTP请求超时: 服务器={ServerAddress}, 超时={Timeout:F0}ms", serverAddress, timeout.TotalMilliseconds);
                 return null;
             }
 
@@ -112,7 +112,7 @@ public class NtpTimeProvider : ITimeProvider
         }
         catch (OperationCanceledException)
         {
-            Logger.Warn("NtpTimeProvider", $"NTP请求已取消: 服务器={serverAddress}");
+            _logger.LogWarning("NTP请求已取消: 服务器={ServerAddress}", serverAddress);
             return null;
         }
         finally

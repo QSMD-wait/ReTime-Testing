@@ -1,5 +1,7 @@
 namespace ReTime_Testing.Tests.Services;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 /// <summary>
 /// AbsoluteTimeService 类的单元测试
 /// 测试绝对时间服务的各种场景
@@ -10,7 +12,7 @@ public class AbsoluteTimeServiceTests
     public void Constructor_应该正确初始化()
     {
         // Arrange & Act
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
 
         // Assert
         service.Should().NotBeNull();
@@ -22,7 +24,7 @@ public class AbsoluteTimeServiceTests
     public void GetCurrentTime_应该返回单调递增的时间()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var time1 = service.GetCurrentTime();
         Thread.Sleep(100); // 等待 100ms
 
@@ -39,7 +41,7 @@ public class AbsoluteTimeServiceTests
     public void GetCurrentTime_连续调用应该平滑递增()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var times = new List<DateTime>();
 
         // Act
@@ -60,7 +62,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_应该正确更新基准时间()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var oldTime = service.GetCurrentTime();
         var cloudTime = oldTime.AddMinutes(10);
 
@@ -88,7 +90,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_校准后IsCloudSynchronized应该为True()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var cloudTime = service.GetCurrentTime().AddMinutes(10);
 
         // Act
@@ -102,7 +104,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_多次校准应该正确工作()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var eventCount = 0;
         service.TimeJumped += (sender, args) => eventCount++;
 
@@ -122,7 +124,7 @@ public class AbsoluteTimeServiceTests
     public void TimeJumped_事件参数应该正确()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var oldTime = service.GetCurrentTime();
         var newTime = oldTime.AddHours(1);
 
@@ -143,7 +145,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_时间向后跳跃应该触发事件()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var oldTime = service.GetCurrentTime();
         var newTime = oldTime.AddHours(-1); // 向后跳跃
 
@@ -170,7 +172,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_时间向前跳跃应该触发事件()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var oldTime = service.GetCurrentTime();
         var newTime = oldTime.AddHours(2); // 向前跳跃
 
@@ -197,7 +199,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_校准到当前时间Offset应该接近零()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var currentTime = service.GetCurrentTime();
 
         TimeJumpedEventArgs? capturedArgs = null;
@@ -215,7 +217,7 @@ public class AbsoluteTimeServiceTests
     public void GetCurrentTime_校准后时间应该平滑递增()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var baseTime = service.GetCurrentTime().AddHours(1);
         service.Calibrate(baseTime);
 
@@ -240,7 +242,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_多个订阅者都应该收到事件()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var count1 = 0;
         var count2 = 0;
         var count3 = 0;
@@ -262,7 +264,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_取消订阅后不应收到事件()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var count = 0;
 
         EventHandler<TimeJumpedEventArgs> handler = (sender, args) => count++;
@@ -281,7 +283,7 @@ public class AbsoluteTimeServiceTests
     public async Task Calibrate_并发调用应该线程安全()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var tasks = new List<Task>();
         var exceptions = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
         var eventCount = 0;
@@ -323,7 +325,7 @@ public class AbsoluteTimeServiceTests
     public async Task GetCurrentTime_并发调用应该线程安全()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var tasks = new List<Task>();
         var times = new System.Collections.Concurrent.ConcurrentBag<DateTime>();
         var exceptions = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
@@ -356,7 +358,7 @@ public class AbsoluteTimeServiceTests
     public void Calibrate_校准后立即调用GetCurrentTime应该返回校准后的时间()
     {
         // Arrange
-        var service = new AbsoluteTimeService();
+        var service = new AbsoluteTimeService(NullLogger<AbsoluteTimeService>.Instance);
         var cloudTime = new DateTime(2026, 3, 15, 10, 30, 0);
 
         // Act

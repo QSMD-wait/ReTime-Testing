@@ -1,5 +1,6 @@
 using ReTime_Testing.Models;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -10,6 +11,7 @@ namespace ReTime_Testing.Services;
 /// </summary>
 public class AbsoluteTimeService : ITimeService, IDisposable
 {
+        private readonly ILogger<AbsoluteTimeService> _logger;
     private readonly object _lock = new();
     private DateTime _baseTime;
     private long _baseTick;
@@ -35,9 +37,9 @@ public class AbsoluteTimeService : ITimeService, IDisposable
     /// <summary>
     /// 构造函数
     /// </summary>
-    public AbsoluteTimeService()
+    public AbsoluteTimeService(ILogger<AbsoluteTimeService> logger)
     {
-        // 初始化为系统时间
+        _logger = logger;
         _baseTime = DateTime.Now;
         _baseTick = Stopwatch.GetTimestamp();
         _isCloudSynchronized = false;
@@ -101,7 +103,7 @@ public class AbsoluteTimeService : ITimeService, IDisposable
             _isCloudSynchronized = true;
         }
 
-        Logger.Debug("AbsoluteTimeService", $"微调偏移: 偏移量={offset.TotalSeconds:F2}秒");
+        _logger.LogDebug("微调偏移: 偏移量={Offset:F2}秒", offset.TotalSeconds);
     }
 
     /// <summary>
@@ -118,7 +120,7 @@ public class AbsoluteTimeService : ITimeService, IDisposable
             _userOffset = clampedOffset;
         }
 
-        Logger.Debug("AbsoluteTimeService", $"用户偏移: 偏移量={clampedOffset.TotalSeconds:F2}秒");
+        _logger.LogDebug("用户偏移: 偏移量={Offset:F2}秒", clampedOffset.TotalSeconds);
     }
 
     /// <summary>

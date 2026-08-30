@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using ReTime_Testing.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -16,6 +17,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TimeScheduleManager : ITimeScheduleManager
     {
+        private readonly ILogger<TimeScheduleManager> _logger;
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -48,12 +50,12 @@ namespace ReTime_Testing.Services
         /// 构造函数（支持 DI 注入）
         /// </summary>
         /// <param name="configManager">配置管理器</param>
-        public TimeScheduleManager(IConfigurationManager configManager)
+        public TimeScheduleManager(IConfigurationManager configManager, ILogger<TimeScheduleManager> logger)
         {
+            _logger = logger;
             _timeSchedulesDirectory = configManager.TimeSchedulesDirectory;
 
-            Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                $"路径初始化完成: TimeSchedulesDirectory={_timeSchedulesDirectory}");
+            _logger.LogInformation("路径初始化完成: TimeSchedulesDirectory={Directory}", _timeSchedulesDirectory);
         }
 
         /// <summary>
@@ -66,12 +68,11 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(_timeSchedulesDirectory);
                 EnsureInitialScheduleExists();
 
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "初始化完成");
+                _logger.LogInformation("初始化完成");
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"初始化失败: {ex.Message}", ex);
+                _logger.LogError(ex, "初始化失败: {Message}", ex.Message);
                 throw;
             }
         }
@@ -84,8 +85,7 @@ namespace ReTime_Testing.Services
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"目录已创建: {path}");
+                _logger.LogInformation("目录已创建: {Path}", path);
             }
         }
 
@@ -101,7 +101,7 @@ namespace ReTime_Testing.Services
             {
                 var defaultSchedule = CreateDefaultSchedule();
                 SaveSchedule(defaultSchedule);
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager", "首次初始化：已创建默认计划表");
+                _logger.LogInformation("首次初始化：已创建默认计划表");
             }
         }
 
@@ -159,8 +159,7 @@ namespace ReTime_Testing.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                            $"读取文件失败: {file}, 错误: {ex.Message}");
+                        _logger.LogError(ex, "读取文件失败: {File}, 错误: {Message}", file, ex.Message);
                     }
                 }
 
@@ -168,8 +167,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"加载所有时间计划失败: {ex.Message}", ex);
+                _logger.LogError(ex, "加载所有时间计划失败: {Message}", ex.Message);
                 return new List<TimeSchedule>();
             }
         }
@@ -206,8 +204,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"加载时间计划失败: {id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "加载时间计划失败: {Id}, 错误: {Message}", id, ex.Message);
                 return null;
             }
         }
@@ -245,8 +242,7 @@ namespace ReTime_Testing.Services
             }
             catch (JsonException ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"JSON解析失败: {filePath}, 错误: {ex.Message}");
+                _logger.LogError(ex, "JSON解析失败: {FilePath}, 错误: {Message}", filePath, ex.Message);
                 return null;
             }
         }
@@ -276,13 +272,11 @@ namespace ReTime_Testing.Services
                 // 触发事件
                 OnScheduleChanged?.Invoke(schedule);
 
-                Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                    $"时间计划保存成功: {schedule.Id}");
+                _logger.LogInformation("时间计划保存成功: {Id}", schedule.Id);
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"保存时间计划失败: {schedule.Id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "保存时间计划失败: {Id}, 错误: {Message}", schedule.Id, ex.Message);
                 throw;
             }
         }
@@ -303,8 +297,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"写入文件失败: {filePath}, 错误: {ex.Message}");
+                _logger.LogError(ex, "写入文件失败: {FilePath}, 错误: {Message}", filePath, ex.Message);
                 throw;
             }
         }
@@ -326,16 +319,14 @@ namespace ReTime_Testing.Services
                     _scheduleCache.Remove(id);
                     OnScheduleDeleted?.Invoke(id);
                     
-                    Logger.Info("ReTime_Testing.Services.TimeScheduleManager",
-                        $"时间计划删除成功: {id}");
+                    _logger.LogInformation("时间计划删除成功: {Id}", id);
                     return true;
                 }
                 return false;
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"删除时间计划失败: {id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "删除时间计划失败: {Id}, 错误: {Message}", id, ex.Message);
                 return false;
             }
         }
@@ -367,8 +358,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"获取计划表列表失败: {ex.Message}", ex);
+                _logger.LogError(ex, "获取计划表列表失败: {Message}", ex.Message);
                 return new List<ScheduleInfo>();
             }
         }
@@ -419,8 +409,7 @@ namespace ReTime_Testing.Services
                 var source = LoadSchedule(sourceId);
                 if (source == null)
                 {
-                    Logger.Warn("ReTime_Testing.Services.TimeScheduleManager",
-                        $"源计划表不存在: {sourceId}");
+                    _logger.LogWarning("源计划表不存在: {SourceId}", sourceId);
                     return null;
                 }
 
@@ -450,8 +439,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"复制计划表失败: {sourceId} -> {newId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "复制计划表失败: {SourceId} -> {NewId}, 错误: {Message}", sourceId, newId, ex.Message);
                 return null;
             }
         }
@@ -478,8 +466,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"重命名计划表失败: {id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "重命名计划表失败: {Id}, 错误: {Message}", id, ex.Message);
                 return false;
             }
         }
@@ -501,8 +488,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"更新计划表元数据失败: {id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "更新计划表元数据失败: {Id}, 错误: {Message}", id, ex.Message);
                 return false;
             }
         }
@@ -550,8 +536,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"添加时间段失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "添加时间段失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }
@@ -584,8 +569,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"更新时间段失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "更新时间段失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }
@@ -616,8 +600,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"删除时间段失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "删除时间段失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }
@@ -649,8 +632,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"添加时间点失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "添加时间点失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }
@@ -683,8 +665,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"更新时间点失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "更新时间点失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }
@@ -715,8 +696,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TimeScheduleManager",
-                    $"删除时间点失败: {scheduleId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "删除时间点失败: {ScheduleId}, 错误: {Message}", scheduleId, ex.Message);
                 return false;
             }
         }

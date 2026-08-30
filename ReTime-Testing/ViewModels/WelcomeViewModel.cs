@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels
 {
@@ -10,6 +11,7 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class WelcomeViewModel : ObservableObject
     {
+        private readonly ILogger<WelcomeViewModel> _logger;
         /// <summary>
         /// 引导步骤定义
         /// </summary>
@@ -185,11 +187,13 @@ namespace ReTime_Testing.ViewModels
             !(CurrentIndex == (int)WelcomeStep.License && !HasAcceptedLicense);
 
         public WelcomeViewModel(
+            ILogger<WelcomeViewModel> logger,
             ISettingsService settingsService,
             IThemeService themeService,
             IDesktopWindowManager desktopWindowManager,
             IAutoStartService autoStartService)
         {
+            _logger = logger;
             _settingsService = settingsService;
             _themeService = themeService;
             _desktopWindowManager = desktopWindowManager;
@@ -213,11 +217,11 @@ namespace ReTime_Testing.ViewModels
                 TextFontSize = Math.Clamp(timeTopSetting.TextOverlay.Style.FontSize, FontSizeMinimum, FontSizeMaximum);
                 SelectedTextEffect = NormalizeTextEffect(timeTopSetting.TextOverlay.Style.TextEffect);
 
-                Logger.Info("WelcomeViewModel", "欢迎引导初始化完成");
+                _logger.LogInformation("欢迎引导初始化完成");
             }
             catch (Exception ex)
             {
-                Logger.Error("WelcomeViewModel", $"欢迎引导初始化失败: {ex.Message}", ex);
+                _logger.LogError(ex, "欢迎引导初始化失败: {Message}", ex.Message);
             }
             finally
             {
@@ -239,7 +243,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeViewModel", $"主题即时预览失败: {ex.Message}");
+                _logger.LogWarning(ex, "主题即时预览失败");
             }
 
             OnPropertyChanged(nameof(SelectedThemeText));
@@ -255,7 +259,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeViewModel", $"位置即时预览失败: {ex.Message}");
+                _logger.LogWarning(ex, "位置即时预览失败");
             }
 
             OnPropertyChanged(nameof(SelectedPositionText));
@@ -273,7 +277,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeViewModel", $"自启动即时应用失败: {ex.Message}");
+                _logger.LogWarning(ex, "自启动即时应用失败");
             }
 
             OnPropertyChanged(nameof(AutoStartText));
@@ -310,7 +314,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeViewModel", $"流畅优化保存失败: {ex.Message}");
+                _logger.LogWarning(ex, "流畅优化保存失败");
             }
         }
 
@@ -392,11 +396,11 @@ namespace ReTime_Testing.ViewModels
 
                 IsCompleted = true;
 
-                Logger.Info("WelcomeViewModel", "欢迎引导完成，设置已保存");
+                _logger.LogInformation("欢迎引导完成，设置已保存");
             }
             catch (Exception ex)
             {
-                Logger.Error("WelcomeViewModel", $"完成引导保存设置失败: {ex.Message}", ex);
+                _logger.LogError(ex, "完成引导保存设置失败");
                 throw;
             }
         }
@@ -414,7 +418,7 @@ namespace ReTime_Testing.ViewModels
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeViewModel", $"{label}保存失败: {ex.Message}");
+                _logger.LogWarning(ex, "{Label}保存失败", label);
             }
         }
 

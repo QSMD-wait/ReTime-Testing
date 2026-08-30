@@ -1,4 +1,5 @@
 using ReTime_Testing.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -55,8 +56,7 @@ public interface IScheduleOrchestrator
 /// </summary>
 public class ScheduleOrchestrator : IScheduleOrchestrator
 {
-    private const string Source = nameof(ScheduleOrchestrator);
-
+        private readonly ILogger<ScheduleOrchestrator> _logger;
     private readonly ITimeScheduleManager _timeScheduleManager;
     private readonly IScheduleGroupManager _scheduleGroupManager;
     private readonly IScheduleManager _scheduleRunManager;
@@ -64,12 +64,14 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
     private readonly ExecutionPlanGenerator _planGenerator;
 
     public ScheduleOrchestrator(
+        ILogger<ScheduleOrchestrator> logger,
         ITimeScheduleManager timeScheduleManager,
         IScheduleGroupManager scheduleGroupManager,
         IScheduleManager scheduleRunManager,
         ITimeService timeService,
         ExecutionPlanGenerator planGenerator)
     {
+        _logger = logger;
         _timeScheduleManager = timeScheduleManager;
         _scheduleGroupManager = scheduleGroupManager;
         _scheduleRunManager = scheduleRunManager;
@@ -85,21 +87,21 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
 
         if (!scheduleEnabled)
         {
-            Logger.Info(Source, "时间计划控制已禁用，跳过调度初始化");
+            _logger.LogInformation("时间计划控制已禁用，跳过调度初始化");
             return new ScheduleStartupResult(ScheduleStartupStatus.Disabled);
         }
 
         var effectiveScheduleId = _scheduleGroupManager.GetEffectiveScheduleId();
         if (effectiveScheduleId == null)
         {
-            Logger.Info(Source, "今日无生效计划表，保持空闲状态");
+            _logger.LogInformation("今日无生效计划表，保持空闲状态");
             return new ScheduleStartupResult(ScheduleStartupStatus.IdleNoSchedule);
         }
 
         var selectedSchedule = _timeScheduleManager.LoadSchedule(effectiveScheduleId);
         if (selectedSchedule == null)
         {
-            Logger.Error(Source, $"生效计划表无效或不存在: {effectiveScheduleId}，保持空闲状态");
+            _logger.LogError("生效计划表无效或不存在: {ScheduleId}，保持空闲状态", effectiveScheduleId);
             return new ScheduleStartupResult(
                 ScheduleStartupStatus.InvalidScheduleId,
                 $"计划表 \"{effectiveScheduleId}\" 无效或不存在。\n\n请检查计划表组配置或计划表文件是否完整。");
@@ -109,15 +111,15 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
         var executionPlan = _planGenerator.GenerateSafe(selectedSchedule, DateTime.Today, currentTime);
         if (executionPlan == null)
         {
-            Logger.Warn(Source, "时间计划验证失败，保持空闲状态");
+            _logger.LogWarning("时间计划验证失败，保持空闲状态");
             return new ScheduleStartupResult(
                 ScheduleStartupStatus.InvalidPlan,
                 "时间计划配置无效，已保持空闲状态。\n\n请检查时间计划表配置是否正确。");
         }
 
-        Logger.Info(Source, $"执行计划已生成: {executionPlan}");
+        _logger.LogInformation("执行计划已生成: {Plan}", executionPlan);
         _scheduleRunManager.Initialize(executionPlan);
-        Logger.Info(Source, "调度管理器已启动");
+        _logger.LogInformation("调度管理器已启动");
         return new ScheduleStartupResult(ScheduleStartupStatus.Started);
     }
 
@@ -131,7 +133,7 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
                 if (_scheduleRunManager.CurrentPlan != null)
                 {
                     _scheduleRunManager.Stop();
-                    Logger.Info(Source, "热重载：时间计划控制已禁用，调度器已停止");
+                    _logger.LogInformation("热重载：时间计划控制已禁用，调度器已停止");
                 }
                 return;
             }
@@ -148,7 +150,7 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
             if (effectiveScheduleId == null)
             {
                 _scheduleRunManager.Stop();
-                Logger.Info(Source, "热重载：今日无生效计划表，调度器已停止");
+                _logger.LogInformation("热重载：今日无生效计划表，调度器已停止");
                 return;
             }
 
@@ -173,11 +175,11 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
             {
                 _scheduleRunManager.Initialize(newPlan);
             }
-            Logger.Info(Source, $"热重载：执行计划已切换至 {effectiveScheduleId}");
+            _logger.LogInformation("热重载：执行计划已切换至 {ScheduleId}", effectiveScheduleId);
         }
         catch (Exception ex)
         {
-            Logger.Error(Source, $"热重载调度器失败: {ex.Message}", ex);
+            _logger.LogError(ex, "热重载调度器失败: {Message}", ex.Message);
         }
     }
 }

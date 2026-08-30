@@ -1,6 +1,7 @@
 using ReTime_Testing.Models;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -19,6 +20,13 @@ namespace ReTime_Testing.Services;
 /// </remarks>
 public class ExecutionPlanGenerator
 {
+
+        public ExecutionPlanGenerator(ILogger<ExecutionPlanGenerator> logger)
+        {
+            _logger = logger;
+        }
+
+        private readonly ILogger<ExecutionPlanGenerator> _logger;
     private readonly TimeScheduleValidator _validator = new();
 
     /// <summary>
@@ -42,7 +50,7 @@ public class ExecutionPlanGenerator
         // 输出警告
         foreach (var warning in validationResult.Warnings)
         {
-            Logger.Warn("ExecutionPlanGenerator", warning);
+            _logger.LogWarning(warning);
         }
 
         var plan = new ExecutionPlan
@@ -75,14 +83,14 @@ public class ExecutionPlanGenerator
         var validationResult = _validator.Validate(schedule);
         if (!validationResult.IsValid)
         {
-            Logger.Warn("ExecutionPlanGenerator", $"验证失败: {string.Join(", ", validationResult.Errors)}");
+            _logger.LogWarning("验证失败: {Errors}", string.Join(", ", validationResult.Errors));
             return null;
         }
 
         // 输出警告
         foreach (var warning in validationResult.Warnings)
         {
-            Logger.Warn("ExecutionPlanGenerator", warning);
+            _logger.LogWarning(warning);
         }
 
         var plan = new ExecutionPlan
@@ -235,7 +243,7 @@ public class ExecutionPlanGenerator
             }
             catch (Exception ex)
             {
-                Logger.Warn("ExecutionPlanGenerator", $"解析自定义时间点失败: {custom.Id}, 错误: {ex.Message}");
+                _logger.LogWarning(ex, "解析自定义时间点失败: {TimePointId}", custom.Id);
             }
         }
 
@@ -299,7 +307,7 @@ public class ExecutionPlanGenerator
             }
             catch (Exception ex)
             {
-                Logger.Warn("ExecutionPlanGenerator", $"生成自定义时间点失败: {custom.Id}, 错误: {ex.Message}");
+                _logger.LogWarning(ex, "生成自定义时间点失败: {TimePointId}", custom.Id);
             }
         }
 

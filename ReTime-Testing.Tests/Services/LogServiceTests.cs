@@ -1,8 +1,19 @@
+using System;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
+using ReTime_Testing.Services;
+using Xunit;
 
 namespace ReTime_Testing.Tests.Services
 {
+    /// <summary>
+    /// LoggingSetup + InMemoryLogSink 测试
+    /// 验证前置初始化、文件输出、句柄释放（原 P0）、模板转义安全与内存缓冲行为
+    /// </summary>
     public class LogServiceTests : IDisposable
     {
         private readonly string _testLogDir;
@@ -15,286 +26,197 @@ namespace ReTime_Testing.Tests.Services
 
         public void Dispose()
         {
+            LoggingSetup.Shutdown();
             try
             {
-                if (Directory.Exists(_testLogDir))
-                    Directory.Delete(_testLogDir, true);
+                Directory.Delete(_testLogDir, true);
             }
             catch
             {
-                // 清理失败不影响测试
+                // 临时目录清理失败不影响测试结果
             }
         }
 
-        [Fact]
-        public void Instance_在未初始化前应返回null()
+        private LogConfig CreateConfig(ReTime_Testing.Models.LogLevel minimumLevel = ReTime_Testing.Models.LogLevel.DBG, int retainedDays = 30)
         {
-            // 反射重置单例状态（测试隔离）
-            ResetSerilogInstance();
-
-            var instance = SerilogLogService.Instance;
-
-            instance.Should().BeNull();
-        }
-
-        [Fact]
-        public void Initialize_应正确设置单例实例()
-        {
-            ResetSerilogInstance();
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.DBG },
-                _testLogDir);
-
-            SerilogLogService.Initialize(config);
-
-            SerilogLogService.Instance.Should().NotBeNull();
-        }
-
-        [Fact]
-        public void Initialize_重新初始化应覆盖旧实例()
-        {
-            ResetSerilogInstance();
-
-            var config1 = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.INF },
-                _testLogDir);
-            SerilogLogService.Initialize(config1);
-            var instance1 = SerilogLogService.Instance;
-
-            var config2 = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.DBG },
-                _testLogDir);
-            SerilogLogService.Initialize(config2);
-            var instance2 = SerilogLogService.Instance;
-
-            instance1.Should().NotBeNull();
-            instance2.Should().NotBeNull();
-            instance1.Should().NotBeSameAs(instance2);
-        }
-
-        [Fact]
-        public void LogServiceConfiguration_默认构造应使用绝对路径()
-        {
-            var config = new LogServiceConfiguration();
-
-            config.EnableFileOutput.Should().BeTrue();
-            config.MinimumLevel.Should().Be(LogLevel.INF);
-            config.RetainedFileCountLimit.Should().Be(30);
-            config.FileSizeLimitBytes.Should().Be(10 * 1024L * 1024L);
-            Path.IsPathRooted(config.LogDirectory).Should().BeTrue();
-        }
-
-        [Fact]
-        public void LogServiceConfiguration_自定义构造应正确应用参数()
-        {
-            var logConfig = new LogConfig
+            return new LogConfig
             {
-                EnableFileOutput = false,
-                MinimumLevel = LogLevel.DBG,
-                RetainedDays = 7,
+                EnableFileOutput = true,
+                MinimumLevel = minimumLevel,
+                RetainedDays = retainedDays,
                 FileSizeLimitMB = 5
             };
+        }
 
-            var config = new LogServiceConfiguration(logConfig, _testLogDir);
+        private string GetSingleLogFile()
+        {
+            var files = Directory.GetFiles(_testLogDir, "RTT_log-*.log");
+            files.Should().HaveCount(1, "单次初始化应只产生一个日志文件");
+            return files[0];
+        }
 
-            config.EnableFileOutput.Should().BeFalse();
-            config.MinimumLevel.Should().Be(LogLevel.DBG);
-            config.LogDirectory.Should().Be(_testLogDir);
-            config.RetainedFileCountLimit.Should().Be(7);
-            config.FileSizeLimitBytes.Should().Be(5 * 1024L * 1024L);
+        // ==================== LoggingSetup 初始化 ====================
+
+        [Fact]
+        public void Initialize_应创建日志文件并写入内容()
+        {
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+
+            Serilog.Log.Logger.Information("{Msg}", "初始化写入测试");
+
+            LoggingSetup.Shutdown();
+
+            var content = File.ReadAllText(GetSingleLogFile());
+            content.Should().Contain("初始化写入测试");
         }
 
         [Fact]
-        public void LogServiceConfiguration_保留天数至少为1()
+        public void Initialize_重复初始化应释放旧文件句柄()
         {
-            var logConfig = new LogConfig { RetainedDays = 0 };
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+            Serilog.Log.Logger.Information("{Msg}", "首次初始化写入");
+            var firstLogFile = GetSingleLogFile();
 
-            var config = new LogServiceConfiguration(logConfig, _testLogDir);
+            // 第二次初始化应先释放旧实例的文件句柄
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
 
-            config.RetainedFileCountLimit.Should().Be(1);
+            // 旧文件不再被锁定，可正常删除（原 P0：Dispose 释放目标错误导致句柄泄漏）
+            var act = () => File.Delete(firstLogFile);
+            act.Should().NotThrow("重复初始化后旧文件句柄应已释放");
+
+            LoggingSetup.Shutdown();
         }
 
         [Fact]
-        public void LogServiceConfiguration_文件大小限制至少为1MB()
+        public void Shutdown_后日志文件应可正常读取()
         {
-            var logConfig = new LogConfig { FileSizeLimitMB = 0 };
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+            Serilog.Log.Logger.Information("{Msg}", "关闭前写入");
 
-            var config = new LogServiceConfiguration(logConfig, _testLogDir);
+            LoggingSetup.Shutdown();
 
-            config.FileSizeLimitBytes.Should().Be(1 * 1024L * 1024L);
+            // 关闭后文件句柄应完全释放（原已知失败测试的核心场景）
+            var act = () => File.ReadAllText(GetSingleLogFile());
+            act.Should().NotThrow("Shutdown 后文件不应再被锁定");
         }
 
         [Fact]
-        public void LogServiceConfiguration_null参数应抛出异常()
+        public void 日志消息含大括号应作为字面量安全输出()
         {
-            Action act = () => new LogServiceConfiguration(null!, _testLogDir);
-            act.Should().Throw<ArgumentNullException>();
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+
+            // 消息中的非法占位符样式内容不应触发 FormatException（原 P0：模板注入）
+            Serilog.Log.Logger.Information("{Msg}", "配置内容 { NotAPlaceholder } 与 {0}");
+
+            LoggingSetup.Shutdown();
+
+            var content = File.ReadAllText(GetSingleLogFile());
+            content.Should().Contain("配置内容 { NotAPlaceholder } 与 {0}");
         }
 
         [Fact]
-        public void LogServiceConfiguration_空路径应抛出异常()
+        public void Initialize_应清理过期日志文件()
         {
-            Action act = () => new LogServiceConfiguration(new LogConfig(), "");
-            act.Should().Throw<ArgumentException>();
+            // 创建一个远超保留期的旧日志文件
+            var expiredFile = Path.Combine(_testLogDir, "RTT_log-2020-01-01-00-00-00.log");
+            File.WriteAllText(expiredFile, "过期日志");
+
+            LoggingSetup.Initialize(CreateConfig(retainedDays: 7), _testLogDir);
+
+            File.Exists(expiredFile).Should().BeFalse("超过保留天数的日志文件应被清理");
+
+            LoggingSetup.Shutdown();
         }
 
         [Fact]
-        public void LogLevel枚举值应包含五个等级()
+        public void AppLog_For返回的日志器应输出到当前管道()
         {
-            Enum.GetValues<LogLevel>().Should().HaveCount(5);
-            Enum.GetValues<LogLevel>().Should().Contain([LogLevel.TRC, LogLevel.DBG, LogLevel.INF, LogLevel.WRN, LogLevel.ERR]);
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+
+            AppLog.For<LogServiceTests>().LogInformation("非DI场景日志输出");
+
+            LoggingSetup.Shutdown();
+
+            var content = File.ReadAllText(GetSingleLogFile());
+            content.Should().Contain("非DI场景日志输出");
+            content.Should().Contain(nameof(LogServiceTests), "来源应自动取泛型类名");
+        }
+
+        // ==================== InMemoryLogSink 内存缓冲 ====================
+
+        [Fact]
+        public void 内存缓冲应记录流经管道的日志()
+        {
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+
+            LoggingSetup.InMemorySink.Clear();
+            Serilog.Log.Logger.Information("{Msg}", "内存缓冲测试");
+
+            var entries = LoggingSetup.InMemorySink.GetRecentEntries();
+            entries.Should().Contain(e => e.Message.Contains("内存缓冲测试"));
+
+            LoggingSetup.Shutdown();
         }
 
         [Fact]
-        public void LogConfig默认值应正确()
+        public void 内存缓冲新增日志应触发事件()
         {
-            var config = new LogConfig();
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+            LoggingSetup.InMemorySink.Clear();
 
-            config.EnableFileOutput.Should().BeTrue();
-            config.MinimumLevel.Should().Be(LogLevel.INF);
-            config.RetainedDays.Should().Be(30);
-            config.FileSizeLimitMB.Should().Be(10);
+            LogEntryItem? received = null;
+            var resetEvent = new AutoResetEvent(false);
+            void Handler(LogEntryItem entry)
+            {
+                received = entry;
+                resetEvent.Set();
+            }
+
+            LoggingSetup.InMemorySink.LogEntryAdded += Handler;
+            try
+            {
+                Serilog.Log.Logger.Warning("{Msg}", "事件触发测试");
+                resetEvent.WaitOne(TimeSpan.FromSeconds(2)).Should().BeTrue("应在新日志写入后触发事件");
+                received.Should().NotBeNull();
+                received!.Message.Should().Contain("事件触发测试");
+                received.Level.Should().Be(ReTime_Testing.Models.LogLevel.WRN);
+            }
+            finally
+            {
+                LoggingSetup.InMemorySink.LogEntryAdded -= Handler;
+            }
+
+            LoggingSetup.Shutdown();
         }
 
         [Fact]
-        public void SerilogLogService_应实现ILogService接口()
+        public void 内存缓冲超出上限应自动裁剪()
         {
-            ResetSerilogInstance();
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+            LoggingSetup.InMemorySink.Clear();
 
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = false },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
+            for (var i = 0; i < InMemoryLogSink.MaxLogBufferCount + 100; i++)
+            {
+                Serilog.Log.Logger.Information("{Msg}", i);
+            }
 
-            SerilogLogService.Instance.Should().BeAssignableTo<ILogService>();
+            LoggingSetup.InMemorySink.GetRecentEntries().Should()
+                .HaveCount(InMemoryLogSink.MaxLogBufferCount, "缓冲应保持在上限内");
+
+            LoggingSetup.Shutdown();
         }
 
         [Fact]
-        public void SerilogLogService_应实现IDisposable接口()
+        public void Clear应清空内存缓冲()
         {
-            ResetSerilogInstance();
+            LoggingSetup.Initialize(CreateConfig(), _testLogDir);
+            Serilog.Log.Logger.Information("{Msg}", "待清除的日志");
 
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = false },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
+            LoggingSetup.InMemorySink.Clear();
 
-            SerilogLogService.Instance.Should().BeAssignableTo<IDisposable>();
-        }
+            LoggingSetup.InMemorySink.GetRecentEntries().Should().BeEmpty("清空后缓冲应为空");
 
-        [Fact]
-        public void Dispose_多次调用应安全()
-        {
-            ResetSerilogInstance();
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = false },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
-
-            var instance = SerilogLogService.Instance;
-            instance.Should().NotBeNull();
-
-            instance!.Dispose();
-            instance.Dispose();
-            instance.Dispose();
-        }
-
-        [Fact]
-        public void 文件日志输出应创建日志文件()
-        {
-            ResetSerilogInstance();
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.INF },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
-
-            var instance = SerilogLogService.Instance;
-            instance.Should().NotBeNull();
-
-            instance!.Info("TestModule", "测试日志消息");
-
-            var logFiles = Directory.GetFiles(_testLogDir, "RTT_log-*.log");
-            logFiles.Should().NotBeEmpty();
-        }
-
-        [Fact]
-        public void 禁用文件输出应不创建日志文件()
-        {
-            ResetSerilogInstance();
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = false, MinimumLevel = LogLevel.INF },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
-
-            var instance = SerilogLogService.Instance;
-            instance.Should().NotBeNull();
-
-            instance!.Info("TestModule", "测试日志消息");
-
-            var logFiles = Directory.GetFiles(_testLogDir, "RTT_log-*.log");
-            logFiles.Should().BeEmpty();
-        }
-
-        [Fact]
-        public void Logger_Serilog就绪前应缓存日志()
-        {
-            ResetSerilogInstance();
-
-            Logger.Info("TestModule", "就绪前日志1");
-            Logger.Warn("TestModule", "就绪前日志2");
-            Logger.Debug("TestModule", "就绪前日志3");
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.DBG },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
-            Logger.OnSerilogReady();
-
-            var logFiles = Directory.GetFiles(_testLogDir, "RTT_log-*.log");
-            logFiles.Should().NotBeEmpty();
-
-            SerilogLogService.Instance?.Dispose();
-
-            var content = File.ReadAllText(logFiles[0]);
-            content.Should().Contain("就绪前日志1");
-            content.Should().Contain("就绪前日志2");
-            content.Should().Contain("就绪前日志3");
-        }
-
-        [Fact]
-        public void Logger_Serilog就绪后应直接写入()
-        {
-            ResetSerilogInstance();
-
-            var config = new LogServiceConfiguration(
-                new LogConfig { EnableFileOutput = true, MinimumLevel = LogLevel.INF },
-                _testLogDir);
-            SerilogLogService.Initialize(config);
-            Logger.OnSerilogReady();
-
-            Logger.Info("TestModule", "就绪后日志");
-
-            var logFiles = Directory.GetFiles(_testLogDir, "RTT_log-*.log");
-            logFiles.Should().NotBeEmpty();
-
-            SerilogLogService.Instance?.Dispose();
-
-            var content = File.ReadAllText(logFiles[0]);
-            content.Should().Contain("就绪后日志");
-        }
-
-        private static void ResetSerilogInstance()
-        {
-            var instance = SerilogLogService.Instance;
-            instance?.Dispose();
-
-            var field = typeof(SerilogLogService).GetField("_instance",
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-            field?.SetValue(null, null);
+            LoggingSetup.Shutdown();
         }
     }
 }

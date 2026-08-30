@@ -2,11 +2,14 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ReTime_Testing.Views.Settings.Pages;
 
 public partial class AboutPage : SettingsPageBase
 {
+        private readonly ILogger<AboutPage> _logger = ((App)App.Current).Services.GetRequiredService<ILogger<AboutPage>>();
     /// <summary>
     /// 项目仓库地址
     /// </summary>
@@ -31,7 +34,7 @@ public partial class AboutPage : SettingsPageBase
         }
         catch (Exception ex)
         {
-            Logger.Warn("AboutPage", $"打开项目仓库失败: {ex.Message}");
+            _logger.LogWarning(ex, "打开项目仓库失败");
         }
     }
 }

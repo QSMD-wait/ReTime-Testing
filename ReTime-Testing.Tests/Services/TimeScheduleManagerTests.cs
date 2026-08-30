@@ -3,6 +3,7 @@ using ReTime_Testing.Services;
 using FluentAssertions;
 using System.IO;
 using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ReTime_Testing.Tests.Services;
 
@@ -25,7 +26,7 @@ public class TimeScheduleManagerTests : IDisposable
         mockConfig.Setup(c => c.TimeSchedulesDirectory).Returns(_testDirectory);
 
         // 通过 DI 构造函数创建测试用管理器
-        _manager = new TimeScheduleManager(mockConfig.Object);
+        _manager = new TimeScheduleManager(mockConfig.Object, NullLogger<TimeScheduleManager>.Instance);
     }
 
     public void Dispose()

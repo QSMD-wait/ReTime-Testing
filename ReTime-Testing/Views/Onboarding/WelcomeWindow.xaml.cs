@@ -4,6 +4,7 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Views.Onboarding
 {
@@ -13,6 +14,7 @@ namespace ReTime_Testing.Views.Onboarding
     /// </summary>
     public partial class WelcomeWindow : Window
     {
+        private readonly ILogger<WelcomeWindow> _logger = ((App)App.Current).Services.GetRequiredService<ILogger<WelcomeWindow>>();
         private WelcomeViewModel? _viewModel;
         private bool _allowClose;
         private bool _isDialogShowing;
@@ -45,7 +47,7 @@ namespace ReTime_Testing.Views.Onboarding
             if (e.PropertyName == nameof(WelcomeViewModel.IsCompleted) && _viewModel?.IsCompleted == true)
             {
                 _allowClose = true;
-                Logger.Info("WelcomeWindow", "引导完成，关闭引导窗口");
+                _logger.LogInformation("引导完成，关闭引导窗口");
                 Close();
             }
         }
@@ -80,14 +82,14 @@ namespace ReTime_Testing.Views.Onboarding
                 var result = await dialog.ShowAsync();
                 if (result == iNKORE.UI.WPF.Modern.Controls.ContentDialogResult.Primary)
                 {
-                    Logger.Info("WelcomeWindow", "引导未完成，用户选择退出应用");
+                    _logger.LogInformation("引导未完成，用户选择退出应用");
                     _allowClose = true;
                     Close();
                 }
             }
             catch (Exception ex)
             {
-                Logger.Warn("WelcomeWindow", $"关闭确认对话框异常: {ex.Message}");
+                _logger.LogWarning(ex, "关闭确认对话框异常");
             }
             finally
             {

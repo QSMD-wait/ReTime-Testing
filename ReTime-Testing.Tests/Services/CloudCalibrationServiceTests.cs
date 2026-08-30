@@ -1,5 +1,6 @@
 using ReTime_Testing.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ReTime_Testing.Tests.Services;
 
@@ -14,7 +15,7 @@ public class CloudCalibrationServiceTests
 
     public CloudCalibrationServiceTests()
     {
-        _service = new CloudCalibrationService();
+        _service = new CloudCalibrationService(NullLogger<CloudCalibrationService>.Instance);
     }
 
     [Fact]

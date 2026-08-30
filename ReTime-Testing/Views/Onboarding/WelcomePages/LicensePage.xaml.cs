@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ReTime_Testing.Views.Onboarding.WelcomePages
 {
@@ -11,6 +13,7 @@ namespace ReTime_Testing.Views.Onboarding.WelcomePages
     /// </summary>
     public partial class LicensePage : UserControl
     {
+        private readonly ILogger<LicensePage> _logger = ((App)App.Current).Services.GetRequiredService<ILogger<LicensePage>>();
         /// <summary>
         /// 项目仓库地址
         /// </summary>
@@ -35,7 +38,7 @@ namespace ReTime_Testing.Views.Onboarding.WelcomePages
             }
             catch (Exception ex)
             {
-                Logger.Warn("LicensePage", $"打开项目仓库失败: {ex.Message}");
+                _logger.LogWarning(ex, "打开项目仓库失败");
             }
         }
     }

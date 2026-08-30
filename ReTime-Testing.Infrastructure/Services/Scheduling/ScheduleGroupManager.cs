@@ -6,6 +6,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ReTime_Testing.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -15,8 +16,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class ScheduleGroupManager : IScheduleGroupManager
     {
-        private const string LOG_MODULE = "ScheduleGroupManager";
-
+        private readonly ILogger<ScheduleGroupManager> _logger;
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -34,11 +34,12 @@ namespace ReTime_Testing.Services
         public event Action<ScheduleGroup>? OnGroupChanged;
         public event Action<string>? OnGroupDeleted;
 
-        public ScheduleGroupManager(IConfigurationManager configManager, ISettingsService settingsService, ITimeScheduleManager scheduleManager)
+        public ScheduleGroupManager(IConfigurationManager configManager, ISettingsService settingsService, ITimeScheduleManager scheduleManager, ILogger<ScheduleGroupManager> logger)
         {
             _configManager = configManager;
             _settingsService = settingsService;
             _scheduleManager = scheduleManager;
+            _logger = logger;
             _scheduleGroupsDirectory = configManager.ScheduleGroupsDirectory;
         }
 
@@ -46,7 +47,7 @@ namespace ReTime_Testing.Services
         {
             EnsureDirectoryExists(_scheduleGroupsDirectory);
             EnsureDefaultGroupExists();
-            Logger.Info(LOG_MODULE, "初始化完成");
+            _logger.LogInformation("初始化完成");
         }
 
         private void EnsureDirectoryExists(string path)
@@ -62,7 +63,7 @@ namespace ReTime_Testing.Services
             if (!GroupExists(ScheduleGroup.DefaultGroupId))
             {
                 CreateNewGroup(ScheduleGroup.DefaultGroupId, "默认");
-                Logger.Info(LOG_MODULE, "已创建默认组");
+                _logger.LogInformation("已创建默认组");
             }
         }
 
@@ -89,14 +90,14 @@ namespace ReTime_Testing.Services
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error(LOG_MODULE, $"读取文件失败: {file}, 错误: {ex.Message}");
+                        _logger.LogError(ex, "读取文件失败: {File}, 错误: {Message}", file, ex.Message);
                     }
                 }
                 return groups;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"加载所有计划表组失败: {ex.Message}", ex);
+                _logger.LogError(ex, "加载所有计划表组失败: {Message}", ex.Message);
                 return new List<ScheduleGroup>();
             }
         }
@@ -116,7 +117,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"加载计划表组失败: {id}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "加载计划表组失败: {Id}, 错误: {Message}", id, ex.Message);
                 return null;
             }
         }
@@ -133,7 +134,7 @@ namespace ReTime_Testing.Services
             }
             catch (JsonException ex)
             {
-                Logger.Error(LOG_MODULE, $"JSON解析失败: {filePath}, 错误: {ex.Message}");
+                _logger.LogError(ex, "JSON解析失败: {FilePath}, 错误: {Message}", filePath, ex.Message);
                 return null;
             }
         }
@@ -188,7 +189,7 @@ namespace ReTime_Testing.Services
         {
             if (groupId == ScheduleGroup.DefaultGroupId)
             {
-                Logger.Warn(LOG_MODULE, "默认组不可解散");
+                _logger.LogWarning("默认组不可解散");
                 return false;
             }
 
@@ -214,12 +215,12 @@ namespace ReTime_Testing.Services
                 _groupCache.Remove(groupId);
                 OnGroupDeleted?.Invoke(groupId);
 
-                Logger.Info(LOG_MODULE, $"组已解散: {groupId}，表已移至默认组");
+                _logger.LogInformation("组已解散: {GroupId}，表已移至默认组", groupId);
                 return true;
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"解散组失败: {groupId}, 错误: {ex.Message}", ex);
+                _logger.LogError(ex, "解散组失败: {GroupId}, 错误: {Message}", groupId, ex.Message);
                 return false;
             }
         }
@@ -231,7 +232,7 @@ namespace ReTime_Testing.Services
         {
             if (groupId == ScheduleGroup.DefaultGroupId)
             {
-                Logger.Warn(LOG_MODULE, "默认组不可重命名");
+                _logger.LogWarning("默认组不可重命名");
                 return false;
             }
 
@@ -278,7 +279,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"计算轮换周失败: {ex.Message}", ex);
+                _logger.LogError(ex, "计算轮换周失败: {Message}", ex.Message);
                 return 1;
             }
         }
@@ -351,7 +352,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_MODULE, $"获取生效计划表ID失败: {ex.Message}", ex);
+                _logger.LogError(ex, "获取生效计划表ID失败: {Message}", ex.Message);
                 return null;
             }
         }

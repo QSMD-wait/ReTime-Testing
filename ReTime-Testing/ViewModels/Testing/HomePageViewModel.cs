@@ -4,6 +4,7 @@ using ReTime_Testing.Services;
 using System;
 using System.IO;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.Testing
 {
@@ -13,8 +14,7 @@ namespace ReTime_Testing.ViewModels.Testing
     /// </summary>
     public partial class HomePageViewModel : ObservableObject
     {
-        private const string LOG_TAG = "HomePageViewModel";
-
+        private readonly ILogger<HomePageViewModel> _logger;
         private readonly IMutexManager _mutexManager;
         private readonly IDesktopWindowManager _desktopWindowManager;
         private readonly IConfigurationManager _configurationManager;
@@ -66,12 +66,14 @@ namespace ReTime_Testing.ViewModels.Testing
         private string _positionText = "未知";
 
         public HomePageViewModel(
+            ILogger<HomePageViewModel> logger,
             IMutexManager mutexManager,
             IDesktopWindowManager desktopWindowManager,
             IConfigurationManager configurationManager,
             ITimeService? timeService = null,
             IScheduleManager? scheduleManager = null)
         {
+            _logger = logger;
             _mutexManager = mutexManager;
             _desktopWindowManager = desktopWindowManager;
             _configurationManager = configurationManager;
@@ -153,7 +155,7 @@ namespace ReTime_Testing.ViewModels.Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "刷新服务状态时发生异常", ex);
+                _logger.LogError(ex, "刷新服务状态时发生异常");
             }
         }
 
@@ -193,11 +195,11 @@ namespace ReTime_Testing.ViewModels.Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "重启应用失败", ex);
+                _logger.LogError(ex, "重启应用失败");
             }
         }
 
-        private static void OpenDirectory(string path, string name)
+        private void OpenDirectory(string path, string name)
         {
             try
             {
@@ -207,12 +209,12 @@ namespace ReTime_Testing.ViewModels.Testing
                 }
                 else
                 {
-                    Logger.Warn(LOG_TAG, $"{name}不存在: {path}");
+                    _logger.LogWarning("{Name}不存在: {Path}", name, path);
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, $"打开{name}失败", ex);
+                _logger.LogError(ex, "打开{Name}失败", name);
             }
         }
     }

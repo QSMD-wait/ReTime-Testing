@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
 using System.Windows.Threading;
 
@@ -12,6 +13,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
     private readonly ITimeService _timeService;
     private readonly IProgressStateManager _stateManager;
     private readonly ISettingsService? _settingsService;
+    private readonly ILogger<ScheduleManager> _logger;
 
     private ExecutionPlan? _currentPlan;
     private DispatcherTimer? _timer;
@@ -35,10 +37,12 @@ public class ScheduleManager : IScheduleManager, IDisposable
     /// <param name="stateManager">状态管理器</param>
     /// <param name="settingsService">设置服务（可选）</param>
     public ScheduleManager(
+        ILogger<ScheduleManager> logger,
         ITimeService timeService,
         IProgressStateManager stateManager,
         ISettingsService? settingsService = null)
     {
+        _logger = logger;
         _timeService = timeService;
         _stateManager = stateManager;
         _settingsService = settingsService;
@@ -73,7 +77,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
             ApplyBehavior(_currentPlan.CurrentSegment);
         }
 
-        Logger.Info("ScheduleManager", $"调度管理器已初始化: {plan}");
+        _logger.LogInformation("调度管理器已初始化: {Plan}", plan);
 
         // 初始加载就是一次时间跳跃：从当天 0 点跳到当前时间，同步所有状态
         ExecuteMissedTransitions(DateTime.Today, _currentTime);
@@ -85,7 +89,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
     /// <param name="newPlan">新的执行计划</param>
     public void RegenerateExecutionPlan(ExecutionPlan newPlan)
     {
-        Logger.Info("ScheduleManager", $"重新生成执行计划: {newPlan}");
+        _logger.LogInformation("重新生成执行计划: {Plan}", newPlan);
 
         _currentPlan = newPlan;
         ApplyCurrentState();
@@ -107,7 +111,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
             _timer.Tick -= OnTimerTick;
             _timer = null;
 
-            Logger.Info("ScheduleManager", "调度管理器已停止");
+            _logger.LogInformation("调度管理器已停止");
         }
     }
 
@@ -132,7 +136,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Error("ScheduleManager", $"定时器回调失败: {ex.Message}", ex);
+            _logger.LogError(ex, "定时器回调失败: {Message}", ex.Message);
         }
     }
 
@@ -155,7 +159,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
         if (pendingTimePoints.Any())
         {
-            Logger.Trace("ScheduleManager", $"开始处理 {pendingTimePoints.Count} 个待执行时间点 (当前时间: {currentTime:HH:mm:ss})");
+            _logger.LogTrace("开始处理 {Count} 个待执行时间点 (当前时间: {CurrentTime:HH:mm:ss})",
+                pendingTimePoints.Count, currentTime);
 
             int stateChanges = 0, styleChanges = 0;
             var debugEntries = new List<string>();
@@ -169,7 +174,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
                 {
                     timePoint.TryGetFromState(out var fromState);
                     timePoint.TryGetToState(out var toState);
-                    Logger.Trace("ScheduleManager", $"[{timePoint.Time:HH:mm}] {timePoint.Name}: {fromState} → {toState}");
+                    _logger.LogTrace("[{Time:HH:mm}] {Name}: {FromState} → {ToState}",
+                        timePoint.Time, timePoint.Name, fromState, toState);
                     ExecuteTransition(timePoint, fromState, toState);
                     stateChanges++;
                     debugEntries.Add($"[{timePoint.Time:HH:mm}]{fromState}→{toState}:{timePoint.Name}");
@@ -177,7 +183,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
                 if (hasStyleChange)
                 {
-                    Logger.Trace("ScheduleManager", $"[{timePoint.Time:HH:mm}] {timePoint.Name}: 样式变更");
+                    _logger.LogTrace("[{Time:HH:mm}] {Name}: 样式变更", timePoint.Time, timePoint.Name);
                     ExecuteStyleChange(timePoint);
                     styleChanges++;
                     debugEntries.Add($"[{timePoint.Time:HH:mm}]样式变更:{timePoint.Name}");
@@ -185,8 +191,9 @@ public class ScheduleManager : IScheduleManager, IDisposable
                 _currentPlan.LastExecutedTimePoint = timePoint;
             }
 
-            Logger.Info("ScheduleManager", $"批量执行完成: 总计 {pendingTimePoints.Count} 个时间点 | 状态切换 {stateChanges} 次 | 样式变更 {styleChanges} 次");
-            Logger.Debug("ScheduleManager", $"执行列表: {string.Join(", ", debugEntries)}");
+            _logger.LogInformation("批量执行完成: 总计 {Count} 个时间点 | 状态切换 {StateChanges} 次 | 样式变更 {StyleChanges} 次",
+                pendingTimePoints.Count, stateChanges, styleChanges);
+            _logger.LogDebug("执行列表: {Entries}", string.Join(", ", debugEntries));
         }
     }
 
@@ -323,12 +330,13 @@ public class ScheduleManager : IScheduleManager, IDisposable
     /// <param name="e">时间跳跃事件参数</param>
     private void OnTimeJumped(object? sender, TimeJumpedEventArgs e)
     {
-        Logger.Info("ScheduleManager", $"时间跳跃: {e.OldTime:HH:mm:ss} → {e.NewTime:HH:mm:ss} (偏移: {e.Offset.TotalSeconds}秒, 原因: {e.Reason}, 严重程度: {e.Severity})");
+        _logger.LogInformation("时间跳跃: {OldTime:HH:mm:ss} → {NewTime:HH:mm:ss} (偏移: {OffsetSeconds}秒, 原因: {Reason}, 严重程度: {Severity})",
+            e.OldTime, e.NewTime, e.Offset.TotalSeconds, e.Reason, e.Severity);
 
         // 微调校准（Minor）不触发调度状态重算，避免进度条闪烁
         if (e.Severity == TimeJumpSeverity.Minor)
         {
-            Logger.Trace("ScheduleManager", "微调校准，跳过调度状态重算");
+            _logger.LogTrace("微调校准，跳过调度状态重算");
             return;
         }
 
@@ -360,7 +368,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
     
                 if (!missedPoints.Any()) return;
 
-                Logger.Trace("ScheduleManager", $"时间跳跃同步: {oldTime:HH:mm} → {newTime:HH:mm}, 处理 {missedPoints.Count} 个时间点");
+                _logger.LogTrace("时间跳跃同步: {OldTime:HH:mm} → {NewTime:HH:mm}, 处理 {Count} 个时间点",
+                    oldTime, newTime, missedPoints.Count);
 
                 int stateChanges = 0, styleChanges = 0;
                 var debugEntries = new List<string>();
@@ -374,7 +383,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
                     {
                         point.TryGetFromState(out var fromState);
                         point.TryGetToState(out var toState);
-                        Logger.Trace("ScheduleManager", $"[{point.Time:HH:mm}] {point.Name}: {fromState} → {toState}");
+                        _logger.LogTrace("[{Time:HH:mm}] {Name}: {FromState} → {ToState}",
+                            point.Time, point.Name, fromState, toState);
                         ExecuteTransition(point, fromState, toState);
                         stateChanges++;
                         debugEntries.Add($"[{point.Time:HH:mm}]{fromState}→{toState}:{point.Name}");
@@ -382,7 +392,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
                     if (hasStyleChange)
                     {
-                        Logger.Trace("ScheduleManager", $"[{point.Time:HH:mm}] {point.Name}: 样式变更");
+                        _logger.LogTrace("[{Time:HH:mm}] {Name}: 样式变更", point.Time, point.Name);
                         ExecuteStyleChange(point);
                         styleChanges++;
                         debugEntries.Add($"[{point.Time:HH:mm}]样式变更:{point.Name}");
@@ -390,8 +400,9 @@ public class ScheduleManager : IScheduleManager, IDisposable
                     _currentPlan.LastExecutedTimePoint = point;
                 }
 
-                Logger.Info("ScheduleManager", $"跳跃同步完成: 总计 {missedPoints.Count} 个时间点 | 状态切换 {stateChanges} 次 | 样式变更 {styleChanges} 次");
-                Logger.Debug("ScheduleManager", $"执行列表: {string.Join(", ", debugEntries)}");
+                _logger.LogInformation("跳跃同步完成: 总计 {Count} 个时间点 | 状态切换 {StateChanges} 次 | 样式变更 {StyleChanges} 次",
+                    missedPoints.Count, stateChanges, styleChanges);
+                _logger.LogDebug("执行列表: {Entries}", string.Join(", ", debugEntries));
 
                 UpdateCurrentSegment(newTime);
             }
@@ -401,7 +412,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
     /// <param name="newTime">新时间</param>
     private void RecalculateCurrentState(DateTime newTime)
     {
-        Logger.Info("ScheduleManager", "向后跳跃，重新计算当前状态");
+        _logger.LogInformation("向后跳跃，重新计算当前状态");
 
         // 更新当前时间段
         UpdateCurrentSegment(newTime);
@@ -409,7 +420,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
         // 重新应用当前状态
         ApplyCurrentState();
 
-        Logger.Trace("ScheduleManager", $"状态重新计算完成: 新时间段={_currentPlan?.CurrentSegment?.Name ?? "(无)"}");
+        _logger.LogTrace("状态重新计算完成: 新时间段={CurrentSegmentName}",
+            _currentPlan?.CurrentSegment?.Name ?? "(无)");
     }
 
     /// <summary>
@@ -429,7 +441,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
         
         if (oldSegment?.State != newSegment?.State)
         {
-            Logger.Trace("ScheduleManager", $"时间段状态变化: {oldSegment?.State} → {newSegment?.State} (时间: {currentTime:HH:mm:ss})");
+            _logger.LogTrace("时间段状态变化: {OldState} → {NewState} (时间: {Time:HH:mm:ss})",
+                oldSegment?.State, newSegment?.State, currentTime);
         }
 
         // 如果时间段发生变化，重新解析行为配置
@@ -463,10 +476,11 @@ public class ScheduleManager : IScheduleManager, IDisposable
         if (_timer != null && resolved.PollingIntervalMs != oldBehavior.PollingIntervalMs)
         {
             _timer.Interval = TimeSpan.FromMilliseconds(resolved.PollingIntervalMs);
-            Logger.Trace("ScheduleManager", $"轮询间隔已更新: {oldBehavior.PollingIntervalMs}ms → {resolved.PollingIntervalMs}ms");
+            _logger.LogTrace("轮询间隔已更新: {OldMs}ms → {NewMs}ms",
+                oldBehavior.PollingIntervalMs, resolved.PollingIntervalMs);
         }
 
-        Logger.Trace("ScheduleManager", $"行为配置已应用: {resolved}");
+        _logger.LogTrace("行为配置已应用: {Resolved}", resolved);
     }
 
     /// <summary>
@@ -483,7 +497,7 @@ public class ScheduleManager : IScheduleManager, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Warn("ScheduleManager", $"读取行为配置失败: {ex.Message}");
+            _logger.LogWarning("读取行为配置失败: {Message}", ex.Message);
             return null;
         }
     }
@@ -497,7 +511,8 @@ public class ScheduleManager : IScheduleManager, IDisposable
 
         var segment = _currentPlan.CurrentSegment;
 
-        Logger.Trace("ScheduleManager", $"应用当前状态: {segment.State} - {segment.Name} (时间: {_currentTime:HH:mm:ss})");
+        _logger.LogTrace("应用当前状态: {State} - {Name} (时间: {Time:HH:mm:ss})",
+            segment.State, segment.Name, _currentTime);
 
         // 使用批量更新确保只触发一次回调
         _stateManager.BatchUpdate(manager =>

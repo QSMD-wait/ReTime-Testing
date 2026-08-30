@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using ReTime_Testing.Models;
 using System;
@@ -10,6 +11,13 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class AutoStartService : IAutoStartService
     {
+
+        public AutoStartService(ILogger<AutoStartService> logger)
+        {
+            _logger = logger;
+        }
+
+        private readonly ILogger<AutoStartService> _logger;
         private const string RegistryKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
         private const string AppName = "ReTime-Testing";
 
@@ -51,11 +59,11 @@ namespace ReTime_Testing.Services
                         break;
                 }
 
-                Logger.Info(nameof(AutoStartService), $"自启动已启用，方式: {Method}");
+                _logger.LogInformation("自启动已启用，方式: {Method}", Method);
             }
             catch (Exception ex)
             {
-                Logger.Error(nameof(AutoStartService), $"启用自启动失败: {ex.Message}", ex);
+                _logger.LogError(ex, "启用自启动失败: {Message}", ex.Message);
                 IsEnabled = false;
             }
         }
@@ -69,11 +77,11 @@ namespace ReTime_Testing.Services
                 RemoveRegistryValue();
                 RemoveStartupFolderShortcut();
 
-                Logger.Info(nameof(AutoStartService), "自启动已禁用");
+                _logger.LogInformation("自启动已禁用");
             }
             catch (Exception ex)
             {
-                Logger.Error(nameof(AutoStartService), $"禁用自启动失败: {ex.Message}", ex);
+                _logger.LogError(ex, "禁用自启动失败: {Message}", ex.Message);
             }
         }
 

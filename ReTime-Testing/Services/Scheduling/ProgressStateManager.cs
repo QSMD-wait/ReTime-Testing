@@ -1,6 +1,7 @@
 using ReTime_Testing.Models;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -9,6 +10,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class ProgressStateManager : IProgressStateManager
     {
+        private readonly ILogger<ProgressStateManager> _logger;
         private readonly ISettingsService? _settingsService;
         private bool _isBatchUpdating = false;
         private bool _pendingNotify = false;
@@ -22,8 +24,9 @@ namespace ReTime_Testing.Services
         /// 构造函数（支持 DI 注入）
         /// </summary>
         /// <param name="settingsService">设置服务（可选，为 null 时使用默认样式）</param>
-        public ProgressStateManager(ISettingsService? settingsService = null)
+        public ProgressStateManager(ILogger<ProgressStateManager> logger, ISettingsService? settingsService = null)
         {
+            _logger = logger;
             _settingsService = settingsService;
         }
 
@@ -251,7 +254,7 @@ namespace ReTime_Testing.Services
             // 仅在状态变化时输出追踪日志
             if (_currentConfig.StateType != stateType)
             {
-                Logger.Trace("ProgressStateManager", $"设置状态: {_currentConfig.StateType} → {stateType}");
+                _logger.LogTrace("设置状态: {FromState} → {ToState}", _currentConfig.StateType, stateType);
             }
 
             // 1. 获取基础样式（按优先级：配置文件 > 默认值）
@@ -337,7 +340,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Warn("ProgressStateManager", $"读取样式配置失败: {ex.Message}");
+                _logger.LogWarning(ex, "读取样式配置失败");
             }
 
             // 3. 返回默认样式
@@ -455,12 +458,12 @@ namespace ReTime_Testing.Services
                     return new SolidColorBrush(color);
                 }
 
-                Logger.Warn("ProgressStateManager", $"颜色字符串格式无效: {colorString}");
+                _logger.LogWarning("颜色字符串格式无效: {ColorString}", colorString);
                 return Brushes.Transparent;
             }
             catch (Exception ex)
             {
-                Logger.Error("ProgressStateManager", $"解析颜色字符串失败: {colorString}, 错误: {ex.Message}");
+                _logger.LogError(ex, "解析颜色字符串失败: {ColorString}", colorString);
                 return Brushes.Transparent;
             }
         }

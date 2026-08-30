@@ -4,6 +4,7 @@ using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using System;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.Testing
 {
@@ -13,8 +14,7 @@ namespace ReTime_Testing.ViewModels.Testing
     /// </summary>
     public partial class ServiceDebugViewModel : ObservableObject
     {
-        private const string LOG_TAG = "ServiceDebugViewModel";
-
+        private readonly ILogger<ServiceDebugViewModel> _logger;
         private readonly IMutexManager _mutexManager;
         private readonly ISettingsService _settingsService;
         private readonly IDesktopWindowManager _desktopWindowManager;
@@ -74,12 +74,14 @@ namespace ReTime_Testing.ViewModels.Testing
         private int _timePointCount;
 
         public ServiceDebugViewModel(
+            ILogger<ServiceDebugViewModel> logger,
             IMutexManager mutexManager,
             ISettingsService settingsService,
             IDesktopWindowManager desktopWindowManager,
             ITimeService? timeService = null,
             IScheduleManager? scheduleManager = null)
         {
+            _logger = logger;
             _mutexManager = mutexManager;
             _settingsService = settingsService;
             _desktopWindowManager = desktopWindowManager;
@@ -150,7 +152,7 @@ namespace ReTime_Testing.ViewModels.Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "刷新调试信息时发生异常", ex);
+                _logger.LogError(ex, "刷新调试信息时发生异常");
             }
         }
 
@@ -183,11 +185,11 @@ namespace ReTime_Testing.ViewModels.Testing
             {
                 _mutexManager.Release();
                 UpdateMutexStatus();
-                Logger.Info(LOG_TAG, "互斥锁已释放");
+                _logger.LogInformation("互斥锁已释放");
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "释放互斥锁时发生异常", ex);
+                _logger.LogError(ex, "释放互斥锁时发生异常");
             }
         }
 
@@ -199,13 +201,13 @@ namespace ReTime_Testing.ViewModels.Testing
                 bool acquired = _mutexManager.TryAcquire();
                 UpdateMutexStatus();
                 if (acquired)
-                    Logger.Info(LOG_TAG, "互斥锁重新获取成功");
+                    _logger.LogInformation("互斥锁重新获取成功");
                 else
-                    Logger.Warn(LOG_TAG, "互斥锁重新获取失败");
+                    _logger.LogWarning("互斥锁重新获取失败");
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "重新获取互斥锁时发生异常", ex);
+                _logger.LogError(ex, "重新获取互斥锁时发生异常");
             }
         }
 
@@ -217,11 +219,11 @@ namespace ReTime_Testing.ViewModels.Testing
                 var config = _mutexManager.Config;
                 config.IsEnabled = !config.IsEnabled;
                 IsMutexEnabled = config.IsEnabled;
-                Logger.Info(LOG_TAG, $"互斥锁已{(config.IsEnabled ? "启用" : "禁用")}");
+                _logger.LogInformation("互斥锁已{Status}", config.IsEnabled ? "启用" : "禁用");
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "切换互斥锁启用状态时发生异常", ex);
+                _logger.LogError(ex, "切换互斥锁启用状态时发生异常");
             }
         }
 
@@ -276,11 +278,11 @@ namespace ReTime_Testing.ViewModels.Testing
                 _desktopWindowManager.SetPosition(position);
                 SavePositionConfig(position);
                 UpdatePositionStatus();
-                Logger.Info(LOG_TAG, $"进度条位置已切换到{name}");
+                _logger.LogInformation("进度条位置已切换到{Name}", name);
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, $"切换进度条位置到{name}时发生异常", ex);
+                _logger.LogError(ex, "切换进度条位置到{Name}时发生异常", name);
             }
         }
 
@@ -317,12 +319,12 @@ namespace ReTime_Testing.ViewModels.Testing
             {
                 var newTime = _timeService.GetCurrentTime().AddSeconds(seconds);
                 _timeService.Calibrate(newTime);
-                Logger.Info(LOG_TAG, $"时间已校准{seconds} 秒: {newTime:HH:mm:ss}");
+                _logger.LogInformation("时间已校准{Seconds} 秒: {NewTime:HH:mm:ss}", seconds, newTime);
                 RefreshStatus();
             }
             else
             {
-                Logger.Warn(LOG_TAG, "时间服务未初始化");
+                _logger.LogWarning("时间服务未初始化");
             }
         }
 
@@ -331,12 +333,12 @@ namespace ReTime_Testing.ViewModels.Testing
         [RelayCommand]
         private void ShowExecutionPlan()
         {
-            Logger.Info(LOG_TAG, "=== 执行计划详情 ===");
-            Logger.Info(LOG_TAG, $"时间点数量: {TimePointCount}");
-            Logger.Info(LOG_TAG, $"当前时间段: {CurrentSegmentName}");
-            Logger.Info(LOG_TAG, $"当前状态: {CurrentState}");
-            Logger.Info(LOG_TAG, $"下个时间点: {NextTimePoint}");
-            Logger.Info(LOG_TAG, "====================");
+            _logger.LogInformation("=== 执行计划详情 ===");
+            _logger.LogInformation("时间点数量: {TimePointCount}", TimePointCount);
+            _logger.LogInformation("当前时间段: {SegmentName}", CurrentSegmentName);
+            _logger.LogInformation("当前状态: {State}", CurrentState);
+            _logger.LogInformation("下个时间点: {NextTimePoint}", NextTimePoint);
+            _logger.LogInformation("====================");
         }
 
         [RelayCommand]
@@ -345,7 +347,7 @@ namespace ReTime_Testing.ViewModels.Testing
             if (_scheduleManager != null)
             {
                 _scheduleManager.ApplyCurrentState();
-                Logger.Info(LOG_TAG, "当前状态已重新应用");
+                _logger.LogInformation("当前状态已重新应用");
             }
         }
 
@@ -358,7 +360,7 @@ namespace ReTime_Testing.ViewModels.Testing
             {
                 _scheduleManager.Stop();
                 IsScheduleManagerRunning = false;
-                Logger.Info(LOG_TAG, "调度管理器已停止");
+                _logger.LogInformation("调度管理器已停止");
             }
         }
 
@@ -375,16 +377,16 @@ namespace ReTime_Testing.ViewModels.Testing
                     if (currentPlan != null)
                     {
                         _scheduleManager.Initialize(currentPlan);
-                        Logger.Info(LOG_TAG, "调度管理器已重启，执行计划已重新应用");
+                        _logger.LogInformation("调度管理器已重启，执行计划已重新应用");
                     }
                     else
                     {
-                        Logger.Warn(LOG_TAG, "无法重启调度管理器：执行计划为空");
+                        _logger.LogWarning("无法重启调度管理器：执行计划为空");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(LOG_TAG, "重启调度管理器时发生异常", ex);
+                    _logger.LogError(ex, "重启调度管理器时发生异常");
                 }
             }
         }

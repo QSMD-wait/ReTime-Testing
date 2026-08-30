@@ -3,6 +3,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 
@@ -11,6 +12,7 @@ namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 /// </summary>
 public partial class ScheduleItemListItem : ObservableObject
 {
+        private static readonly ILogger<ScheduleItemListItem> _logger = AppLog.For<ScheduleItemListItem>();
     public string Id { get; set; } = "";
 
     [ObservableProperty]
@@ -133,7 +135,7 @@ public partial class ScheduleItemListItem : ObservableObject
             }
             catch (Exception ex)
             {
-                Logger.Warn("ScheduleItemListItem", $"颜色格式解析失败: {value}, 错误: {ex.Message}");
+                _logger.LogWarning(ex, "颜色格式解析失败: {Value}", value);
             }
         }
     }
@@ -156,7 +158,7 @@ public partial class ScheduleItemListItem : ObservableObject
             }
             catch (Exception ex)
             {
-                Logger.Warn("ScheduleItemListItem", $"背景色格式解析失败: {value}, 错误: {ex.Message}");
+                _logger.LogWarning(ex, "背景色格式解析失败: {Value}", value);
             }
         }
     }

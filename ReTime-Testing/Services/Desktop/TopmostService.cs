@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
 
 namespace ReTime_Testing.Services
@@ -12,6 +13,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TopmostService : ITopmostService
     {
+        private readonly ILogger<TopmostService> _logger;
 
         private Window? _targetWindow;
         private TopmostMode _currentMode = TopmostMode.OnDeactivated;
@@ -21,6 +23,11 @@ namespace ReTime_Testing.Services
         private const int DEBOUNCE_INTERVAL_MS = 50;
         private IntPtr _winEventHook = IntPtr.Zero;
         private WinEventDelegate? _winEventDelegate;
+
+        public TopmostService(ILogger<TopmostService> logger)
+        {
+            _logger = logger;
+        }
 
         [DllImport("user32.dll")]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -60,8 +67,7 @@ namespace ReTime_Testing.Services
             {
                 case TopmostMode.None:
                     // 仅初始化置顶，不维护
-                    Logger.Info("ReTime_Testing.Services.TopmostService",
-                        "层级维持模式: None（仅初始化）");
+                    _logger.LogInformation("层级维持模式: None（仅初始化）");
                     break;
 
                 case TopmostMode.OnDeactivated:
@@ -75,8 +81,7 @@ namespace ReTime_Testing.Services
                     SubscribeWindowMessages();
                     SetupZOrderHook();
                     
-                    Logger.Info("ReTime_Testing.Services.TopmostService",
-                        "层级维持模式: OnDeactivated（窗口层级变化时）");
+                    _logger.LogInformation("层级维持模式: OnDeactivated（窗口层级变化时）");
                     break;
 
                 case TopmostMode.Polling:
@@ -86,8 +91,7 @@ namespace ReTime_Testing.Services
                     };
                     _pollingTimer.Tick += OnPollingTick;
                     _pollingTimer.Start();
-                    Logger.Info("ReTime_Testing.Services.TopmostService",
-                        "层级维持模式: Polling（500ms 定时轮询）");
+                    _logger.LogInformation("层级维持模式: Polling（500ms 定时轮询）");
                     break;
             }
         }
@@ -125,7 +129,7 @@ namespace ReTime_Testing.Services
                 UnhookWinEvent(_winEventHook);
                 _winEventHook = IntPtr.Zero;
                 _winEventDelegate = null;
-                Logger.Info("ReTime_Testing.Services.TopmostService", "Z-order 钩子已清理");
+                _logger.LogInformation("Z-order 钩子已清理");
             }
 
             _targetWindow = null;
@@ -142,8 +146,7 @@ namespace ReTime_Testing.Services
             try
             {
                 var helper = new WindowInteropHelper(_targetWindow);
-                Logger.Info("ReTime_Testing.Services.TopmostService", 
-                    $"尝试订阅 Windows 消息，窗口句柄: {helper.Handle}");
+                _logger.LogInformation("尝试订阅 Windows 消息，窗口句柄: {Handle}", helper.Handle);
                 
                 if (helper.Handle != IntPtr.Zero)
                 {
@@ -151,24 +154,21 @@ namespace ReTime_Testing.Services
                     if (_hwndSource != null)
                     {
                         _hwndSource.AddHook(WndProc);
-                        Logger.Info("ReTime_Testing.Services.TopmostService", 
-                            "Windows 消息钩子订阅成功");
+                        _logger.LogInformation("Windows 消息钩子订阅成功");
                     }
                     else
                     {
-                        Logger.Warn("ReTime_Testing.Services.TopmostService", 
-                            "HwndSource.FromHwnd 返回 null");
+                        _logger.LogWarning("HwndSource.FromHwnd 返回 null");
                     }
                 }
                 else
                 {
-                    Logger.Warn("ReTime_Testing.Services.TopmostService", 
-                        "窗口句柄为 0，无法订阅消息");
+                    _logger.LogWarning("窗口句柄为 0，无法订阅消息");
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TopmostService", "订阅 Windows 消息失败", ex);
+                _logger.LogError(ex, "订阅 Windows 消息失败");
             }
         }
 
@@ -191,16 +191,16 @@ namespace ReTime_Testing.Services
 
                 if (_winEventHook != IntPtr.Zero)
                 {
-                    Logger.Info("ReTime_Testing.Services.TopmostService", "Z-order 监听钩子设置成功");
+                    _logger.LogInformation("Z-order 监听钩子设置成功");
                 }
                 else
                 {
-                    Logger.Error("ReTime_Testing.Services.TopmostService", "Z-order 监听钩子设置失败");
+                    _logger.LogError("Z-order 监听钩子设置失败");
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TopmostService", "设置 Z-order 监听钩子失败", ex);
+                _logger.LogError(ex, "设置 Z-order 监听钩子失败");
             }
         }
 
@@ -311,7 +311,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("ReTime_Testing.Services.TopmostService", "异步强制置顶失败", ex);
+                    _logger.LogError(ex, "异步强制置顶失败");
                 }
             }, DispatcherPriority.Normal);
         }
@@ -339,7 +339,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TopmostService", "强制置顶失败", ex);
+                _logger.LogError(ex, "强制置顶失败");
             }
         }
 
@@ -357,13 +357,13 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.TopmostService", "置顶失败", ex);
+                _logger.LogError(ex, "置顶失败");
             }
         }
 
         private void OnWindowDeactivated(object? sender, EventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", "OnWindowDeactivated 事件触发");
+            _logger.LogInformation("OnWindowDeactivated 事件触发");
             if (_currentMode == TopmostMode.OnDeactivated)
             {
                 ForceTopmost();
@@ -372,7 +372,7 @@ namespace ReTime_Testing.Services
 
         private void OnWindowActivated(object? sender, EventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", "OnWindowActivated 事件触发");
+            _logger.LogInformation("OnWindowActivated 事件触发");
             if (_currentMode == TopmostMode.OnDeactivated)
             {
                 ForceTopmost();
@@ -381,7 +381,7 @@ namespace ReTime_Testing.Services
 
         private void OnWindowLocationChanged(object? sender, EventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", "OnWindowLocationChanged 事件触发");
+            _logger.LogInformation("OnWindowLocationChanged 事件触发");
             if (_currentMode == TopmostMode.OnDeactivated)
             {
                 ForceTopmost();
@@ -390,7 +390,7 @@ namespace ReTime_Testing.Services
 
         private void OnWindowSizeChanged(object? sender, EventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", "OnWindowSizeChanged 事件触发");
+            _logger.LogInformation("OnWindowSizeChanged 事件触发");
             if (_currentMode == TopmostMode.OnDeactivated)
             {
                 ForceTopmost();
@@ -399,8 +399,7 @@ namespace ReTime_Testing.Services
 
         private void OnWindowIsVisibleChanged(object? sender, DependencyPropertyChangedEventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", 
-                $"OnWindowIsVisibleChanged 事件触发，IsVisible: {_targetWindow?.IsVisible}");
+            _logger.LogInformation("OnWindowIsVisibleChanged 事件触发，IsVisible: {IsVisible}", _targetWindow?.IsVisible);
             if (_currentMode == TopmostMode.OnDeactivated && _targetWindow != null && _targetWindow.IsVisible)
             {
                 ForceTopmost();
@@ -409,7 +408,7 @@ namespace ReTime_Testing.Services
 
         private void OnWindowSourceInitialized(object? sender, EventArgs e)
         {
-            Logger.Info("ReTime_Testing.Services.TopmostService", "OnWindowSourceInitialized 事件触发");
+            _logger.LogInformation("OnWindowSourceInitialized 事件触发");
             if (_currentMode == TopmostMode.OnDeactivated)
             {
                 SubscribeWindowMessages();

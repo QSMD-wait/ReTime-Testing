@@ -1,5 +1,6 @@
 using ReTime_Testing.Models;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -11,6 +12,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class ConfigurationManager : IConfigurationManager
     {
+        private readonly ILogger<ConfigurationManager> _logger;
         /// <summary>
         /// 获取应用根目录
         /// </summary>
@@ -59,8 +61,9 @@ namespace ReTime_Testing.Services
         /// <summary>
         /// 构造函数（支持 DI 注入）
         /// </summary>
-        public ConfigurationManager()
+        public ConfigurationManager(ILogger<ConfigurationManager> logger)
         {
+            _logger = logger;
             InitializePaths();
         }
 
@@ -83,13 +86,11 @@ namespace ReTime_Testing.Services
                 LogsDirectory = Path.Combine(DataDirectory, "Logs");
                 ProgressBarThemesDirectory = Path.Combine(ConfigsDirectory, "TimeTopDesktop", "Themes");
 
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
-                    $"路径初始化完成: Root={ApplicationRootDirectory}, Data={DataDirectory}");
+                _logger.LogInformation("路径初始化完成: Root={Root}, Data={Data}", ApplicationRootDirectory, DataDirectory);
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
-                    $"路径初始化失败: {ex.Message}", ex);
+                _logger.LogError(ex, "路径初始化失败: {Message}", ex.Message);
                 throw new ConfigurationException("路径初始化失败", ex);
             }
         }
@@ -109,13 +110,11 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(LogsDirectory);
                 EnsureDirectoryExists(ProgressBarThemesDirectory);
 
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
-                    "目录结构初始化完成");
+                _logger.LogInformation("目录结构初始化完成");
             }
             catch (Exception ex)
             {
-                Logger.Error("ReTime_Testing.Services.ConfigurationManager",
-                    $"目录结构初始化失败: {ex.Message}", ex);
+                _logger.LogError(ex, "目录结构初始化失败: {Message}", ex.Message);
                 throw new ConfigurationException("目录结构初始化失败", ex);
             }
         }
@@ -128,8 +127,7 @@ namespace ReTime_Testing.Services
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Logger.Info("ReTime_Testing.Services.ConfigurationManager",
-                    $"目录已创建: {path}");
+                _logger.LogInformation("目录已创建: {Path}", path);
             }
         }
     }

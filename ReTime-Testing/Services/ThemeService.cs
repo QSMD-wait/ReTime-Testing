@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using iNKORE.UI.WPF.Modern;
 
 namespace ReTime_Testing.Services
@@ -7,7 +8,13 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class ThemeService : IThemeService
     {
+        private readonly ILogger<ThemeService> _logger;
         public string CurrentTheme { get; private set; } = "light";
+
+        public ThemeService(ILogger<ThemeService> logger)
+        {
+            _logger = logger;
+        }
 
         public void ApplyTheme(string themeName)
         {
@@ -21,7 +28,7 @@ namespace ReTime_Testing.Services
 
             ThemeManager.Current.ApplicationTheme = appTheme;
 
-            Logger.Info(nameof(ThemeService), $"主题已应用: {CurrentTheme}");
+            _logger.LogInformation("主题已应用: {Theme}", CurrentTheme);
         }
     }
 }

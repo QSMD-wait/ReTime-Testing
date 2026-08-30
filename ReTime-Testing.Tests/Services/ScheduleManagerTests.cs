@@ -1,4 +1,4 @@
-using ReTime_Testing.Models;
+﻿using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 using Moq;
 using FluentAssertions;
@@ -18,8 +18,8 @@ public class ScheduleManagerTests
     {
         _mockTimeService = new Mock<ITimeService>();
         // 使用真实的 ProgressStateManager，因为 Mock 它的方法比较复杂
-        var stateManager = new ProgressStateManager();
-        _manager = new ScheduleManager(_mockTimeService.Object, stateManager);
+        var stateManager = new ProgressStateManager(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProgressStateManager>.Instance);
+        _manager = new ScheduleManager(Microsoft.Extensions.Logging.Abstractions.NullLogger<ScheduleManager>.Instance, _mockTimeService.Object, stateManager);
     }
 
     [Fact]

@@ -9,11 +9,14 @@ using CommunityToolkit.Mvvm.Input;
 using ReTime_Testing.Models;
 using ReTime_Testing.Models.UI;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 
 public partial class TimeScheduleEditorViewModel : ObservableObject
 {
+        private readonly ILogger<TimeScheduleEditorViewModel> _logger;
+    private readonly ILogger<ExecutionPlanGenerator> _planGeneratorLogger;
     private readonly ITimeScheduleManager _scheduleManager;
     private readonly IScheduleGroupManager _groupManager;
     private readonly ISettingsService _settingsService;
@@ -76,12 +79,16 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private const string DEFAULT_GROUP_NAME = "默认";
 
     public TimeScheduleEditorViewModel(
+        ILogger<TimeScheduleEditorViewModel> logger,
+        ILogger<ExecutionPlanGenerator> planGeneratorLogger,
         ITimeScheduleManager scheduleManager,
         IScheduleGroupManager groupManager,
         ISettingsService settingsService,
         ITimeService? timeService = null,
         IScheduleManager? scheduleRunManager = null)
     {
+        _logger = logger;
+        _planGeneratorLogger = planGeneratorLogger;
         _scheduleManager = scheduleManager;
         _groupManager = groupManager;
         _settingsService = settingsService;
@@ -243,7 +250,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var schedule = _scheduleManager.CreateNewSchedule(newId, newName);
         if (schedule != null)
         {
-            Logger.Info("TimeScheduleEditor", $"创建新计划表: {newId}");
+            _logger.LogInformation("创建新计划表: {ScheduleId}", newId);
             RefreshScheduleList();
             SelectedSchedule = Schedules.FirstOrDefault(s => s.Id == newId);
         }
@@ -512,12 +519,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
             UpdateHasUnpersistedChanges();
 
-            Logger.Info("TimeScheduleEditor", $"计划表保存成功: {_currentEditingState.ScheduleId}");
+            _logger.LogInformation("计划表保存成功: {ScheduleId}", _currentEditingState.ScheduleId);
             return true;
         }
         catch (Exception ex)
         {
-            Logger.Error("TimeScheduleEditor", $"计划表保存失败: {_currentEditingState.ScheduleId}, 错误: {ex.Message}", ex);
+            _logger.LogError(ex, "计划表保存失败: {ScheduleId}", _currentEditingState.ScheduleId);
             ToastRequested?.Invoke(new ToastMessage("保存失败", ex.Message) { Severity = ToastSeverity.Error, Duration = TimeSpan.FromSeconds(8) });
             return false;
         }
@@ -685,7 +692,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn("TimeScheduleEditor", $"时间格式解析失败: {seg.StartTime}/{seg.EndTime}, 错误: {ex.Message}");
+                    _logger.LogWarning(ex, "时间格式解析失败: {StartTime}/{EndTime}", seg.StartTime, seg.EndTime);
                     seg.StartTimeError = "时间格式无效";
                 }
             }
@@ -878,19 +885,19 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             if (schedule == null)
                 return (false, $"计划表 \"{scheduleId}\" 不存在");
 
-            var planGenerator = new ExecutionPlanGenerator();
+            var planGenerator = new ExecutionPlanGenerator(_planGeneratorLogger);
             var now = _timeService.GetCurrentTime();
             var newPlan = planGenerator.Generate(schedule, now.Date, now);
             _scheduleRunManager.RegenerateExecutionPlan(newPlan);
 
             _timeService.Calibrate(_timeService.GetCurrentTime(), TimeJumpReason.ManualCalibration, TimeJumpSeverity.Minor);
 
-            Logger.Info("TimeScheduleEditor", $"热重载成功: {scheduleId}");
+            _logger.LogInformation("热重载成功: {ScheduleId}", scheduleId);
             return (true, null);
         }
         catch (Exception ex)
         {
-            Logger.Error("TimeScheduleEditor", $"热重载失败: {ex.Message}", ex);
+            _logger.LogError(ex, "热重载失败");
             return (false, ex.Message);
         }
     }
@@ -1142,7 +1149,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         if (group != null)
         {
-            Logger.Info("TimeScheduleEditor", $"创建新表组: {newId}");
+            _logger.LogInformation("创建新表组: {GroupId}", newId);
             RefreshGroups();
         }
     }

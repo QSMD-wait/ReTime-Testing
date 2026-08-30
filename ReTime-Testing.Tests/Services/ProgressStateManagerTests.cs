@@ -3,6 +3,7 @@ using ReTime_Testing.Services;
 using FluentAssertions;
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ReTime_Testing.Tests.Services;
 
@@ -16,7 +17,7 @@ public class ProgressStateManagerTests
 
     public ProgressStateManagerTests()
     {
-        _manager = new ProgressStateManager();
+        _manager = new ProgressStateManager(NullLogger<ProgressStateManager>.Instance);
         _stateChanges = new List<ProgressStateConfig>();
         _manager.OnStateChanged += (config) => _stateChanges.Add(config.Clone());
     }

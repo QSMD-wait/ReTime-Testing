@@ -4,9 +4,13 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Media;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
 using ReTime_Testing.Core.Services;
 using ReTime_Testing.Core.Models.Theme;
@@ -16,6 +20,7 @@ using ReTime_Testing.Views;
 using ReTime_Testing.Views.Settings;
 using ReTime_Testing.Views.TimeTopDesktop;
 using ReTime_Testing.Helpers;
+using Serilog;
 
 namespace ReTime_Testing
 {
@@ -29,6 +34,7 @@ namespace ReTime_Testing
     /// </remarks>
     public partial class App : Application
     {
+        private readonly ILogger<App> _logger = AppLog.For<App>();
         private IHost? _host;
         private IMutexManager? _mutexManager;
         private ITrayIconService? _trayIconService;
@@ -53,11 +59,11 @@ namespace ReTime_Testing
             var message = ex?.Message ?? "未知错误";
             if (ex != null)
             {
-                Logger.Error(GetType().FullName ?? "App", $"全局未处理异常: {message}", ex);
+                _logger.LogError(ex, "全局未处理异常: {Message}", message);
             }
             else
             {
-                Logger.Error(GetType().FullName ?? "App", $"全局未处理异常: {message}");
+                _logger.LogError("全局未处理异常: {Message}", message);
             }
 
             if (e.IsTerminating)
@@ -79,8 +85,15 @@ namespace ReTime_Testing
 
             try
             {
-                // 构建 DI 容器（必须在其他操作之前）
+                // 控制台 UTF-8 编码，解决中文乱码
+                Console.OutputEncoding = Encoding.UTF8;
+
+                // 最早阶段：初始化 Serilog 全局日志器（控制台 + 文件 + 内存缓冲）
+                InitializeLogging();
+
+                // 构建 DI 容器，使用 Serilog 接管 Host 日志管道
                 _host = Host.CreateDefaultBuilder()
+                    .UseSerilog(Log.Logger, dispose: false)
                     .ConfigureServices((context, services) =>
                     {
                         services.AddReTimeServices();
@@ -104,7 +117,7 @@ namespace ReTime_Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", $"应用启动失败: {ex.Message}", ex);
+                _logger.LogError(ex, "应用启动失败");
                 ShowWarningAndExit($"应用启动失败：\n{ex.Message}");
             }
         }
@@ -136,7 +149,7 @@ namespace ReTime_Testing
 
                 // 初始化系统托盘图标（含事件路由）
                 _trayIconService = Services.GetRequiredService<ITrayIconService>();
-                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication);
+                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication, Services.GetRequiredService<ILogger<TrayIconController>>());
                 _trayIconController.Initialize();
 
                 // 订阅配置变更事件（热重载）
@@ -152,7 +165,7 @@ namespace ReTime_Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "启动应用程序时发生异常", ex);
+                _logger.LogError(ex, "启动应用程序时发生异常");
                 Shutdown();
             }
         }
@@ -176,10 +189,10 @@ namespace ReTime_Testing
 
                 // 引导模式：加载托盘图标（不带右键菜单）
                 _trayIconService = Services.GetRequiredService<ITrayIconService>();
-                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication);
+                _trayIconController = new TrayIconController(_trayIconService, RestartApplication, ExitApplication, Services.GetRequiredService<ILogger<TrayIconController>>());
                 _trayIconController.Initialize(showContextMenu: false);
 
-                Logger.Info(GetType().FullName ?? "App", "进入欢迎引导模式");
+                _logger.LogInformation("进入欢迎引导模式");
 
                 var welcomeWindow = new Views.Onboarding.WelcomeWindow();
                 welcomeWindow.ShowDialog();
@@ -190,17 +203,17 @@ namespace ReTime_Testing
 
                 if (!welcomeWindow.IsWizardCompleted)
                 {
-                    Logger.Info(GetType().FullName ?? "App", "欢迎引导未完成，退出应用");
+                    _logger.LogInformation("欢迎引导未完成，退出应用");
                     Shutdown();
                     return;
                 }
 
-                Logger.Info(GetType().FullName ?? "App", "欢迎引导完成，重启进入正常启动流程");
+                _logger.LogInformation("欢迎引导完成，重启进入正常启动流程");
                 RestartApplication();
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "欢迎引导流程发生异常", ex);
+                _logger.LogError(ex, "欢迎引导流程发生异常");
                 Shutdown();
             }
         }
@@ -215,16 +228,16 @@ namespace ReTime_Testing
                 var success = await timeCalibrationService.CalibrateAsync();
                 if (success)
                 {
-                    Logger.Info(GetType().FullName ?? "App", "首次校准成功");
+                    _logger.LogInformation("首次校准成功");
                 }
                 else
                 {
-                    Logger.Warn(GetType().FullName ?? "App", "首次校准失败，使用系统时间");
+                    _logger.LogWarning("首次校准失败，使用系统时间");
                 }
             }
             catch (Exception ex)
             {
-                Logger.Warn(GetType().FullName ?? "App", $"首次校准异常: {ex.Message}，使用系统时间");
+                _logger.LogWarning(ex, "首次校准异常，使用系统时间");
             }
         }
 
@@ -237,11 +250,11 @@ namespace ReTime_Testing
             {
                 var themeService = Services.GetRequiredService<IThemeService>();
                 themeService.ApplyTheme(setting.Basic.Theme);
-                Logger.Info(GetType().FullName ?? "App", "热重载：主题已刷新");
+                _logger.LogInformation("热重载：主题已刷新");
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", $"热重载主题失败: {ex.Message}", ex);
+                _logger.LogError(ex, "热重载主题失败");
             }
         }
 
@@ -258,14 +271,14 @@ namespace ReTime_Testing
                 desktopWindowManager.RefreshShadow();
                 desktopWindowManager.RefreshTextOverlay();
                 desktopWindowManager.ApplyTopmostModeFromConfig();
-                Logger.Info(GetType().FullName ?? "App", "热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
+                _logger.LogInformation("热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
 
                 // 热重载调度器：重新评估生效计划表并更新执行计划
                 Services.GetRequiredService<IScheduleOrchestrator>().ApplyScheduleConfig(setting.Schedule.Enabled);
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", $"热重载窗口配置失败: {ex.Message}", ex);
+                _logger.LogError(ex, "热重载窗口配置失败");
             }
         }
 
@@ -278,14 +291,14 @@ namespace ReTime_Testing
 
             if (config == null)
             {
-                Logger.Error(GetType().FullName ?? "App", "互斥锁管理器配置为 null");
+                _logger.LogError("互斥锁管理器配置为 null");
                 Shutdown();
                 return;
             }
 
             ShowModernConflictDialog(config);
 
-            Logger.Warn(GetType().FullName ?? "App", "检测到多实例运行，显示冲突弹窗");
+            _logger.LogWarning("检测到多实例运行，显示冲突弹窗");
 
             if (config.AutoShutdownOnConflict)
             {
@@ -311,7 +324,7 @@ namespace ReTime_Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "显示 Modern UI 对话框时发生异常，回退到标准 MessageBox", ex);
+                _logger.LogError(ex, "显示 Modern UI 对话框时发生异常，回退到标准 MessageBox");
 
                 MessageBox.Show(
                     config.ConflictWindowMessage,
@@ -327,7 +340,7 @@ namespace ReTime_Testing
         /// </summary>
         private void OnMutexConflictDetected(object? sender, MutexConflictEventArgs e)
         {
-            Logger.Warn(GetType().FullName ?? "App", $"互斥锁冲突事件触发，冲突时间: {e.ConflictTime}");
+                _logger.LogWarning("互斥锁冲突事件触发，冲突时间: {ConflictTime}", e.ConflictTime);
         }
 
         /// <summary>
@@ -411,7 +424,7 @@ namespace ReTime_Testing
         /// </summary>
         private void OnMutexAcquired(object? sender, EventArgs e)
         {
-            Logger.Info(GetType().FullName ?? "App", "互斥锁获取成功事件触发");
+            _logger.LogInformation("互斥锁获取成功事件触发");
         }
 
         /// <summary>
@@ -421,7 +434,7 @@ namespace ReTime_Testing
         {
             try
             {
-                Logger.Info(GetType().FullName ?? "App", "应用程序重启请求");
+                _logger.LogInformation("应用程序重启请求");
 
                 // 先释放互斥锁，避免新进程获取失败
                 _mutexManager?.Release();
@@ -441,7 +454,7 @@ namespace ReTime_Testing
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "重启应用程序时发生异常", ex);
+                _logger.LogError(ex, "重启应用程序时发生异常");
             }
         }
 
@@ -452,14 +465,57 @@ namespace ReTime_Testing
         {
             try
             {
-                Logger.Info(GetType().FullName ?? "App", "应用程序退出请求");
+                _logger.LogInformation("应用程序退出请求");
                 Shutdown();
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "App", "退出应用程序时发生异常", ex);
+                _logger.LogError(ex, "退出应用程序时发生异常");
                 Shutdown();
             }
+        }
+
+        /// <summary>
+        /// 在应用启动最早阶段初始化 Serilog 日志系统
+        /// 直接读取 Setting.json 提取日志配置，不依赖 DI 容器
+        /// </summary>
+        private void InitializeLogging()
+        {
+            var logConfig = new LogConfig();
+            var logsDirectory = Path.Combine(AppContext.BaseDirectory, "data", "Logs");
+
+            try
+            {
+                var settingPath = Path.Combine(AppContext.BaseDirectory, "data", "Setting.json");
+                if (File.Exists(settingPath))
+                {
+                    var json = File.ReadAllText(settingPath);
+                    var node = JsonNode.Parse(json,
+                        null,
+                        new JsonDocumentOptions { AllowTrailingCommas = true });
+
+                    var logNode = node?["basic"]?["log"];
+                    if (logNode != null)
+                    {
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                        };
+                        var parsed = logNode.Deserialize<LogConfig>(options);
+                        if (parsed != null)
+                            logConfig = parsed;
+                    }
+                }
+
+                if (!Directory.Exists(logsDirectory))
+                    Directory.CreateDirectory(logsDirectory);
+            }
+            catch
+            {
+                // 配置读取失败时使用默认 LogConfig 兜底，确保应用仍可启动
+            }
+
+            LoggingSetup.Initialize(logConfig, logsDirectory);
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -499,8 +555,8 @@ namespace ReTime_Testing
                 }
             }
 
-            Logger.Info(GetType().FullName ?? "App", "应用程序退出");
-            SerilogLogService.Instance?.Dispose();
+            _logger.LogInformation("应用程序退出");
+            LoggingSetup.Shutdown();
 
             _host?.Dispose();
 

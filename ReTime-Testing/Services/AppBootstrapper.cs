@@ -3,6 +3,7 @@ using ReTime_Testing.Core.Models.Theme;
 using ReTime_Testing.Core.Services;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services.Onboarding;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -23,8 +24,7 @@ public sealed record AppStartupResult(
 /// </summary>
 public class AppBootstrapper
 {
-    private const string Source = nameof(AppBootstrapper);
-
+        private readonly ILogger<AppBootstrapper> _logger;
     private readonly IConfigurationManager _configManager;
     private readonly ISettingsService _settingsService;
     private readonly IThemeService _themeService;
@@ -38,6 +38,7 @@ public class AppBootstrapper
     private readonly IGlobalTimeTopDesktopService _globalDesktopService;
 
     public AppBootstrapper(
+        ILogger<AppBootstrapper> logger,
         IConfigurationManager configManager,
         ISettingsService settingsService,
         IThemeService themeService,
@@ -50,6 +51,7 @@ public class AppBootstrapper
         IDesktopWindowManager desktopWindowManager,
         IGlobalTimeTopDesktopService globalDesktopService)
     {
+        _logger = logger;
         _configManager = configManager;
         _settingsService = settingsService;
         _themeService = themeService;
@@ -77,11 +79,7 @@ public class AppBootstrapper
 
         var globalSetting = _settingsService.GetGlobalSetting();
 
-        // 初始化 Serilog 日志服务
-        var logConfig = new LogServiceConfiguration(globalSetting.Basic.Log, _configManager.LogsDirectory);
-        SerilogLogService.Initialize(logConfig);
-        Logger.OnSerilogReady();
-        Logger.Info(Source, "Serilog 日志服务已初始化");
+        // 日志系统已由 App.OnStartup() 中 InitializeLogging() 在启动最早阶段前置接管，此处无需初始化
 
         // 首次启动：进入欢迎引导模式
         if (OnboardingFlow.ShouldShowWelcome(settingFileExisted,
@@ -96,7 +94,7 @@ public class AppBootstrapper
         // 初始化进度条主题服务
         _progressBarThemeService.LoadAllThemes();
         _progressBarThemeService.ApplyTheme(ProgressBarThemeManifest.DefaultId);
-        Logger.Info(Source, "进度条主题服务已初始化");
+        _logger.LogInformation("进度条主题服务已初始化");
 
         // 应用自启动配置
         _autoStartService.InitializeFromConfig(globalSetting.Basic.AutoStart);
@@ -104,12 +102,12 @@ public class AppBootstrapper
         // 初始化时间计划管理器
         _timeScheduleManager.Initialize();
 
-        Logger.Info(Source, "单调时钟服务已初始化");
+        _logger.LogInformation("单调时钟服务已初始化");
 
         // 初始化时间校准服务
         var timeTopSetting = _settingsService.GetTimeTopSetting();
         _timeCalibrationService.ApplyConfig(timeTopSetting.Calibration);
-        Logger.Info(Source, "时间校准服务已初始化");
+        _logger.LogInformation("时间校准服务已初始化");
 
         // 恢复用户时间偏移
         var userOffsetSeconds = timeTopSetting.Calibration.UserOffsetSeconds;
@@ -129,9 +127,9 @@ public class AppBootstrapper
 
         // 启动时间校准服务
         _timeCalibrationService.Start();
-        Logger.Info(Source, "时间校准服务已启动");
+        _logger.LogInformation("时间校准服务已启动");
 
-        Logger.Info(Source, "应用程序启动成功");
+        _logger.LogInformation("应用程序启动成功");
 
         return new AppStartupResult(NeedsWelcomeFlow: false, TimeTopSetting: timeTopSetting, ScheduleValidationError: scheduleError);
     }

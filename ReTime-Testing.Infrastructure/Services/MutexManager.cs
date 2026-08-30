@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services
 {
@@ -11,6 +12,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class MutexManager : IMutexManager
     {
+        private readonly ILogger<MutexManager> _logger;
         private Mutex? _mutex;
         private MutexConfig _config;
         private bool _disposed = false;
@@ -39,8 +41,9 @@ namespace ReTime_Testing.Services
         /// <summary>
         /// 构造函数（支持 DI 注入）
         /// </summary>
-        public MutexManager()
+        public MutexManager(ILogger<MutexManager> logger)
         {
+            _logger = logger;
             _config = MutexConfig.GetDefault();
         }
 
@@ -51,7 +54,7 @@ namespace ReTime_Testing.Services
         public void Initialize(MutexConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            Logger.Info(GetType().FullName ?? "MutexManager", $"MutexManager 初始化完成，互斥锁ID: {_config.MutexId}");
+            _logger.LogInformation("MutexManager 初始化完成，互斥锁ID: {MutexId}", _config.MutexId);
         }
 
         /// <summary>
@@ -62,13 +65,13 @@ namespace ReTime_Testing.Services
         {
             if (_disposed)
             {
-                Logger.Error(GetType().FullName ?? "MutexManager", "MutexManager 已被释放，无法获取互斥锁");
+                _logger.LogError("MutexManager 已被释放，无法获取互斥锁");
                 return false;
             }
 
             if (!_config.IsEnabled)
             {
-                Logger.Info(GetType().FullName ?? "MutexManager", "互斥锁功能已禁用");
+                _logger.LogInformation("互斥锁功能已禁用");
                 _isAcquired = true;
                 OnMutexAcquired?.Invoke(this, EventArgs.Empty);
                 return true;
@@ -84,12 +87,12 @@ namespace ReTime_Testing.Services
 
                 if (_isAcquired)
                 {
-                    Logger.Info(GetType().FullName ?? "MutexManager", $"成功获取互斥锁: {_config.MutexId}");
+                    _logger.LogInformation("成功获取互斥锁: {MutexId}", _config.MutexId);
                     OnMutexAcquired?.Invoke(this, EventArgs.Empty);
                 }
                 else
                 {
-                    Logger.Warn(GetType().FullName ?? "MutexManager", $"检测到互斥锁冲突: {_config.MutexId}");
+                    _logger.LogWarning("检测到互斥锁冲突: {MutexId}", _config.MutexId);
                     OnConflictDetected?.Invoke(this, new MutexConflictEventArgs(
                         _config.MutexId,
                         _config.ConflictWindowAutoCloseTime
@@ -100,7 +103,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(GetType().FullName ?? "MutexManager", "获取互斥锁时发生异常", ex);
+                _logger.LogError(ex, "获取互斥锁时发生异常");
                 return false;
             }
         }
@@ -116,11 +119,11 @@ namespace ReTime_Testing.Services
                 {
                     _mutex.ReleaseMutex();
                     _isAcquired = false;
-                    Logger.Info(GetType().FullName ?? "MutexManager", $"互斥锁已释放: {_config.MutexId}");
+                    _logger.LogInformation("互斥锁已释放: {MutexId}", _config.MutexId);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(GetType().FullName ?? "MutexManager", "释放互斥锁时发生异常", ex);
+                    _logger.LogError(ex, "释放互斥锁时发生异常");
                 }
             }
         }
@@ -150,7 +153,7 @@ namespace ReTime_Testing.Services
                 }
 
                 _disposed = true;
-                Logger.Info(GetType().FullName ?? "MutexManager", "MutexManager 已释放");
+                _logger.LogInformation("MutexManager 已释放");
             }
         }
 

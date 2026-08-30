@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using ReTime_Testing.Models;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -11,6 +12,7 @@ namespace ReTime_Testing.Services;
 /// </summary>
 public class TimeCalibrationService : ITimeCalibrationService, IDisposable
 {
+        private readonly ILogger<TimeCalibrationService> _logger;
     private readonly ITimeService _timeService;
     private readonly ICloudCalibrationService _cloudCalibrationService;
     private readonly Timer _calibrationTimer;
@@ -73,8 +75,9 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
     /// </summary>
     /// <param name="timeService">单调时钟服务</param>
     /// <param name="cloudCalibrationService">云端校准数据源</param>
-    public TimeCalibrationService(ITimeService timeService, ICloudCalibrationService cloudCalibrationService)
+    public TimeCalibrationService(ITimeService timeService, ICloudCalibrationService cloudCalibrationService, ILogger<TimeCalibrationService> logger)
     {
+        _logger = logger;
         _timeService = timeService;
         _cloudCalibrationService = cloudCalibrationService;
         _currentInterval = 300;
@@ -98,15 +101,14 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
     {
         if (!_config.Enabled)
         {
-            Logger.Info("TimeCalibrationService", "时间校准已禁用，无法启动");
+            _logger.LogInformation("时间校准已禁用，无法启动");
             return;
         }
 
         _calibrationTimer.Change(TimeSpan.FromSeconds(_currentInterval), TimeSpan.FromSeconds(_currentInterval));
         _isRunning = true;
 
-        Logger.Info("TimeCalibrationService",
-            $"时间校准已启动: 校准源={_config.Source}, 间隔={_currentInterval}秒");
+        _logger.LogInformation("时间校准已启动: 校准源={Source}, 间隔={Interval}秒", _config.Source, _currentInterval);
     }
 
     /// <summary>
@@ -117,7 +119,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
         _calibrationTimer.Change(Timeout.Infinite, Timeout.Infinite);
         _isRunning = false;
 
-        Logger.Info("TimeCalibrationService", "时间校准已停止");
+        _logger.LogInformation("时间校准已停止");
     }
 
     /// <summary>
@@ -156,10 +158,8 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
             _cloudCalibrationService.ConfigureNtpServers(ntpServers, selectedIndex);
         }
 
-        Logger.Info("TimeCalibrationService",
-            $"配置已应用: Enabled={config.Enabled}, Source={config.Source}, " +
-            $"Interval={config.IntervalSeconds}s, TriggerThreshold={config.TriggerSeconds}s, " +
-            $"MinorThreshold={config.MinorThresholdSeconds}s");
+        _logger.LogInformation("配置已应用: Enabled={Enabled}, Source={Source}, Interval={Interval}s, TriggerThreshold={Trigger}s, MinorThreshold={Minor}s",
+            config.Enabled, config.Source, config.IntervalSeconds, config.TriggerSeconds, config.MinorThresholdSeconds);
 
         // 如果正在运行且启用，重启定时器以应用新间隔
         if (_isRunning && config.Enabled)
@@ -188,7 +188,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
             _currentInterval = _config.IntervalSeconds;
         }
 
-        Logger.Info("TimeCalibrationService", "已重置失败计数器和间隔");
+        _logger.LogInformation("已重置失败计数器和间隔");
 
         if (_isRunning && _config.Enabled)
         {
@@ -239,24 +239,21 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
 
                 if (absOffset.TotalSeconds > _config.TriggerSeconds)
                 {
-                    Logger.Debug("TimeCalibrationService",
-                        $"校准时间: 本地={localTime:HH:mm:ss.fff}, 校准源={calibratedTime.Value:HH:mm:ss.fff}, " +
-                        $"偏差={absOffset.TotalSeconds:F2}秒, 源={_config.Source}");
+                    _logger.LogDebug("校准时间: 本地={LocalTime:HH:mm:ss.fff}, 校准源={CalibratedTime:HH:mm:ss.fff}, 偏差={Offset:F2}秒, 源={Source}",
+                        localTime, calibratedTime.Value, absOffset.TotalSeconds, _config.Source);
 
                     // 区分微调校准和跳跃校准
                     if (absOffset.TotalSeconds <= _config.MinorThresholdSeconds)
                     {
                         // 微调校准：偏差较小，仅应用偏移量，不触发 TimeJumped 事件
                         _timeService.ApplyOffset(offset);
-                        Logger.Debug("TimeCalibrationService",
-                            $"微调校准: 偏差={absOffset.TotalSeconds:F2}秒 (阈值<={_config.MinorThresholdSeconds}秒)");
+                        _logger.LogDebug("微调校准: 偏差={Offset:F2}秒 (阈值<={Threshold}秒)", absOffset.TotalSeconds, _config.MinorThresholdSeconds);
                     }
                     else
                     {
                         // 跳跃校准：偏差较大，硬跳并触发 TimeJumped 事件
                         _timeService.Calibrate(calibratedTime.Value, reason, TimeJumpSeverity.Major);
-                        Logger.Debug("TimeCalibrationService",
-                            $"跳跃校准: 偏差={absOffset.TotalSeconds:F2}秒 (阈值>{_config.MinorThresholdSeconds}秒)");
+                        _logger.LogDebug("跳跃校准: 偏差={Offset:F2}秒 (阈值>{Threshold}秒)", absOffset.TotalSeconds, _config.MinorThresholdSeconds);
                     }
 
                     _lastCalibrationTime = _timeService.GetCurrentTime();
@@ -271,8 +268,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
                 }
                 else
                 {
-                    Logger.Debug("TimeCalibrationService",
-                        $"偏差在阈值内: {absOffset.TotalSeconds:F2}秒 (阈值<={_config.TriggerSeconds}秒)，无需校准");
+                    _logger.LogDebug("偏差在阈值内: {Offset:F2}秒 (阈值<={Trigger}秒)，无需校准", absOffset.TotalSeconds, _config.TriggerSeconds);
 
                     _lastCalibrationTime = _timeService.GetCurrentTime();
                     _failureCount = 0;
@@ -286,8 +282,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
         {
             _failureCount++;
 
-            Logger.Warn("TimeCalibrationService",
-                $"时间校准失败: {ex.Message} (失败次数: {_failureCount}/{_config.MaxRetryCount})");
+            _logger.LogWarning("时间校准失败: {Message} (失败次数: {FailureCount}/{MaxRetryCount})", ex.Message, _failureCount, _config.MaxRetryCount);
 
             // 退避策略：延长下次校准间隔
             var newInterval = (int)(_currentInterval * _config.BackoffMultiplier);
@@ -298,14 +293,12 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
                 TimeSpan.FromSeconds(_currentInterval),
                 TimeSpan.FromSeconds(_currentInterval));
 
-            Logger.Info("TimeCalibrationService",
-                $"校准间隔已调整为: {_currentInterval}秒");
+            _logger.LogInformation("校准间隔已调整为: {Interval}秒", _currentInterval);
 
             // 连续失败达上限，停止校准
             if (_failureCount >= _config.MaxRetryCount)
             {
-                Logger.Error("TimeCalibrationService",
-                    $"时间校准连续失败 {_failureCount} 次，停止校准");
+                _logger.LogError("时间校准连续失败 {FailureCount} 次，停止校准", _failureCount);
                 Stop();
             }
 
@@ -364,8 +357,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
             var resumeThreshold = TimeSpan.FromSeconds(Math.Max(60, _config.ResumeThresholdSeconds));
             if (sleepDuration > resumeThreshold)
             {
-                Logger.Info("TimeCalibrationService",
-                    $"系统休眠恢复，休眠时长={sleepDuration.TotalMinutes:F1}分钟，触发重新校准");
+                _logger.LogInformation("系统休眠恢复，休眠时长={Minutes:F1}分钟，触发重新校准", sleepDuration.TotalMinutes);
 
                 // 使用系统校准原因
                 _ = PerformCalibration(TimeJumpReason.SystemResume);

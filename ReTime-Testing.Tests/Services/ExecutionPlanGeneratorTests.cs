@@ -1,5 +1,7 @@
 namespace ReTime_Testing.Tests.Services;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 /// <summary>
 /// ExecutionPlanGenerator 类的单元测试
 /// 测试执行计划生成器的各种场景
@@ -14,7 +16,7 @@ public class ExecutionPlanGeneratorTests
 
     public ExecutionPlanGeneratorTests()
     {
-        _generator = new ExecutionPlanGenerator();
+        _generator = new ExecutionPlanGenerator(NullLogger<ExecutionPlanGenerator>.Instance);
     }
 
     [Fact]

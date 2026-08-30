@@ -1,5 +1,6 @@
 using ReTime_Testing.Models;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.Services;
 
@@ -10,6 +11,7 @@ namespace ReTime_Testing.Services;
 /// </summary>
 public class CloudCalibrationService : ICloudCalibrationService
 {
+        private readonly ILogger<CloudCalibrationService> _logger;
     private ITimeProvider? _currentTimeProvider;
     private List<string> _ntpServers = new();
     private int _selectedNtpServerIndex = 0;
@@ -27,8 +29,9 @@ public class CloudCalibrationService : ICloudCalibrationService
     /// <summary>
     /// 构造函数
     /// </summary>
-    public CloudCalibrationService()
+    public CloudCalibrationService(ILogger<CloudCalibrationService> logger)
     {
+        _logger = logger;
     }
 
     /// <summary>
@@ -54,8 +57,7 @@ public class CloudCalibrationService : ICloudCalibrationService
         }
         _currentTimeProvider = new NtpTimeProvider(orderedServers.ToArray());
 
-        Logger.Info("CloudCalibrationService",
-            $"NTP时间提供者已初始化: 提供者={_currentTimeProvider.Name}, 服务器={string.Join(", ", orderedServers)}");
+        _logger.LogInformation("NTP时间提供者已初始化: 提供者={Provider}, 服务器={Servers}", _currentTimeProvider.Name, string.Join(", ", orderedServers));
     }
 
     /// <summary>
@@ -70,8 +72,7 @@ public class CloudCalibrationService : ICloudCalibrationService
 
         InitializeTimeProvider();
 
-        Logger.Info("CloudCalibrationService",
-            $"NTP服务器已配置: 服务器={string.Join(", ", _ntpServers)}, 选中索引={selectedNtpServerIndex}");
+        _logger.LogInformation("NTP服务器已配置: 服务器={Servers}, 选中索引={SelectedIndex}", string.Join(", ", _ntpServers), selectedNtpServerIndex);
     }
 
     /// <summary>
@@ -84,7 +85,7 @@ public class CloudCalibrationService : ICloudCalibrationService
     {
         if (_currentTimeProvider == null)
         {
-            Logger.Error("CloudCalibrationService", "时间提供者未初始化");
+            _logger.LogError("时间提供者未初始化");
             return null;
         }
 
@@ -96,15 +97,14 @@ public class CloudCalibrationService : ICloudCalibrationService
             {
                 LastRttMs = result.RoundTripTime.TotalMilliseconds;
 
-                Logger.Debug("CloudCalibrationService",
-                    $"获取云端时间成功: UTC={result.UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={result.RoundTripTime.TotalMilliseconds:F1}ms");
+                _logger.LogDebug("获取云端时间成功: UTC={UtcTime:yyyy-MM-dd HH:mm:ss.fff}, RTT={Rtt:F1}ms", result.UtcTime, result.RoundTripTime.TotalMilliseconds);
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            Logger.Error("CloudCalibrationService", $"获取云端时间失败: {ex.Message}", ex);
+            _logger.LogError(ex, "获取云端时间失败: {Message}", ex.Message);
             return null;
         }
     }

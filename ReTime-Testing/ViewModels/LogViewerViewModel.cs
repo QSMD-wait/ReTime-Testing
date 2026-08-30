@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
 
@@ -14,14 +15,14 @@ namespace ReTime_Testing.ViewModels
 {
     /// <summary>
     /// 日志查看器 ViewModel
-    /// 职责：订阅 Logger 内存缓冲，按等级/关键字过滤展示
+    /// 职责：订阅内存日志缓冲（InMemoryLogSink），按等级/关键字过滤展示
     /// </summary>
     public partial class LogViewerViewModel : ObservableObject, IDisposable
     {
-        private const string LOG_TAG = "LogViewerViewModel";
         private const int MaxVisibleEntries = 1000;
 
         private readonly Dispatcher _dispatcher;
+        private readonly ILogger<LogViewerViewModel> _logger = AppLog.For<LogViewerViewModel>();
         private readonly List<LogEntryItem> _allEntries = new();
         private bool _disposed;
 
@@ -55,9 +56,9 @@ namespace ReTime_Testing.ViewModels
         public LogViewerViewModel()
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
-            Logger.LogEntryAdded += OnLogEntryAdded;
+            LoggingSetup.InMemorySink.LogEntryAdded += OnLogEntryAdded;
 
-            foreach (var entry in Logger.GetRecentLogEntries())
+            foreach (var entry in LoggingSetup.InMemorySink.GetRecentEntries())
             {
                 _allEntries.Add(entry);
             }
@@ -111,15 +112,15 @@ namespace ReTime_Testing.ViewModels
                 || entry.Module.Contains(Keyword, StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool IsLevelEnabled(LogLevel level)
+        private bool IsLevelEnabled(Models.LogLevel level)
         {
             return level switch
             {
-                LogLevel.ERR => IsErrorFilterEnabled,
-                LogLevel.WRN => IsWarningFilterEnabled,
-                LogLevel.INF => IsInfoFilterEnabled,
-                LogLevel.DBG => IsDebugFilterEnabled,
-                LogLevel.TRC => IsTraceFilterEnabled,
+                Models.LogLevel.ERR => IsErrorFilterEnabled,
+                Models.LogLevel.WRN => IsWarningFilterEnabled,
+                Models.LogLevel.INF => IsInfoFilterEnabled,
+                Models.LogLevel.DBG => IsDebugFilterEnabled,
+                Models.LogLevel.TRC => IsTraceFilterEnabled,
                 _ => true
             };
         }
@@ -159,10 +160,10 @@ namespace ReTime_Testing.ViewModels
         [RelayCommand]
         private void ClearLogs()
         {
-            Logger.ClearLogBuffer();
+            LoggingSetup.InMemorySink.Clear();
             _allEntries.Clear();
             Entries.Clear();
-            Logger.Info(LOG_TAG, "日志查看器缓冲已清空");
+            _logger.LogInformation("日志查看器缓冲已清空");
         }
 
         [RelayCommand]
@@ -184,12 +185,12 @@ namespace ReTime_Testing.ViewModels
                 if (lines.Count > 0)
                 {
                     System.Windows.Clipboard.SetText(string.Join(Environment.NewLine, lines));
-                    Logger.Info(LOG_TAG, $"已复制 {lines.Count} 条日志到剪贴板");
+                    _logger.LogInformation("已复制 {Count} 条日志到剪贴板", lines.Count);
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "复制日志失败", ex);
+                _logger.LogError(ex, "复制日志失败");
             }
         }
 
@@ -211,12 +212,12 @@ namespace ReTime_Testing.ViewModels
                 }
                 else
                 {
-                    Logger.Warn(LOG_TAG, $"日志目录不存在: {path}");
+                    _logger.LogWarning("日志目录不存在: {Path}", path);
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(LOG_TAG, "打开日志目录失败", ex);
+                _logger.LogError(ex, "打开日志目录失败");
             }
         }
 
@@ -224,7 +225,7 @@ namespace ReTime_Testing.ViewModels
         {
             if (_disposed) return;
             _disposed = true;
-            Logger.LogEntryAdded -= OnLogEntryAdded;
+            LoggingSetup.InMemorySink.LogEntryAdded -= OnLogEntryAdded;
         }
     }
 }

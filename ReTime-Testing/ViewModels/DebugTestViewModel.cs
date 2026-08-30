@@ -4,6 +4,7 @@ using ReTime_Testing.Services;
 using ReTime_Testing.ViewModels.Testing;
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels
 {
@@ -46,6 +47,9 @@ namespace ReTime_Testing.ViewModels
         public event Action<ToastMessage>? ToastRequested;
 
         public DebugTestViewModel(
+            ILogger<HomePageViewModel> homePageLogger,
+            ILogger<ServiceDebugViewModel> serviceDebugLogger,
+            ILogger<ControlsViewModel> controlsLogger,
             IGlobalTimeTopDesktopService globalService,
             IMutexManager mutexManager,
             ISettingsService settingsService,
@@ -54,12 +58,12 @@ namespace ReTime_Testing.ViewModels
             ITimeService? timeService = null,
             IScheduleManager? scheduleManager = null)
         {
-            HomePage = new HomePageViewModel(mutexManager, desktopWindowManager, configurationManager,
+            HomePage = new HomePageViewModel(homePageLogger, mutexManager, desktopWindowManager, configurationManager,
                 timeService, scheduleManager);
             MainFeature = new MainFeatureViewModel(globalService);
-            ServiceDebug = new ServiceDebugViewModel(mutexManager, settingsService, desktopWindowManager,
+            ServiceDebug = new ServiceDebugViewModel(serviceDebugLogger, mutexManager, settingsService, desktopWindowManager,
                 timeService, scheduleManager);
-            Controls = new ControlsViewModel();
+            Controls = new ControlsViewModel(controlsLogger);
 
             Controls.ToastRequested += OnControlsToastRequested;
 

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -30,13 +31,13 @@ public class TimeTopDesktopViewModelTests
         _mockSettingsService.Setup(x => x.GetGlobalSetting()).Returns(_globalSetting);
         _mockSettingsService.Setup(x => x.GetTimeTopSetting()).Returns(_timeTopSetting);
 
-        _stateManager = new ProgressStateManager();
-        _globalService = new GlobalTimeTopDesktopService(_stateManager);
+        _stateManager = new ProgressStateManager(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProgressStateManager>.Instance);
+        _globalService = new GlobalTimeTopDesktopService(_stateManager, Mock.Of<ILogger<GlobalTimeTopDesktopService>>());
     }
 
     private TimeTopDesktopViewModel CreateViewModel()
     {
-        return new TimeTopDesktopViewModel(_globalService, _mockSettingsService.Object);
+        return new TimeTopDesktopViewModel(Microsoft.Extensions.Logging.Abstractions.NullLogger<TimeTopDesktopViewModel>.Instance, _globalService, _mockSettingsService.Object);
     }
 
     [Fact]

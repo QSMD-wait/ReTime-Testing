@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Helpers;
 using ReTime_Testing.Models;
 using ReTime_Testing.Services;
@@ -21,6 +22,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class TrayIconService : ITrayIconService
     {
+        private readonly ILogger<TrayIconService> _logger;
         private Window? _trayIconWindow;
         private TaskbarIcon? _trayIcon;
         private bool _disposed = false;
@@ -94,10 +96,11 @@ namespace ReTime_Testing.Services
         /// </summary>
         /// <param name="themeService">主题服务</param>
         /// <param name="settingsService">设置服务（订阅主题热响应）</param>
-        public TrayIconService(IThemeService? themeService = null, ISettingsService? settingsService = null)
+        public TrayIconService(IThemeService? themeService = null, ISettingsService? settingsService = null, ILogger<TrayIconService> logger = null!)
         {
             _themeService = themeService;
             _settingsService = settingsService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -151,15 +154,15 @@ namespace ReTime_Testing.Services
                 }
                 else
                 {
-                    Logger.Info("TrayIconService", "当前以引导模式启动，托盘图标不带右键菜单");
+                    _logger.LogInformation("当前以引导模式启动，托盘图标不带右键菜单");
                 }
 
-                Logger.Info("TrayIconService", "系统托盘图标初始化成功（无窗口模式）");
+                _logger.LogInformation("系统托盘图标初始化成功（无窗口模式）");
             }
             catch (Exception ex)
             {
-                Logger.Error("TrayIconService", "初始化系统托盘图标时发生异常", ex);
-                Logger.Warn("TrayIconService", "无窗口模式失败，尝试使用窗口承载模式");
+                _logger.LogError(ex, "初始化系统托盘图标时发生异常");
+                _logger.LogWarning("无窗口模式失败，尝试使用窗口承载模式");
                 InitializeWithWindow();
             }
         }
@@ -200,11 +203,11 @@ namespace ReTime_Testing.Services
                 }
                 _trayIconWindow.Content = _trayIcon;
 
-                Logger.Info("TrayIconService", "系统托盘图标初始化成功（窗口承载模式）");
+                _logger.LogInformation("系统托盘图标初始化成功（窗口承载模式）");
             }
             catch (Exception ex)
             {
-                Logger.Error("TrayIconService", "窗口承载模式初始化失败", ex);
+                _logger.LogError(ex, "窗口承载模式初始化失败");
                 throw;
             }
         }
@@ -237,17 +240,17 @@ namespace ReTime_Testing.Services
                     if (streamInfo != null)
                     {
                         using var stream = streamInfo.Stream;
-                        Logger.Info("TrayIconService", $"内嵌图标加载成功: {uriStr}");
+                        _logger.LogInformation("内嵌图标加载成功: {Uri}", uriStr);
                         icon = new Icon(stream);
                     }
                     else
                     {
-                        Logger.Warn("TrayIconService", $"内嵌资源未找到: {uriStr}");
+                        _logger.LogWarning("内嵌资源未找到: {Uri}", uriStr);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn("TrayIconService", $"加载内嵌图标失败: {ex.Message}");
+                    _logger.LogWarning("加载内嵌图标失败: {Message}", ex.Message);
                 }
             }
 
@@ -260,7 +263,7 @@ namespace ReTime_Testing.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warn("TrayIconService", $"加载自定义图标失败: {ex.Message}");
+                    _logger.LogWarning("加载自定义图标失败: {Message}", ex.Message);
                 }
             }
 
@@ -504,7 +507,7 @@ namespace ReTime_Testing.Services
             }
             catch (Exception ex)
             {
-                Logger.Warn("TrayIconService", $"创建应用图标源失败: {ex.Message}");
+                _logger.LogWarning("创建应用图标源失败: {Message}", ex.Message);
             }
         }
 
@@ -605,11 +608,11 @@ namespace ReTime_Testing.Services
 
                 _disposed = true;
 
-                Logger.Info("TrayIconService", "系统托盘图标已释放");
+                _logger.LogInformation("系统托盘图标已释放");
             }
             catch (Exception ex)
             {
-                Logger.Error("TrayIconService", "释放系统托盘图标时发生异常", ex);
+                _logger.LogError(ex, "释放系统托盘图标时发生异常");
             }
         }
     }

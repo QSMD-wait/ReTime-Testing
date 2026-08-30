@@ -3,6 +3,8 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+using ReTime_Testing.Services;
 
 namespace ReTime_Testing.Services
 {
@@ -13,8 +15,7 @@ namespace ReTime_Testing.Services
     /// </summary>
     public class JsonConfigProvider
     {
-        private const string LOG_MODULE = "JsonConfigProvider";
-
+        private static readonly ILogger<JsonConfigProvider> _logger = AppLog.For<JsonConfigProvider>();
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -36,7 +37,7 @@ namespace ReTime_Testing.Services
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Logger.Info(LOG_MODULE, $"目录已创建: {path}");
+                _logger.LogInformation("目录已创建: {Path}", path);
             }
         }
 
@@ -48,7 +49,7 @@ namespace ReTime_Testing.Services
         {
             if (!File.Exists(filePath))
             {
-                Logger.Warn(LOG_MODULE, $"文件不存在: {Path.GetFileName(filePath)}");
+                _logger.LogWarning("文件不存在: {FileName}", Path.GetFileName(filePath));
                 return null;
             }
 
@@ -56,12 +57,12 @@ namespace ReTime_Testing.Services
 
             if (string.IsNullOrWhiteSpace(jsonContent) || jsonContent.Trim() == "{}")
             {
-                Logger.Warn(LOG_MODULE, $"文件内容为空: {Path.GetFileName(filePath)}");
+                _logger.LogWarning("文件内容为空: {FileName}", Path.GetFileName(filePath));
                 return null;
             }
 
             var result = JsonSerializer.Deserialize<T>(jsonContent, _jsonOptions);
-            Logger.Info(LOG_MODULE, $"文件读取成功: {Path.GetFileName(filePath)}");
+            _logger.LogInformation("文件读取成功: {FileName}", Path.GetFileName(filePath));
             return result;
         }
 
@@ -72,7 +73,7 @@ namespace ReTime_Testing.Services
         {
             if (!File.Exists(filePath))
             {
-                Logger.Warn(LOG_MODULE, $"文件不存在: {Path.GetFileName(filePath)}");
+                _logger.LogWarning("文件不存在: {FileName}", Path.GetFileName(filePath));
                 return null;
             }
 
@@ -80,11 +81,11 @@ namespace ReTime_Testing.Services
 
             if (string.IsNullOrWhiteSpace(jsonContent) || jsonContent.Trim() == "{}")
             {
-                Logger.Warn(LOG_MODULE, $"文件内容为空: {Path.GetFileName(filePath)}");
+                _logger.LogWarning("文件内容为空: {FileName}", Path.GetFileName(filePath));
                 return null;
             }
 
-            Logger.Info(LOG_MODULE, $"文件读取成功: {Path.GetFileName(filePath)}");
+            _logger.LogInformation("文件读取成功: {FileName}", Path.GetFileName(filePath));
             return jsonContent;
         }
 
@@ -99,7 +100,7 @@ namespace ReTime_Testing.Services
 
             string jsonContent = JsonSerializer.Serialize(value, _jsonOptions);
             File.WriteAllText(filePath, jsonContent);
-            Logger.Info(LOG_MODULE, $"文件写入成功: {Path.GetFileName(filePath)}");
+            _logger.LogInformation("文件写入成功: {FileName}", Path.GetFileName(filePath));
         }
 
         /// <summary>
@@ -134,7 +135,7 @@ namespace ReTime_Testing.Services
             }
             catch (JsonException)
             {
-                Logger.Warn(LOG_MODULE, $"域 '{propertyName}' 解析失败，使用该域默认值");
+                _logger.LogWarning("域 '{PropertyName}' 解析失败，使用该域默认值", propertyName);
                 return null;
             }
         }
@@ -210,7 +211,7 @@ namespace ReTime_Testing.Services
             var whole = TryDeserializeDomain<CalibrationConfig>(root, "calibration");
             if (whole != null) return whole;
 
-            Logger.Warn(LOG_MODULE, "calibration 整域解析失败，尝试逐子域解析");
+            _logger.LogWarning("calibration 整域解析失败，尝试逐子域解析");
             var result = new CalibrationConfig();
             result.Enabled = TryGetBool(calNode, "enabled") ?? result.Enabled;
             var sourceStr = TryGetString(calNode, "source");
@@ -251,7 +252,7 @@ namespace ReTime_Testing.Services
             var whole = TryDeserializeDomain<TextOverlayConfig>(root, "textOverlay");
             if (whole != null) return whole;
 
-            Logger.Warn(LOG_MODULE, "textOverlay 整域解析失败，尝试逐子域解析");
+            _logger.LogWarning("textOverlay 整域解析失败，尝试逐子域解析");
             var result = new TextOverlayConfig();
             result.Enabled = TryGetBool(toNode, "enabled") ?? result.Enabled;
             result.Layout = TryDeserializeDomain<TextOverlayLayoutConfig>(toNode, "layout") ?? result.Layout;

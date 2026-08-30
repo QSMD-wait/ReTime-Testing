@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using ReTime_Testing.Models;
 using System.Windows;
 using System.Windows.Media;
@@ -11,7 +12,8 @@ namespace ReTime_Testing.Services
     public class GlobalTimeTopDesktopService : IGlobalTimeTopDesktopService
     {
         private readonly ProgressStateManager _stateManager;
-        
+        private readonly ILogger<GlobalTimeTopDesktopService> _logger;
+
         /// <summary>
         /// 状态管理器（供外部访问）
         /// </summary>
@@ -21,14 +23,16 @@ namespace ReTime_Testing.Services
         /// 接口显式实现：状态管理器
         /// </summary>
         IProgressStateManager IGlobalTimeTopDesktopService.StateManager => _stateManager;
-        
+
         /// <summary>
         /// 构造函数（支持 DI 注入）
         /// </summary>
         /// <param name="stateManager">进度状态管理器</param>
-        public GlobalTimeTopDesktopService(IProgressStateManager stateManager)
+        /// <param name="logger">日志记录器</param>
+        public GlobalTimeTopDesktopService(IProgressStateManager stateManager, ILogger<GlobalTimeTopDesktopService> logger)
         {
             _stateManager = (ProgressStateManager)stateManager;
+            _logger = logger;
         }
         
         /// <summary>
@@ -43,7 +47,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetLoading()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Loading");
+            _logger.LogInformation("设置状态: Loading");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Loading);
         }
         
@@ -52,7 +56,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetProgress(double value)
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", $"设置进度: {value:F1}%");
+            _logger.LogInformation("设置进度: {Value:F1}%", value);
             _stateManager.SetState(ProgressStateManager.ProgressStates.Progress);
             _stateManager.SetValue(value);
         }
@@ -71,7 +75,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetSuccess()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Success");
+            _logger.LogInformation("设置状态: Success");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Success);
         }
         
@@ -80,7 +84,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetError()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Error");
+            _logger.LogInformation("设置状态: Error");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Error);
         }
         
@@ -89,7 +93,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetPaused()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Paused");
+            _logger.LogInformation("设置状态: Paused");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Paused);
         }
         
@@ -98,7 +102,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetHidden()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Hidden");
+            _logger.LogInformation("设置状态: Hidden");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Hidden);
         }
         
@@ -107,7 +111,7 @@ namespace ReTime_Testing.Services
         /// </summary>
         public void SetDisabled()
         {
-            Logger.Info("ReTime_Testing.Services.GlobalTimeTopDesktopService", "设置状态: Disabled");
+            _logger.LogInformation("设置状态: Disabled");
             _stateManager.SetState(ProgressStateManager.ProgressStates.Disabled);
         }
         
