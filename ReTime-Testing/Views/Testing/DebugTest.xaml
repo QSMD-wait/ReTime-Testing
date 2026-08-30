@@ -37,14 +37,27 @@
         <DataTemplate DataType="{x:Type viewModels:ControlsViewModel}">
             <pages:ControlsPage/>
         </DataTemplate>
+
+        <!-- 数据模板：抽屉控件测试 -->
+        <DataTemplate DataType="{x:Type viewModels:DrawerTestViewModel}">
+            <pages:DrawerTestPage/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
-        <TabControl ItemsSource="{Binding Tabs}"
-                    DisplayMemberPath="TabTitle"
-                    SelectedIndex="{Binding SelectedTabIndex}"
-                    Style="{StaticResource TabControlPivotStyle}"
-                    Padding="0"/>
+        <controls:DrawerHost IsDrawerOpen="{Binding IsDrawerOpen, Mode=TwoWay}"
+                             DrawerWidth="{Binding DrawerWidth}">
+            <TabControl ItemsSource="{Binding Tabs}"
+                        DisplayMemberPath="TabTitle"
+                        SelectedIndex="{Binding SelectedTabIndex}"
+                        Style="{StaticResource TabControlPivotStyle}"
+                        Padding="0"/>
+
+            <!-- 抽屉内容 -->
+            <controls:DrawerHost.DrawerContent>
+                <pages:DrawerTestContentPage DataContext="{Binding DrawerTest}"/>
+            </controls:DrawerHost.DrawerContent>
+        </controls:DrawerHost>
 
         <!-- Toast 通知容器 -->
         <controls:ToastOverlay x:Name="ToastOverlayControl"/>

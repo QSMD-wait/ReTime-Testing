@@ -25,6 +25,33 @@
         </Setter>
     </Style>
 
+    <Style TargetType="local:DrawerHost">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DrawerHost">
+                    <Grid>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                        <Border x:Name="PART_OverlayBorder"
+                                Background="#33000000"
+                                IsHitTestVisible="False"
+                                Opacity="0"/>
+                        <Border x:Name="PART_DrawerBorder"
+                                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                                Width="{TemplateBinding DrawerWidth}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Stretch"
+                                IsHitTestVisible="False"
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                BorderThickness="1,0,0,0">
+                            <ContentPresenter Content="{TemplateBinding DrawerContent}"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="local:ToastOverlay">
         <Setter Property="HorizontalAlignment" Value="Right"/>
         <Setter Property="VerticalAlignment" Value="Bottom"/>

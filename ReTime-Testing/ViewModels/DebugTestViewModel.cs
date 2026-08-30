@@ -14,8 +14,16 @@ namespace ReTime_Testing.ViewModels
     /// </summary>
     public partial class DebugTestViewModel : ObservableObject
     {
+        private bool _syncing;
+
         [ObservableProperty]
         private int _selectedTabIndex;
+
+        [ObservableProperty]
+        private bool _isDrawerOpen;
+
+        [ObservableProperty]
+        private double _drawerWidth = 320;
         /// <summary>
         /// 首页：服务状态总览 + 快捷操作
         /// </summary>
@@ -35,6 +43,11 @@ namespace ReTime_Testing.ViewModels
         /// 控件测试：Toast 等
         /// </summary>
         public ControlsViewModel Controls { get; }
+
+        /// <summary>
+        /// 抽屉控件测试：DrawerHost 侧拉抽屉
+        /// </summary>
+        public DrawerTestViewModel DrawerTest { get; }
 
         /// <summary>
         /// Tab 集合（供 TabControl 绑定，Header 使用各页 TabTitle）
@@ -67,7 +80,36 @@ namespace ReTime_Testing.ViewModels
 
             Controls.ToastRequested += OnControlsToastRequested;
 
-            Tabs = new object[] { HomePage, MainFeature, ServiceDebug, Controls };
+            DrawerTest = new DrawerTestViewModel();
+            DrawerTest.PropertyChanged += (_, e) =>
+            {
+                if (_syncing) return;
+                _syncing = true;
+                try
+                {
+                    if (e.PropertyName == nameof(DrawerTestViewModel.IsDrawerOpen))
+                        IsDrawerOpen = DrawerTest.IsDrawerOpen;
+                    if (e.PropertyName == nameof(DrawerTestViewModel.DrawerWidth))
+                        DrawerWidth = DrawerTest.DrawerWidth;
+                }
+                finally { _syncing = false; }
+            };
+
+            PropertyChanged += (_, e) =>
+            {
+                if (_syncing) return;
+                _syncing = true;
+                try
+                {
+                    if (e.PropertyName == nameof(IsDrawerOpen))
+                        DrawerTest.IsDrawerOpen = IsDrawerOpen;
+                    if (e.PropertyName == nameof(DrawerWidth))
+                        DrawerTest.DrawerWidth = DrawerWidth;
+                }
+                finally { _syncing = false; }
+            };
+
+            Tabs = new object[] { HomePage, MainFeature, ServiceDebug, Controls, DrawerTest };
         }
 
         private void OnControlsToastRequested(ToastMessage message)

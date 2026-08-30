@@ -1,0 +1,102 @@
+<UserControl x:Class="ReTime_Testing.Views.Testing.Pages.DrawerTestContentPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:ReTime_Testing.Controls"
+             mc:Ignorable="d"
+             d:DesignWidth="320"
+             d:DesignHeight="500">
+
+    <UserControl.Resources>
+        <Style x:Key="DrawerSep" TargetType="Separator">
+            <Setter Property="Background" Value="{DynamicResource SystemControlForegroundBaseLowBrush}"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Margin" Value="0,8"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题栏：标题 + 副标题 -->
+        <Border Grid.Row="0"
+                Padding="16,14,16,12">
+            <StackPanel>
+                <TextBlock Text="抽屉内容"
+                           FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="选择内容类型以切换抽屉中的面板"
+                           FontSize="13" Foreground="Gray"
+                           Margin="0,2,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 内容 0：简单文本 -->
+        <StackPanel Grid.Row="1" Margin="16"
+                    Visibility="{Binding SelectedContentIndex, Converter={x:Static controls:DrawerHost.IndexToVisibilityConverterInstance}, ConverterParameter=0}">
+            <TextBlock Text="简单文本内容"
+                       FontSize="14" FontWeight="SemiBold"
+                       Margin="0,0,0,8"/>
+            <TextBlock Text="这是抽屉中的简单文本示例。您可以在这里放置任何需要展示的内容。"
+                       TextWrapping="Wrap"
+                       Foreground="Gray" FontSize="13"/>
+            <Separator Style="{StaticResource DrawerSep}"/>
+            <TextBlock Text="抽屉从右侧滑入，带有平滑的动画效果。"
+                       TextWrapping="Wrap"
+                       Foreground="Gray" FontSize="13"/>
+        </StackPanel>
+
+        <!-- 内容 1：表单面板 -->
+        <StackPanel Grid.Row="1" Margin="16"
+                    Visibility="{Binding SelectedContentIndex, Converter={x:Static controls:DrawerHost.IndexToVisibilityConverterInstance}, ConverterParameter=1}">
+            <TextBlock Text="表单面板"
+                       FontSize="14" FontWeight="SemiBold"
+                       Margin="0,0,0,8"/>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="名称" VerticalAlignment="Center" FontSize="13"/>
+                <TextBox Grid.Column="1" FontSize="13" Padding="4,2"/>
+            </Grid>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="描述" VerticalAlignment="Center" FontSize="13"/>
+                <TextBox Grid.Column="1" FontSize="13" Padding="4,2"
+                         TextWrapping="Wrap" AcceptsReturn="True" Height="60"/>
+            </Grid>
+            <Separator Style="{StaticResource DrawerSep}"/>
+            <Button Content="保存" Width="80" HorizontalAlignment="Left"
+                    Style="{StaticResource AccentButtonStyle}" FontSize="13"/>
+        </StackPanel>
+
+        <!-- 内容 2：列表面板 -->
+        <StackPanel Grid.Row="1" Margin="16"
+                    Visibility="{Binding SelectedContentIndex, Converter={x:Static controls:DrawerHost.IndexToVisibilityConverterInstance}, ConverterParameter=2}">
+            <TextBlock Text="列表面板"
+                       FontSize="14" FontWeight="SemiBold"
+                       Margin="0,0,0,8"/>
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                    BorderThickness="1" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock Text="项目 A" Padding="8,6" FontSize="13"/>
+                    <Separator Style="{StaticResource DrawerSep}" Margin="0"/>
+                    <TextBlock Text="项目 B" Padding="8,6" FontSize="13"/>
+                    <Separator Style="{StaticResource DrawerSep}" Margin="0"/>
+                    <TextBlock Text="项目 C" Padding="8,6" FontSize="13"/>
+                    <Separator Style="{StaticResource DrawerSep}" Margin="0"/>
+                    <TextBlock Text="项目 D" Padding="8,6" FontSize="13"/>
+                    <Separator Style="{StaticResource DrawerSep}" Margin="0"/>
+                    <TextBlock Text="项目 E" Padding="8,6" FontSize="13"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>
