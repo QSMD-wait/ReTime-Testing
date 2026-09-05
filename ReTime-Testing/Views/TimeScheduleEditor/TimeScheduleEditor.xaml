@@ -386,7 +386,8 @@
                                 <!-- 编辑面板：有选中项时显示 -->
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                                               Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NotNullToVisibilityConverter}}"
-                                              Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
+                                              Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}"
+                                              Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
                                     <StackPanel Margin="20,16">
 
                                         <!-- 面板头部：动态类型标题 -->
@@ -1027,7 +1028,8 @@
 
                         <!-- 组详情 -->
                         <ScrollViewer Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
-                                      VerticalScrollBarVisibility="Auto" Margin="16">
+                                      VerticalScrollBarVisibility="Auto" Margin="16"
+                                      Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
                             <StackPanel>
                                 <!-- 组名 -->
                                 <TextBlock Text="组名" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>

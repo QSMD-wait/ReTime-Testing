@@ -18,7 +18,10 @@ namespace ReTime_Testing.Services
 
         public void ApplyTheme(string themeName)
         {
-            CurrentTheme = themeName.ToLower();
+            var normalized = themeName?.ToLower() ?? "light";
+            if (normalized == CurrentTheme) return;
+
+            CurrentTheme = normalized;
 
             var appTheme = CurrentTheme switch
             {
