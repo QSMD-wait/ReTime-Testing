@@ -42,5 +42,17 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("smoothnessOptimization")]
         public bool SmoothnessOptimization { get; set; } = false;
+
+        /// <summary>
+        /// 静默异常处理：启用后应用不在前台时发生异常将自动处理，不弹崩溃窗口
+        /// </summary>
+        [JsonPropertyName("criticalSafeMode")]
+        public bool CriticalSafeMode { get; set; } = false;
+
+        /// <summary>
+        /// 静默异常处理方式：0=静默退出, 1=静默重启, 2=完全忽略（仅记日志）
+        /// </summary>
+        [JsonPropertyName("criticalSafeModeMethod")]
+        public int CriticalSafeModeMethod { get; set; } = 0;
     }
 }

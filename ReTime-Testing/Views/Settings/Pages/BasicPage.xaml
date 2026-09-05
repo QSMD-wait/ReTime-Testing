@@ -160,5 +160,53 @@
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
 
+        <ui:SettingsCard Header="静默异常处理"
+                         Description="启用后，应用不在前台时发生异常将自动处理而不显示崩溃窗口。可在日志记录中查看崩溃详情。">
+            <ui:SettingsCard.HeaderIcon>
+                <ui:FontIcon Icon="{x:Static ui:FluentSystemIcons.ShieldError_24_Regular}" />
+            </ui:SettingsCard.HeaderIcon>
+            <ikw:SimpleStackPanel Orientation="Horizontal" Spacing="8">
+                <!-- 关闭时：禁用的选择框 -->
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCriticalSafeModeEnabled}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ComboBox Width="135"
+                              VerticalAlignment="Center"
+                              IsEnabled="False"
+                              SelectedIndex="0">
+                        <ComboBoxItem Content="显示崩溃报告"/>
+                    </ComboBox>
+                </Border>
+                <!-- 开启时：可选择的处理方式 -->
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCriticalSafeModeEnabled}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ComboBox Width="135"
+                              VerticalAlignment="Center"
+                              SelectedIndex="{Binding CriticalSafeModeMethodIndex, Mode=TwoWay}">
+                        <ComboBoxItem Content="静默退出"/>
+                        <ComboBoxItem Content="静默重启"/>
+                        <ComboBoxItem Content="忽略"/>
+                    </ComboBox>
+                </Border>
+                <ui:ToggleSwitch IsOn="{Binding IsCriticalSafeModeEnabled, Mode=TwoWay}"
+                                 OffContent="关闭" OnContent="开启" MinWidth="0"/>
+            </ikw:SimpleStackPanel>
+        </ui:SettingsCard>
+
     </ikw:SimpleStackPanel>
 </pages:SettingsPageBase>

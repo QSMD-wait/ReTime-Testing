@@ -44,6 +44,11 @@ namespace ReTime_Testing
         private TrayIconController? _trayIconController;
 
         /// <summary>
+        /// 静默异常处理模式是否启用（运行时标志，从设置加载）
+        /// </summary>
+        internal static bool IsCriticalSafeModeEnabled = false;
+
+        /// <summary>
         /// DI 服务提供者（供非 DI 管理的代码获取服务）
         /// </summary>
         internal IServiceProvider Services => _host?.Services ?? throw new InvalidOperationException("Host 尚未初始化");
@@ -72,6 +77,14 @@ namespace ReTime_Testing
 
             if (e.IsTerminating)
             {
+                // 安全模式：终止性异常仍强制退出（进程即将死亡，无法恢复）
+                if (IsCriticalSafeModeEnabled)
+                {
+                    _logger.LogInformation("安全模式：AppDomain 终止性异常，记录日志后退出");
+                    Environment.Exit(1);
+                    return;
+                }
+
                 try
                 {
                     var crashInfo = _crashService.BuildCrashReport(ex ?? new Exception("未知错误"));
@@ -92,6 +105,14 @@ namespace ReTime_Testing
         /// </summary>
         private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            // 安全模式 + 应用不在前台：静默处理
+            if (IsCriticalSafeModeEnabled && !IsAppInForeground())
+            {
+                HandleSafeModeException(e.Exception);
+                e.Handled = true;
+                return;
+            }
+
             _logger.LogError(e.Exception, "Dispatcher 未处理异常: {Message}", e.Exception.Message);
 
             try
@@ -116,6 +137,14 @@ namespace ReTime_Testing
             // 过滤应用退出时的良性异常（如 NTP UDP 接收被中断的 SocketException 995）
             if (IsBenignShutdownException(e.Exception))
             {
+                e.SetObserved();
+                return;
+            }
+
+            // 安全模式 + 应用不在前台：静默处理
+            if (IsCriticalSafeModeEnabled && !IsAppInForeground())
+            {
+                Dispatcher.BeginInvoke(() => HandleSafeModeException(e.Exception));
                 e.SetObserved();
                 return;
             }
@@ -157,6 +186,56 @@ namespace ReTime_Testing
             return false;
         }
 
+        /// <summary>
+        /// 判断应用主窗口是否在前台（活跃状态）
+        /// </summary>
+        private bool IsAppInForeground()
+        {
+            try
+            {
+                var mainWindow = Application.Current.MainWindow;
+                return mainWindow != null && mainWindow.IsActive;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 安全模式异常处理：根据设置选择静默退出/重启/忽略
+        /// </summary>
+        private void HandleSafeModeException(Exception exception)
+        {
+            var method = 0;
+            try
+            {
+                method = Services.GetService<ISettingsService>()?.GetGlobalSetting().Basic.CriticalSafeModeMethod ?? 0;
+            }
+            catch
+            {
+                // 读取设置失败时默认静默退出
+            }
+
+            _logger.LogError(exception, "安全模式：处理未捕获异常 (Method={Method})", method);
+
+            switch (method)
+            {
+                case 1: // 静默重启
+                    _logger.LogInformation("安全模式：静默重启");
+                    Action? releaseMutex = _mutexManager != null ? () => _mutexManager.Release() : null;
+                    _crashService.RestartApplication(releaseMutex);
+                    break;
+                case 2: // 完全忽略
+                    _logger.LogInformation("安全模式：忽略异常，继续运行");
+                    break;
+                default: // 0 或未知：静默退出
+                    _logger.LogInformation("安全模式：静默退出");
+                    Environment.Exit(1);
+                    break;
+            }
+        }
+
         // 公共属性（过渡期保留，供 View code-behind 使用）
         public ITimeService TimeService => Services.GetRequiredService<ITimeService>();
         public ITimeCalibrationService TimeCalibrationService => Services.GetRequiredService<ITimeCalibrationService>();
@@ -196,6 +275,17 @@ namespace ReTime_Testing
                 {
                     HandleMutexConflict();
                     return;
+                }
+
+                // 从设置加载安全模式运行时标志
+                try
+                {
+                    var settings = Services.GetRequiredService<ISettingsService>().GetGlobalSetting();
+                    IsCriticalSafeModeEnabled = settings.Basic.CriticalSafeMode;
+                }
+                catch
+                {
+                    // 读取设置失败时安全模式默认关闭
                 }
 
                 StartupApplication();
@@ -349,6 +439,9 @@ namespace ReTime_Testing
         /// </summary>
         private void OnGlobalSettingChanged(GlobalSetting setting)
         {
+            // 同步安全模式运行时标志
+            IsCriticalSafeModeEnabled = setting.Basic.CriticalSafeMode;
+
             try
             {
                 var themeService = Services.GetRequiredService<IThemeService>();

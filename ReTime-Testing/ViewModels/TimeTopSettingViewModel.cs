@@ -39,6 +39,12 @@ namespace ReTime_Testing.ViewModels
         private bool _isSmoothnessOptimizationEnabled;
 
         [ObservableProperty]
+        private bool _isCriticalSafeModeEnabled;
+
+        [ObservableProperty]
+        private int _criticalSafeModeMethodIndex;
+
+        [ObservableProperty]
         private DateTime? _rotationBaseDate;
 
         [ObservableProperty]
@@ -69,6 +75,8 @@ namespace ReTime_Testing.ViewModels
             RetainedDays = _setting.Basic.Log.RetainedDays;
             FileSizeLimitMB = _setting.Basic.Log.FileSizeLimitMB;
             IsSmoothnessOptimizationEnabled = _setting.Basic.SmoothnessOptimization;
+            IsCriticalSafeModeEnabled = _setting.Basic.CriticalSafeMode;
+            CriticalSafeModeMethodIndex = _setting.Basic.CriticalSafeModeMethod;
 
             // 轮换设置
             var timeTopSetting = _settingsService.GetTimeTopSetting();
@@ -140,6 +148,20 @@ namespace ReTime_Testing.ViewModels
         {
             if (_isInitializing) return;
             _setting.Basic.SmoothnessOptimization = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnIsCriticalSafeModeEnabledChanged(bool value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.CriticalSafeMode = value;
+            _settingsService.SaveGlobalSetting(_setting);
+        }
+
+        partial void OnCriticalSafeModeMethodIndexChanged(int value)
+        {
+            if (_isInitializing) return;
+            _setting.Basic.CriticalSafeModeMethod = value;
             _settingsService.SaveGlobalSetting(_setting);
         }
 
