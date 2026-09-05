@@ -36,7 +36,9 @@ namespace ReTime_Testing.ViewModels.Testing
         private void ThrowNullReference()
         {
             string? obj = null;
-            _ = obj.Length; // 触发 NullReferenceException
+#pragma warning disable CS8602 // 故意空引用，用于测试全局异常处理
+            _ = obj.Length;
+#pragma warning restore CS8602
         }
 
         /// <summary>
