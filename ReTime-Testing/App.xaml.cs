@@ -7,6 +7,7 @@ using System.Media;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Net.Sockets;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -112,6 +113,13 @@ namespace ReTime_Testing
         /// </summary>
         private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
+            // 过滤应用退出时的良性异常（如 NTP UDP 接收被中断的 SocketException 995）
+            if (IsBenignShutdownException(e.Exception))
+            {
+                e.SetObserved();
+                return;
+            }
+
             _logger.LogError(e.Exception, "TaskScheduler 未观察异常: {Message}", e.Exception.Message);
 
             Dispatcher.BeginInvoke(() =>
@@ -129,6 +137,24 @@ namespace ReTime_Testing
             });
 
             e.SetObserved();
+        }
+
+        /// <summary>
+        /// 判断是否为应用退出时产生的良性异常
+        /// </summary>
+        private static bool IsBenignShutdownException(Exception exception)
+        {
+            // TaskScheduler.UnobservedTaskException 包装的 AggregateException
+            if (exception is AggregateException aggregate)
+            {
+                foreach (var inner in aggregate.Flatten().InnerExceptions)
+                {
+                    if (inner is SocketException { ErrorCode: 995 })
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         // 公共属性（过渡期保留，供 View code-behind 使用）

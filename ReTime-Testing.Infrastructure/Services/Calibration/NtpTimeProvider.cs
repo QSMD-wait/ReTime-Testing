@@ -84,6 +84,8 @@ public class NtpTimeProvider : ITimeProvider
             if (completedTask != receiveTask)
             {
                 _logger.LogWarning("NTP请求超时: 服务器={ServerAddress}, 超时={Timeout:F0}ms", serverAddress, timeout.TotalMilliseconds);
+                // observe the abandoned receive task to prevent UnobservedTaskException when UdpClient is disposed
+                _ = receiveTask.ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
                 return null;
             }
 
