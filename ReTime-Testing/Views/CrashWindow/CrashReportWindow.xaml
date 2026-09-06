@@ -45,6 +45,7 @@
                 Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
+                          PanningMode="VerticalOnly"
                           Padding="12">
                 <TextBox x:Name="CrashInfoTextBox"
                          Text="{Binding CrashInfo, RelativeSource={RelativeSource AncestorType=Window}}"

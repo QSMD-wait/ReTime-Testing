@@ -251,7 +251,7 @@
                     </DockPanel>
 
                     <!-- 网格布局：WrapPanel -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="4,1">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly" Padding="4,1">
                         <ListView ItemsSource="{Binding FilteredComponents}"
                                   Background="Transparent" BorderThickness="0" Padding="0"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -293,7 +293,7 @@
             <!-- ==================== Tab 2: 插槽设置 ==================== -->
             <TabItem Header="插槽设置"
                      Visibility="{Binding SelectedSlot, Converter={StaticResource NotNullToVisibilityConverter}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly" Padding="4">
                     <Grid>
                         <ContentControl Content="{Binding SelectedSlot}" Margin="0,4,0,0">
                             <ContentControl.ContentTemplate>
@@ -481,7 +481,7 @@
 
             <!-- ==================== Tab 3: 组设置 ==================== -->
             <TabItem Header="组设置">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly" Padding="4">
                     <ikw:SimpleStackPanel Spacing="4" Margin="0,4,0,0">
                     </ikw:SimpleStackPanel>
                 </ScrollViewer>

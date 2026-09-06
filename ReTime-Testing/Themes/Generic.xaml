@@ -18,6 +18,9 @@
                 <ControlTemplate TargetType="pages:SettingsPageBase">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                   Padding="20,0"
+                                  PanningMode="VerticalOnly"
+                                  PanningRatio="2.0"
+                                  PanningDeceleration="0.2"
                                   Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
                         <ContentPresenter Margin="0,16,0,16"/>
                     </ScrollViewer>
@@ -63,6 +66,7 @@
                                   HorizontalAlignment="Right"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
+                                  PanningMode="VerticalOnly"
                                   MaxWidth="460"
                                   Margin="4"
                                   Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">

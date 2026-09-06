@@ -387,6 +387,9 @@
                                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                                               Visibility="{Binding SelectedScheduleItem, Converter={StaticResource NotNullToVisibilityConverter}}"
                                               Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}"
+                                              PanningMode="VerticalOnly"
+                                              PanningRatio="2.0"
+                                              PanningDeceleration="0.2"
                                               Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
                                     <StackPanel Margin="20,16">
 
@@ -1029,6 +1032,9 @@
                         <!-- 组详情 -->
                         <ScrollViewer Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
                                       VerticalScrollBarVisibility="Auto" Margin="16"
+                                      PanningMode="VerticalOnly"
+                                      PanningRatio="2.0"
+                                      PanningDeceleration="0.2"
                                       Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
                             <StackPanel>
                                 <!-- 组名 -->
