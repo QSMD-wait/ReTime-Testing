@@ -10,7 +10,7 @@
         ui:WindowHelper.SystemBackdropType="Mica"
         ui:TitleBar.Height="36"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="ReTime - Testing" Height="450" Width="800">
 
     <ikw:SimpleStackPanel VerticalAlignment="Center" Spacing="5">
         <TextBlock Text="ReTime - Testing" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
