@@ -34,7 +34,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
     public event Func<string, List<string>, Task<bool>>? ForceSaveConfirmRequested;
     public event Action<ToastMessage>? ToastRequested;
-    public event Func<ScheduleListItem, Task<bool>>? EditScheduleInfoRequested;
     public event Func<string, Task<string?>>? CreateGroupNameRequested;
 
     [ObservableProperty]
@@ -335,24 +334,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     private async Task EditScheduleInfoAsync()
     {
         if (SelectedSchedule == null) return;
-
-        if (EditScheduleInfoRequested != null)
-        {
-            var scheduleId = SelectedSchedule.Id;
-            var updated = await EditScheduleInfoRequested(SelectedSchedule);
-            if (updated)
-            {
-                RefreshScheduleList();
-                var restored = Schedules.FirstOrDefault(s => s.Id == scheduleId);
-                if (restored != null)
-                {
-                    _isSwitchingSchedule = true;
-                    SelectedSchedule = restored;
-                    _isSwitchingSchedule = false;
-                    LoadScheduleForSelection(restored);
-                }
-            }
-        }
+        await Task.CompletedTask;
     }
 
     #endregion
@@ -626,6 +608,11 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 Id = info.Id,
                 Name = info.Name,
                 Description = info.Description,
+                AssociatedGroupId = info.AssociatedGroupId,
+                IsEnabled = info.IsEnabled,
+                DayOfWeek = info.DayOfWeek,
+                RotationCycleCount = info.RotationCycleCount,
+                RotationWeekIndex = info.RotationWeekIndex,
                 IsActivated = info.Id == effectiveScheduleId,
                 CreatedAt = info.CreatedAt,
                 UpdatedAt = info.UpdatedAt

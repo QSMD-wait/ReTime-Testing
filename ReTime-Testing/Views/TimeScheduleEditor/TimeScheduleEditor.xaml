@@ -7,6 +7,7 @@
         xmlns:controls="clr-namespace:ReTime_Testing.Controls"
         xmlns:localconv="clr-namespace:ReTime_Testing.Helpers"
         xmlns:viewmodels="clr-namespace:ReTime_Testing.ViewModels.TimeScheduleEditor"
+        xmlns:local="clr-namespace:ReTime_Testing.Views.TimeScheduleEditor"
         mc:Ignorable="d"
         Title="时间计划表编辑器"
         ui:WindowHelper.UseModernWindowStyle="True"
@@ -34,11 +35,12 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
+    <controls:DrawerHost x:Name="InfoDrawerHost" IsDrawerOpen="False" DrawerWidth="360">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
         <TabControl Grid.Column="0" Grid.ColumnSpan="2"
                     Style="{StaticResource TabControlPivotStyle}"
@@ -216,7 +218,7 @@
                                     </ui:AppBarButton.Icon>
                                 </ui:AppBarButton>
                                 <ui:AppBarSeparator/>
-                                <ui:AppBarButton Label="信息" ToolTip="编辑计划表基本信息" Command="{Binding EditScheduleInfoCommand}">
+                                <ui:AppBarButton Label="信息" ToolTip="编辑计划表基本信息" Click="OnEditScheduleInfoClick">
                                     <ui:AppBarButton.Icon>
                                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Info}"/>
                                     </ui:AppBarButton.Icon>
@@ -1103,6 +1105,11 @@
         <controls:ToastOverlay x:Name="ToastOverlayControl"
                                Grid.Column="0" Grid.ColumnSpan="2"
                                Margin="0,0,16,16"/>
-    </Grid>
+        </Grid>
+
+        <controls:DrawerHost.DrawerContent>
+            <local:ScheduleInfoDrawer x:Name="InfoDrawer"/>
+        </controls:DrawerHost.DrawerContent>
+    </controls:DrawerHost>
 
 </Window>
