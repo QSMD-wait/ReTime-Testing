@@ -37,7 +37,7 @@ public partial class ScheduleInfoDrawer : UserControl
             _viewModel = app?.Services.GetRequiredService<TimeScheduleEditorViewModel>();
         }
 
-        var (groupId, isEnabled, dayOfWeek, cycleCount, weekIndex) = _viewModel!.GetScheduleRule(schedule.Id);
+        var isEnabled = _viewModel!.GetScheduleRule(schedule.Id);
 
         NameBox.Text = schedule.Name;
         NameBox.IsReadOnly = true;
@@ -49,27 +49,9 @@ public partial class ScheduleInfoDrawer : UserControl
 
         EnableToggle.IsOn = isEnabled;
 
-        var groups = _viewModel.GetAvailableGroups();
-        GroupComboBox.ItemsSource = groups;
-        GroupComboBox.SelectedValue = groupId;
-
-        DayComboBox.SelectedIndex = dayOfWeek;
-
-        CycleBox.Text = cycleCount.ToString();
-        WeekBox.Text = weekIndex.ToString();
-
         IdBox.Text = schedule.Id;
 
-        UpdateWeekIndexEnabled(cycleCount);
         _isLoading = false;
-    }
-
-    private void UpdateWeekIndexEnabled(int cycleCount)
-    {
-        bool enabled = cycleCount > 1;
-        WeekBox.IsEnabled = enabled;
-        WeekLabel.Foreground = enabled ? SecondaryBrush : Brushes.Gray;
-        WeekInfo.Foreground = enabled ? SecondaryBrush : Brushes.Gray;
     }
 
     private void OnNameEditClick(object sender, RoutedEventArgs e)
@@ -105,18 +87,6 @@ public partial class ScheduleInfoDrawer : UserControl
 
         string newName = NameBox.IsReadOnly ? _schedule.Name : (NameBox.Text?.Trim() ?? _schedule.Name);
         string? newDesc = DescBox.IsReadOnly ? _schedule.Description : (string.IsNullOrWhiteSpace(DescBox.Text) ? null : DescBox.Text.Trim());
-        string newGroupId = GroupComboBox.SelectedValue as string ?? _schedule.AssociatedGroupId;
-
-        int newDay = DayComboBox.SelectedIndex >= 0 && DayComboBox.SelectedItem is ComboBoxItem dayItem && dayItem.Tag is int dayIdx
-            ? dayIdx : _schedule.DayOfWeek;
-
-        int.TryParse(CycleBox.Text, out int newCycle);
-        newCycle = Math.Clamp(newCycle >= 1 ? newCycle : 1, 1, 9);
-
-        int.TryParse(WeekBox.Text, out int newWeek);
-        newWeek = Math.Clamp(newWeek, 0, newCycle <= 1 ? 0 : newCycle);
-
-        UpdateWeekIndexEnabled(newCycle);
 
         bool newIsEnabled = EnableToggle.IsOn;
 
@@ -128,21 +98,13 @@ public partial class ScheduleInfoDrawer : UserControl
         schedule.Settings.Metadata ??= new TimeScheduleMetadata();
         schedule.Settings.Metadata.Name = newName;
         schedule.Settings.Metadata.Description = newDesc;
-        schedule.Settings.Metadata.AssociatedGroupId = newGroupId;
         schedule.Settings.Metadata.IsEnabled = newIsEnabled;
-        schedule.Settings.Metadata.DayOfWeek = newDay;
-        schedule.Settings.Metadata.RotationCycleCount = newCycle;
-        schedule.Settings.Metadata.RotationWeekIndex = newWeek;
         schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
         scheduleManager.SaveSchedule(schedule);
 
         _schedule.Name = newName;
         _schedule.Description = newDesc;
-        _schedule.AssociatedGroupId = newGroupId;
         _schedule.IsEnabled = newIsEnabled;
-        _schedule.DayOfWeek = newDay;
-        _schedule.RotationCycleCount = newCycle;
-        _schedule.RotationWeekIndex = newWeek;
 
         SaveCompleted?.Invoke(newName, _schedule.Id);
     }

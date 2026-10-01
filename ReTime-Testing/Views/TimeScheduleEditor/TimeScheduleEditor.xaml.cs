@@ -44,6 +44,10 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             _viewModel.ToastRequested += OnToastRequested;
             _viewModel.CreateGroupNameRequested += OnCreateGroupNameRequested;
 
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+            GroupDrawer.AttachViewModel(_viewModel);
+
             this.Closing += OnWindowClosing;
         }
 
@@ -190,6 +194,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
         private async void OnWindowClosing(object? sender, CancelEventArgs e)
         {
+            // 提交编辑抽屉中尚未触发的防抖保存，避免关闭时丢失 500ms 内的修改
+            GroupDrawer.FlushPendingSave();
+
             // 应用退出（Shutdown 已启动）或强制关闭时放行真正关闭
             if (_forceRealClose ||
                 (Application.Current?.Dispatcher.HasShutdownStarted ?? false))
@@ -404,12 +411,47 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             InfoDrawer.LoadSchedule(schedule);
             InfoDrawer.SaveCompleted -= OnInfoDrawerSaveCompleted;
             InfoDrawer.SaveCompleted += OnInfoDrawerSaveCompleted;
+
+            GroupDrawer.Visibility = Visibility.Collapsed;
+            InfoDrawer.Visibility = Visibility.Visible;
             InfoDrawerHost.IsDrawerOpen = true;
         }
 
         private void OnInfoDrawerSaveCompleted(string newName, string scheduleId)
         {
             this.ShowSuccessToast("保存成功", $"计划表 \"{newName}\" 信息已更新");
+        }
+
+        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(TimeScheduleEditorViewModel.SelectedGroup))
+            {
+                var groupData = _viewModel.GetSelectedGroupData();
+                if (groupData != null)
+                {
+                    GroupDrawer.LoadGroup(groupData);
+                }
+            }
+        }
+
+        private void OnEditGroupClick(object sender, RoutedEventArgs e)
+        {
+            if (_isWindowClosing) return;
+            var groupData = _viewModel.GetSelectedGroupData();
+            if (groupData == null) return;
+
+            GroupDrawer.LoadGroup(groupData);
+            GroupDrawer.SaveCompleted -= OnGroupDrawerSaveCompleted;
+            GroupDrawer.SaveCompleted += OnGroupDrawerSaveCompleted;
+
+            InfoDrawer.Visibility = Visibility.Collapsed;
+            GroupDrawer.Visibility = Visibility.Visible;
+            InfoDrawerHost.IsDrawerOpen = true;
+        }
+
+        private void OnGroupDrawerSaveCompleted(string groupId, string groupName)
+        {
+            this.ShowSuccessToast("保存成功", $"表组 \"{groupName}\" 信息已更新");
         }
     }
 }

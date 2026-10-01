@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -19,6 +19,7 @@
     <VersionSuffix>alpha.3</VersionSuffix>
 
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <UserSecretsId>0a15b5b8-b611-4e23-b2ed-d6e04fcdd1c2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

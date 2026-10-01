@@ -67,37 +67,6 @@
                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" Margin="0,0,0,6"/>
                 <ui:ToggleSwitch x:Name="EnableToggle" OnContent="启用" OffContent="启用" IsOn="True" HorizontalAlignment="Left" Toggled="OnEnableToggled"/>
 
-                <!-- 归属组 -->
-                <TextBlock Text="归属组" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <ComboBox x:Name="GroupComboBox" DisplayMemberPath="Name" SelectedValuePath="Id"
-                          MinWidth="160" HorizontalAlignment="Stretch" Padding="8,6" SelectionChanged="OnFieldChanged"/>
-
-                <!-- 星期几 -->
-                <TextBlock Text="星期几" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <TextBlock Text="此表将在星期几生效" FontSize="11"
-                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" Margin="0,0,0,6"/>
-                <ComboBox x:Name="DayComboBox" MinWidth="120" HorizontalAlignment="Left" Padding="8,6" SelectionChanged="OnFieldChanged">
-                    <ComboBoxItem Content="周日" Tag="0"/>
-                    <ComboBoxItem Content="周一" Tag="1"/>
-                    <ComboBoxItem Content="周二" Tag="2"/>
-                    <ComboBoxItem Content="周三" Tag="3"/>
-                    <ComboBoxItem Content="周四" Tag="4"/>
-                    <ComboBoxItem Content="周五" Tag="5"/>
-                    <ComboBoxItem Content="周六" Tag="6"/>
-                </ComboBox>
-
-                <!-- 每N周 -->
-                <TextBlock Text="每N周" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <TextBlock Text="1=每周, 2=每两周, 3=每三周..." FontSize="11"
-                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" Margin="0,0,0,6"/>
-                <TextBox x:Name="CycleBox" MinWidth="60" HorizontalAlignment="Left" Padding="8,6" LostFocus="OnFieldChanged"/>
-
-                <!-- 第几周 -->
-                <TextBlock x:Name="WeekLabel" Text="第几周" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <TextBlock x:Name="WeekInfo" Text="0=每周, 1=第1周, 2=第2周..." FontSize="11"
-                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" Margin="0,0,0,6"/>
-                <TextBox x:Name="WeekBox" MinWidth="60" HorizontalAlignment="Left" Padding="8,6" LostFocus="OnFieldChanged"/>
-
                 <!-- ID -->
                 <TextBlock Text="ID" FontSize="11" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}" Margin="0,20,0,6"/>
                 <TextBox x:Name="IdBox" IsReadOnly="True" IsEnabled="False" Padding="8,6"

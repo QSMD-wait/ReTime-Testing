@@ -66,6 +66,7 @@ namespace ReTime_Testing.Models
 
     /// <summary>
     /// 时间计划表配置
+    /// 轮转配置已移至 ScheduleGroup 层（每组独立）
     /// </summary>
     public class ScheduleConfig
     {
@@ -86,31 +87,6 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("override")]
         public ScheduleOverrideConfig Override { get; set; } = new();
-
-        /// <summary>
-        /// 轮换根日期（ISO 8601 日期字符串，如 "2026-09-01"）
-        /// 作为多周轮换的计算起点，null 时默认为本周周日
-        /// 参考 ClassIsland 的 Settings.SingleWeekStartTime
-        /// </summary>
-        [JsonPropertyName("rotationBaseDate")]
-        public string? RotationBaseDate { get; set; }
-
-        /// <summary>
-        /// 每个周期长度对应的偏移量（2-first 索引）
-        /// 索引 0 和 1 是哨兵值 -1（不存在周期 0 和 1）
-        /// 索引 i 存储 i 周轮换的偏移量
-        /// 默认 [-1, -1, 0, 0, 0] 表示 2/3/4 周轮换偏移量均为 0
-        /// 参考 ClassIsland 的 Settings.MultiWeekRotationOffset
-        /// </summary>
-        [JsonPropertyName("multiWeekRotationOffset")]
-        public List<int> MultiWeekRotationOffset { get; set; } = [-1, -1, 0, 0, 0];
-
-        /// <summary>
-        /// 最大多周轮换周数（2~9），默认 4
-        /// 参考 ClassIsland 的 Settings.MultiWeekRotationMaxCycle
-        /// </summary>
-        [JsonPropertyName("multiWeekRotationMaxCycle")]
-        public int MultiWeekRotationMaxCycle { get; set; } = 4;
     }
 
     /// <summary>

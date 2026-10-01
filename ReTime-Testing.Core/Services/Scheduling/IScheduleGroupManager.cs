@@ -5,7 +5,7 @@ namespace ReTime_Testing.Services;
 /// <summary>
 /// 计划表组管理器接口
 /// 职责：管理计划表组配置文件的创建、读取、保存、删除
-/// 组仅作为归类容器，轮换配置在每个计划表上
+/// 组是时间表集合，持有天→表映射、轮转配置和日期覆盖
 /// </summary>
 public interface IScheduleGroupManager
 {
@@ -45,7 +45,7 @@ public interface IScheduleGroupManager
     ScheduleGroup CreateNewGroup(string id, string name);
 
     /// <summary>
-    /// 解散计划表组（组内表移到默认组，组被删除）
+    /// 解散计划表组（组被删除，不涉及表）
     /// 默认组不可解散
     /// </summary>
     bool DisbandGroup(string groupId);
@@ -62,10 +62,15 @@ public interface IScheduleGroupManager
     bool GroupExists(string id);
 
     /// <summary>
-    /// 获取当前生效的计划表ID（综合解析 ScheduleConfig）
-    /// 优先级：override.enabled > activeGroupId 轮换 > override.scheduleId 默认
+    /// 获取当前生效的计划表ID（综合解析 ScheduleConfig + 激活组的天→表映射）
+    /// 优先级：override.enabled > 日期覆盖 > 轮转覆盖 > 基础映射
     /// </summary>
     string? GetEffectiveScheduleId();
+
+    /// <summary>
+    /// 获取组在指定日期生效的天→表映射（合并基础映射和轮转覆盖）
+    /// </summary>
+    Dictionary<string, string> GetEffectiveDayScheduleMap(ScheduleGroup group, DateTime? date = null);
 
     /// <summary>
     /// 获取组的轮换周描述信息

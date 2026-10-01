@@ -32,7 +32,7 @@ public partial class ScheduleGroupListItem : ObservableObject
     private int _rotationCycleCount = 1;
 
     /// <summary>
-    /// 成员计划表数量
+    /// 成员计划表数量（去重后的唯一表数）
     /// </summary>
     [ObservableProperty]
     private int _memberCount;
@@ -42,12 +42,6 @@ public partial class ScheduleGroupListItem : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _isActivated;
-
-    /// <summary>
-    /// 同日冲突警告（同组内多张表设为同一星期几，仅首张生效）
-    /// </summary>
-    [ObservableProperty]
-    private string? _duplicateDayWarning;
 
     /// <summary>
     /// 轮换信息描述（如 "第1/2周"）

@@ -1015,10 +1015,15 @@
                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                   Background="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
-                    <!-- 右侧面板：组详情 -->
+                    <!-- 右侧面板：组预览 -->
                     <Grid Grid.Column="2" Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorDefaultBrushKey}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
                         <!-- 空状态 -->
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                        <StackPanel Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                                     Visibility="{Binding SelectedGroup, Converter={StaticResource NullToVisibilityConverter}}">
                             <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.NewFolder}"
                                          FontSize="48" HorizontalAlignment="Center"
@@ -1031,48 +1036,80 @@
                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
                         </StackPanel>
 
-                        <!-- 组详情 -->
-                        <ScrollViewer Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
-                                      VerticalScrollBarVisibility="Auto" Margin="16"
-                                      PanningMode="VerticalOnly"
-                                      PanningRatio="2.0"
-                                      PanningDeceleration="0.2"
+                        <!-- CommandBar -->
+                        <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left"
+                                       Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}">
+                            <ui:AppBarButton Label="编辑" ToolTip="编辑表组设置" Click="OnEditGroupClick">
+                                <ui:AppBarButton.Icon>
+                                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Edit}"/>
+                                </ui:AppBarButton.Icon>
+                            </ui:AppBarButton>
+                        </ui:CommandBar>
+
+                        <!-- 组预览内容 -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="8"
+                                      Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
+                                      PanningMode="VerticalOnly" PanningRatio="2.0" PanningDeceleration="0.2"
                                       Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
-                            <StackPanel>
+                            <StackPanel x:Name="GroupPreviewPanel" Margin="8">
                                 <!-- 组名 -->
                                 <TextBlock Text="组名" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
                                 <TextBlock Text="{Binding SelectedGroup.Name}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                                <!-- 成员数 -->
-                                <TextBlock Text="成员" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock FontSize="14" Margin="0,0,0,12">
-                                    <Run Text="共"/><Run Text="{Binding SelectedGroup.MemberCount, Mode=OneWay}"/><Run Text="张计划表"/>
-                                </TextBlock>
-
                                 <!-- 轮换状态 -->
                                 <TextBlock Text="轮换状态" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SelectedGroup.RotationInfo, FallbackValue='每周'}" FontSize="14" Margin="0,0,0,16"/>
+                                <TextBlock Text="{Binding GroupRotationSummary, FallbackValue='每周'}" FontSize="14" Margin="0,0,0,8"/>
 
-                                <!-- 同日冲突警告 -->
-                                <Border Background="{DynamicResource {x:Static ui:ThemeKeys.SystemFillColorCriticalBackgroundBrushKey}}"
-                                        CornerRadius="4" Padding="8,6" Margin="0,0,0,16"
-                                        Visibility="{Binding SelectedGroup.DuplicateDayWarning, Converter={StaticResource NotNullToVisibilityConverter}}">
-                                    <TextBlock Text="{Binding SelectedGroup.DuplicateDayWarning}" FontSize="12" TextWrapping="Wrap"
-                                               Foreground="#C42B1C"/>
-                                </Border>
+                                <!-- 今日生效计划表 -->
+                                <TextBlock Text="今日生效计划表" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding GroupTodayScheduleName, FallbackValue='—'}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                                <!-- 日期覆盖摘要 -->
+                                <TextBlock Text="{Binding GroupDateOverrideSummary}" FontSize="12"
+                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
+                                           TextWrapping="Wrap" Margin="0,0,0,8"
+                                           Visibility="{Binding GroupHasDateOverrides, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                                 <!-- 描述 -->
                                 <TextBlock Text="描述" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
                                 <TextBlock Text="{Binding SelectedGroup.Description, FallbackValue='—'}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-                                <!-- 创建时间 -->
-                                <TextBlock Text="创建时间" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SelectedGroup.CreatedAt, StringFormat={}{0:yyyy/MM/dd HH:mm}, FallbackValue='—'}" FontSize="14" Margin="0,0,0,16"/>
+                                <Separator Margin="0,8" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
+
+                                <!-- 天→表映射预览（本周轮转生效值） -->
+                                <TextBlock Text="天→表映射（本周）" FontSize="14" FontWeight="SemiBold" Margin="0,8,0,8"/>
+
+                                <ItemsControl ItemsSource="{Binding GroupPreviewRows}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="50"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding DayName}" FontSize="12" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ScheduleName}" FontSize="12" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                                <Border Grid.Column="2" Margin="6,0,0,0" Padding="5,1" CornerRadius="4" VerticalAlignment="Center"
+                                                        Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
+                                                        Visibility="{Binding IsRotationApplied, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <TextBlock Text="轮转" FontSize="10"
+                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                                </Border>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Separator Margin="0,8" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
                                 <!-- 操作按钮 -->
                                 <Button Content="激活此组" Command="{Binding ActivateGroupByIdCommand}"
                                         CommandParameter="{Binding SelectedGroup.Id}"
-                                        HorizontalAlignment="Left" Margin="0,0,0,8"
+                                        HorizontalAlignment="Left" Margin="0,8,0,8"
                                         Padding="16,6"/>
                                 <Button Content="解散此组" Command="{Binding DisbandGroupCommand}"
                                         CommandParameter="{Binding SelectedGroup.Id}"
@@ -1108,7 +1145,10 @@
         </Grid>
 
         <controls:DrawerHost.DrawerContent>
-            <local:ScheduleInfoDrawer x:Name="InfoDrawer"/>
+            <Grid>
+                <local:ScheduleInfoDrawer x:Name="InfoDrawer"/>
+                <local:GroupEditDrawer x:Name="GroupDrawer" Visibility="Collapsed"/>
+            </Grid>
         </controls:DrawerHost.DrawerContent>
     </controls:DrawerHost>
 

@@ -44,21 +44,6 @@ namespace ReTime_Testing.ViewModels
         [ObservableProperty]
         private int _criticalSafeModeMethodIndex;
 
-        [ObservableProperty]
-        private DateTime? _rotationBaseDate;
-
-        [ObservableProperty]
-        private int _multiWeekRotationMaxCycle = 4;
-
-        [ObservableProperty]
-        private int _cycle2Offset;
-
-        [ObservableProperty]
-        private int _cycle3Offset;
-
-        [ObservableProperty]
-        private int _cycle4Offset;
-
         public List<string> LogLevelNames { get; } = new() { "错误 (ERR)", "警告 (WRN)", "信息 (INF)", "调试 (DBG)", "跟踪 (TRC)" };
 
         public BasicPageViewModel(ISettingsService settingsService)
@@ -77,20 +62,6 @@ namespace ReTime_Testing.ViewModels
             IsSmoothnessOptimizationEnabled = _setting.Basic.SmoothnessOptimization;
             IsCriticalSafeModeEnabled = _setting.Basic.CriticalSafeMode;
             CriticalSafeModeMethodIndex = _setting.Basic.CriticalSafeModeMethod;
-
-            // 轮换设置
-            var timeTopSetting = _settingsService.GetTimeTopSetting();
-            if (DateTime.TryParse(timeTopSetting.Schedule.RotationBaseDate, out var baseDate))
-            {
-                RotationBaseDate = baseDate;
-            }
-            MultiWeekRotationMaxCycle = timeTopSetting.Schedule.MultiWeekRotationMaxCycle;
-
-            // 加载每个周期长度的偏移量
-            var offsets = timeTopSetting.Schedule.MultiWeekRotationOffset;
-            Cycle2Offset = offsets.Count > 2 ? offsets[2] : 0;
-            Cycle3Offset = offsets.Count > 3 ? offsets[3] : 0;
-            Cycle4Offset = offsets.Count > 4 ? offsets[4] : 0;
 
             _isInitializing = false;
         }
@@ -163,57 +134,6 @@ namespace ReTime_Testing.ViewModels
             if (_isInitializing) return;
             _setting.Basic.CriticalSafeModeMethod = value;
             _settingsService.SaveGlobalSetting(_setting);
-        }
-
-        partial void OnRotationBaseDateChanged(DateTime? value)
-        {
-            if (_isInitializing) return;
-            var timeTopSetting = _settingsService.GetTimeTopSetting();
-            timeTopSetting.Schedule.RotationBaseDate = value?.ToString("yyyy-MM-dd");
-            _settingsService.SaveTimeTopSetting(timeTopSetting);
-        }
-
-        partial void OnMultiWeekRotationMaxCycleChanged(int value)
-        {
-            if (_isInitializing) return;
-            var timeTopSetting = _settingsService.GetTimeTopSetting();
-            timeTopSetting.Schedule.MultiWeekRotationMaxCycle = value;
-            // 确保 offsets 列表足够长
-            while (timeTopSetting.Schedule.MultiWeekRotationOffset.Count <= value)
-            {
-                timeTopSetting.Schedule.MultiWeekRotationOffset.Add(0);
-            }
-            _settingsService.SaveTimeTopSetting(timeTopSetting);
-        }
-
-        partial void OnCycle2OffsetChanged(int value)
-        {
-            if (_isInitializing) return;
-            SaveCycleOffset(2, value);
-        }
-
-        partial void OnCycle3OffsetChanged(int value)
-        {
-            if (_isInitializing) return;
-            SaveCycleOffset(3, value);
-        }
-
-        partial void OnCycle4OffsetChanged(int value)
-        {
-            if (_isInitializing) return;
-            SaveCycleOffset(4, value);
-        }
-
-        private void SaveCycleOffset(int cycleLength, int offset)
-        {
-            var timeTopSetting = _settingsService.GetTimeTopSetting();
-            var offsets = timeTopSetting.Schedule.MultiWeekRotationOffset;
-            while (offsets.Count <= cycleLength)
-            {
-                offsets.Add(0);
-            }
-            offsets[cycleLength] = offset;
-            _settingsService.SaveTimeTopSetting(timeTopSetting);
         }
     }
 
