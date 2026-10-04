@@ -1036,7 +1036,7 @@
                                        Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
                         </StackPanel>
 
-                        <!-- CommandBar -->
+                        <!-- CommandBar：「编辑」为二级编辑页入口（打开 GroupEditDrawer 抽屉） -->
                         <ui:CommandBar Grid.Row="0" DefaultLabelPosition="Right" Margin="4,4,4,0" HorizontalAlignment="Left"
                                        Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}">
                             <ui:AppBarButton Label="编辑" ToolTip="编辑表组设置" Click="OnEditGroupClick">
@@ -1046,77 +1046,9 @@
                             </ui:AppBarButton>
                         </ui:CommandBar>
 
-                        <!-- 组预览内容 -->
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="8"
-                                      Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"
-                                      PanningMode="VerticalOnly" PanningRatio="2.0" PanningDeceleration="0.2"
-                                      Style="{DynamicResource {x:Static ui:ThemeKeys.DefaultScrollViewerStyleKey}}">
-                            <StackPanel x:Name="GroupPreviewPanel" Margin="8">
-                                <!-- 组名 -->
-                                <TextBlock Text="组名" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SelectedGroup.Name}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
-                                <!-- 轮换状态 -->
-                                <TextBlock Text="轮换状态" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding GroupRotationSummary, FallbackValue='每周'}" FontSize="14" Margin="0,0,0,8"/>
-
-                                <!-- 今日生效计划表 -->
-                                <TextBlock Text="今日生效计划表" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding GroupTodayScheduleName, FallbackValue='—'}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
-
-                                <!-- 日期覆盖摘要 -->
-                                <TextBlock Text="{Binding GroupDateOverrideSummary}" FontSize="12"
-                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
-                                           TextWrapping="Wrap" Margin="0,0,0,8"
-                                           Visibility="{Binding GroupHasDateOverrides, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
-                                <!-- 描述 -->
-                                <TextBlock Text="描述" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SelectedGroup.Description, FallbackValue='—'}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,12"/>
-
-                                <Separator Margin="0,8" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
-
-                                <!-- 天→表映射预览（本周轮转生效值） -->
-                                <TextBlock Text="天→表映射（本周）" FontSize="14" FontWeight="SemiBold" Margin="0,8,0,8"/>
-
-                                <ItemsControl ItemsSource="{Binding GroupPreviewRows}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,0,0,6">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="50"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding DayName}" FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding ScheduleName}" FontSize="12" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                                <Border Grid.Column="2" Margin="6,0,0,0" Padding="5,1" CornerRadius="4" VerticalAlignment="Center"
-                                                        Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
-                                                        Visibility="{Binding IsRotationApplied, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                    <TextBlock Text="轮转" FontSize="10"
-                                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                                </Border>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
-                                <Separator Margin="0,8" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
-
-                                <!-- 操作按钮 -->
-                                <Button Content="激活此组" Command="{Binding ActivateGroupByIdCommand}"
-                                        CommandParameter="{Binding SelectedGroup.Id}"
-                                        HorizontalAlignment="Left" Margin="0,8,0,8"
-                                        Padding="16,6"/>
-                                <Button Content="解散此组" Command="{Binding DisbandGroupCommand}"
-                                        CommandParameter="{Binding SelectedGroup.Id}"
-                                        HorizontalAlignment="Left"
-                                        Padding="16,6"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <!-- 一级编辑页：按轮转周堆叠的指派行表（ClassIsland 周视图风格，周一 → 周日） -->
+                        <local:GroupWeekArrangement x:Name="WeekArranger" Grid.Row="1" Margin="8"
+                                       Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibilityConverter}}"/>
                     </Grid>
                 </Grid>
             </TabItem>

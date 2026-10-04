@@ -76,4 +76,10 @@ public interface IScheduleGroupManager
     /// 获取组的轮换周描述信息
     /// </summary>
     string GetRotationInfo(string groupId, DateTime? date = null);
+
+    /// <summary>
+    /// 获取组在指定日期所处的轮换周序号（1=基础周, 2..N=轮转周）
+    /// 用于编排页标记「本周」所在轮转周
+    /// </summary>
+    int GetCurrentRotationWeek(ScheduleGroup group, DateTime? date = null);
 }

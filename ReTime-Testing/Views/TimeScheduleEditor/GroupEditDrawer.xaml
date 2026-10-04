@@ -9,23 +9,6 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-
-        <!-- 天→表映射单行模板（基础映射与轮转覆盖共用） -->
-        <DataTemplate x:Key="DayMapRowTemplate">
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding DayName}" FontSize="12" VerticalAlignment="Center"
-                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
-                          ItemsSource="{Binding ScheduleOptions}"
-                          DisplayMemberPath="Name"
-                          SelectedValuePath="Id"
-                          SelectedValue="{Binding ScheduleId, Mode=TwoWay}"/>
-            </Grid>
-        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
@@ -112,57 +95,7 @@
                               Margin="0,0,0,4"
                               ValueChanged="OnOffsetChanged"/>
 
-                <Separator Margin="0,20" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
-
-                <!-- 天→表映射 -->
-                <TextBlock Text="天→表映射" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                <ItemsControl x:Name="BaseMapList" ItemTemplate="{StaticResource DayMapRowTemplate}"/>
-
-                <Separator Margin="0,20" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
-
-                <!-- 轮转覆盖 -->
-                <StackPanel x:Name="RotationOverrideSection">
-                    <Grid Margin="0,0,0,8">
-                        <TextBlock Text="轮转覆盖" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Button x:Name="AddRotationOverrideButton" HorizontalAlignment="Right" Padding="10,4"
-                                Click="OnAddRotationOverrideClick">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons" FontSize="11"
-                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="添加" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                    <TextBlock x:Name="RotationEmptyHint" Text="无轮转覆盖，所有轮转周均使用基础映射"
-                               FontSize="12" Margin="0,0,0,8"
-                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                    <ItemsControl x:Name="RotationOverrideList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Expander Margin="0,0,0,10"
-                                          IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
-                                          Visibility="{Binding IsWithinCycle, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <Expander.Header>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Summary}" FontSize="11" Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
-                                        </StackPanel>
-                                    </Expander.Header>
-                                    <StackPanel Margin="4,8,0,0">
-                                        <ItemsControl ItemsSource="{Binding Rows}"
-                                                      ItemTemplate="{StaticResource DayMapRowTemplate}"/>
-                                        <Button Content="移除此周覆盖" HorizontalAlignment="Left" Margin="0,4,0,0"
-                                                Padding="10,4" Click="OnRemoveRotationOverrideClick"/>
-                                    </StackPanel>
-                                </Expander>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
+                <!-- 分隔：轮换设置 | 日期覆盖（天→表映射与轮转覆盖由一级编排页 GroupWeekArrangement 负责） -->
                 <Separator x:Name="DateSectionSeparator" Margin="0,20"
                            BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
@@ -211,12 +144,29 @@
 
                 <Separator Margin="0,20" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 
-                <!-- 操作 -->
+                <!-- 操作：解散为危险操作，经 ui:Flyout 二次确认 -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,0,0,8">
                     <Button x:Name="ActivateGroupButton" Content="激活此组"
                             Margin="0,0,8,0" Click="OnActivateGroupClick"/>
                     <Button x:Name="DissolveGroupButton" Content="解散此组"
-                            Click="OnDissolveGroupClick"/>
+                            ui:FlyoutService.FlyoutOpeningMode="Click">
+                        <ui:FlyoutService.Flyout>
+                            <ui:Flyout x:Name="DissolveConfirmFlyout" Placement="Top">
+                                <StackPanel Width="240">
+                                    <TextBlock Text="确定要解散该表组吗？" FontSize="13" FontWeight="SemiBold"
+                                               Margin="0,0,0,6"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                    <TextBlock Text="组将被删除，计划表本身不会受影响。" FontSize="12" TextWrapping="Wrap"
+                                               Margin="0,0,0,12"
+                                               Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Content="取消" Margin="0,0,8,0" Click="OnDissolveCancelClick"/>
+                                        <Button Content="确认解散" Click="OnDissolveConfirmClick"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ui:Flyout>
+                        </ui:FlyoutService.Flyout>
+                    </Button>
                 </StackPanel>
 
             </StackPanel>

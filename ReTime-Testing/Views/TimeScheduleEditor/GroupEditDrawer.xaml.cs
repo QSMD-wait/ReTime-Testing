@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,23 +14,17 @@ using ReTime_Testing.ViewModels.TimeScheduleEditor;
 namespace ReTime_Testing.Views.TimeScheduleEditor;
 
 /// <summary>
-/// 表组编辑抽屉：组属性、轮换配置、天→表映射、轮转覆盖、日期覆盖
+/// 表组二级编辑抽屉：组名/描述、轮换配置、日期覆盖、激活/解散。
+/// 天→表映射与轮转周覆盖由一级编排页 GroupWeekArrangement 负责。
 /// 所有编辑在 500ms 防抖后统一落盘（延迟自动保存）
 /// </summary>
 public partial class GroupEditDrawer : UserControl
 {
-    private static readonly string[] DayNames = { "周日", "周一", "周二", "周三", "周四", "周五", "周六" };
-
     private TimeScheduleEditorViewModel? _viewModel;
     private ScheduleGroup? _group;
     private bool _isLoading;
     private bool _isLoadedOnce;
     private readonly DispatcherTimer _autoSaveTimer;
-
-    /// <summary>
-    /// 基础天→表映射行（7 行，随组重建）
-    /// </summary>
-    private readonly ObservableCollection<DayMapRowItem> _baseRows = new();
 
     /// <summary>
     /// 全部可用计划表选项（不含空选项）
@@ -46,8 +39,6 @@ public partial class GroupEditDrawer : UserControl
     public GroupEditDrawer()
     {
         InitializeComponent();
-
-        BaseMapList.ItemsSource = _baseRows;
 
         _autoSaveTimer = new DispatcherTimer
         {
@@ -105,34 +96,6 @@ public partial class GroupEditDrawer : UserControl
                 _scheduleOptions.Add(new ScheduleOption { Id = schedule.Id, Name = schedule.Name });
         }
 
-        // 基础天→表映射
-        _baseRows.Clear();
-        for (var day = 0; day <= 6; day++)
-        {
-            var row = new DayMapRowItem
-            {
-                DayIndex = day,
-                DayName = DayNames[day],
-                ScheduleOptions = BuildOptions("（未配置）")
-            };
-
-            if (group.DayScheduleMap.TryGetValue(day.ToString(), out var scheduleId))
-                row.ScheduleId = scheduleId;
-
-            HookRow(row, null);
-            _baseRows.Add(row);
-        }
-
-        // 轮转覆盖
-        RotationOverrideList.Items.Clear();
-        foreach (var entry in group.RotatedDayScheduleMaps)
-        {
-            if (!int.TryParse(entry.Key, out var weekKey) || weekKey < 1) continue;
-
-            var item = CreateOverrideItem(weekKey + 1, entry.Value);
-            RotationOverrideList.Items.Add(item);
-        }
-
         // 日期覆盖
         DateOverrideList.Items.Clear();
         foreach (var entry in group.DateOverrides)
@@ -149,24 +112,13 @@ public partial class GroupEditDrawer : UserControl
             DateOverrideList.Items.Add(item);
         }
 
-        UpdateRotationSectionState(group.RotationCycleCount);
         UpdateEmptyHints();
 
         _isLoading = false;
         _isLoadedOnce = true;
     }
 
-    #region 行/选项构建
-
-    /// <summary>
-    /// 构建 ComboBox 选项：第一项为空选项（未配置 / 继承基础映射）+ 全部计划表
-    /// </summary>
-    private List<ScheduleOption> BuildOptions(string emptyLabel)
-    {
-        var options = new List<ScheduleOption> { new ScheduleOption { Id = "", Name = emptyLabel } };
-        options.AddRange(_scheduleOptions);
-        return options;
-    }
+    #region 选项构建
 
     /// <summary>
     /// 构建日期覆盖的选项（无空选项；已删除的计划表补一个占位项）
@@ -177,47 +129,6 @@ public partial class GroupEditDrawer : UserControl
         if (!string.IsNullOrEmpty(scheduleId) && !options.Any(o => o.Id == scheduleId))
             options.Add(new ScheduleOption { Id = scheduleId, Name = "（已删除的计划表）" });
         return options;
-    }
-
-    /// <summary>
-    /// 创建一个轮转周覆盖项（7 天差异行）
-    /// </summary>
-    private RotationOverrideItem CreateOverrideItem(int displayWeek, IReadOnlyDictionary<string, string>? diffMap)
-    {
-        var item = new RotationOverrideItem { DisplayWeek = displayWeek };
-
-        for (var day = 0; day <= 6; day++)
-        {
-            var row = new DayMapRowItem
-            {
-                DayIndex = day,
-                DayName = DayNames[day],
-                ScheduleOptions = BuildOptions("（继承基础映射）")
-            };
-
-            if (diffMap != null && diffMap.TryGetValue(day.ToString(), out var scheduleId))
-                row.ScheduleId = scheduleId;
-
-            HookRow(row, item);
-            item.Rows.Add(row);
-        }
-
-        item.UpdateSummary();
-        return item;
-    }
-
-    /// <summary>
-    /// 订阅行变更：选中计划表变化时刷新摘要并触发防抖保存
-    /// </summary>
-    private void HookRow(DayMapRowItem row, RotationOverrideItem? owner)
-    {
-        row.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName != nameof(DayMapRowItem.ScheduleId)) return;
-
-            owner?.UpdateSummary();
-            ScheduleAutoSave();
-        };
     }
 
     /// <summary>
@@ -298,9 +209,7 @@ public partial class GroupEditDrawer : UserControl
 
     private void OnCycleCountChanged(iNKORE.UI.WPF.Modern.Controls.NumberBox sender, iNKORE.UI.WPF.Modern.Controls.NumberBoxValueChangedEventArgs e)
     {
-        if (!_isLoading)
-            UpdateRotationSectionState(CurrentCycleCount);
-
+        // 周期数变化只影响轮换配置本身；周切换器在抽屉关闭时由编排页重载同步
         ScheduleAutoSave();
     }
 
@@ -352,77 +261,6 @@ public partial class GroupEditDrawer : UserControl
 
     #endregion
 
-    #region 轮转覆盖
-
-    /// <summary>
-    /// 按轮换周期数刷新轮转覆盖区的可见性与可添加周
-    /// </summary>
-    private void UpdateRotationSectionState(int cycleCount)
-    {
-        var rotationEnabled = cycleCount > 1;
-        RotationOverrideSection.Visibility = rotationEnabled ? Visibility.Visible : Visibility.Collapsed;
-        DateSectionSeparator.Visibility = rotationEnabled ? Visibility.Visible : Visibility.Collapsed;
-
-        foreach (var item in RotationOverrideList.Items.OfType<RotationOverrideItem>())
-            item.IsWithinCycle = item.DisplayWeek <= cycleCount;
-
-        var existingWeeks = RotationOverrideList.Items.OfType<RotationOverrideItem>()
-            .Where(i => i.IsWithinCycle)
-            .Select(i => i.DisplayWeek)
-            .ToHashSet();
-
-        AddRotationOverrideButton.IsEnabled = rotationEnabled &&
-                                              Enumerable.Range(2, cycleCount - 1).Any(w => !existingWeeks.Contains(w));
-    }
-
-    private void OnAddRotationOverrideClick(object sender, RoutedEventArgs e)
-    {
-        var cycleCount = CurrentCycleCount;
-        if (cycleCount <= 1) return;
-
-        var existingWeeks = RotationOverrideList.Items.OfType<RotationOverrideItem>()
-            .Select(i => i.DisplayWeek)
-            .ToHashSet();
-
-        var availableWeeks = Enumerable.Range(2, cycleCount - 1).Where(w => !existingWeeks.Contains(w)).ToList();
-        if (availableWeeks.Count == 0) return;
-
-        var menu = new ContextMenu();
-        foreach (var week in availableWeeks)
-        {
-            var capturedWeek = week;
-            var menuItem = new MenuItem { Header = $"第 {capturedWeek} 周" };
-            menuItem.Click += (_, _) => AddRotationOverride(capturedWeek);
-            menu.Items.Add(menuItem);
-        }
-
-        menu.PlacementTarget = AddRotationOverrideButton;
-        menu.IsOpen = true;
-    }
-
-    private void AddRotationOverride(int displayWeek)
-    {
-        if (RotationOverrideList.Items.OfType<RotationOverrideItem>().Any(i => i.DisplayWeek == displayWeek))
-            return;
-
-        RotationOverrideList.Items.Add(CreateOverrideItem(displayWeek, null));
-        UpdateRotationSectionState(CurrentCycleCount);
-        UpdateEmptyHints();
-        ScheduleAutoSave();
-    }
-
-    private void OnRemoveRotationOverrideClick(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.DataContext is not RotationOverrideItem item) return;
-
-        RotationOverrideList.Items.Remove(item);
-        UpdateRotationSectionState(CurrentCycleCount);
-        UpdateEmptyHints();
-        ScheduleAutoSave();
-    }
-
-    #endregion
-
     #region 日期覆盖
 
     private void OnAddDateOverrideClick(object sender, RoutedEventArgs e)
@@ -462,7 +300,6 @@ public partial class GroupEditDrawer : UserControl
 
     private void UpdateEmptyHints()
     {
-        RotationEmptyHint.Visibility = RotationOverrideList.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         DateEmptyHint.Visibility = DateOverrideList.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -505,22 +342,19 @@ public partial class GroupEditDrawer : UserControl
         string? startDate = StartDatePicker.SelectedDate?.ToString("yyyy-MM-dd");
         int offset = CurrentRotationOffset;
 
-        // 基础天→表映射（未配置的天不写入，避免空字符串被解析成生效计划表）
-        var dayScheduleMap = _baseRows
-            .Where(r => !string.IsNullOrEmpty(r.ScheduleId))
-            .ToDictionary(r => r.DayIndex.ToString(), r => r.ScheduleId);
+        // 基础天→表映射与轮转覆盖由一级编排页维护：打开抽屉前已提交，这里透传磁盘当前值
+        // （空值过滤与空周剔除保持落盘语义一致）
+        var dayScheduleMap = _group.DayScheduleMap
+            .Where(kv => !string.IsNullOrEmpty(kv.Value))
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        // 轮转覆盖（只保存差异；全为继承时不写入）
-        var rotatedMaps = new Dictionary<string, Dictionary<string, string>>();
-        foreach (var item in RotationOverrideList.Items.OfType<RotationOverrideItem>())
-        {
-            var diff = item.Rows
-                .Where(r => !string.IsNullOrEmpty(r.ScheduleId))
-                .ToDictionary(r => r.DayIndex.ToString(), r => r.ScheduleId);
-
-            if (diff.Count > 0)
-                rotatedMaps[item.MapKey] = diff;
-        }
+        var rotatedMaps = _group.RotatedDayScheduleMaps
+            .Where(kv => kv.Value != null && kv.Value.Any(v => !string.IsNullOrEmpty(v.Value)))
+            .ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value
+                    .Where(v => !string.IsNullOrEmpty(v.Value))
+                    .ToDictionary(v => v.Key, v => v.Value));
 
         // 日期覆盖（重复日期保留先出现的一条）
         var dateOverrides = new Dictionary<string, string>();
@@ -559,10 +393,22 @@ public partial class GroupEditDrawer : UserControl
         _viewModel.ActivateGroupByIdCommand.Execute(_group.Id);
     }
 
-    private void OnDissolveGroupClick(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// 危险操作确认：解散当前组（由 DissolveConfirmFlyout 确认按钮触发）
+    /// </summary>
+    private void OnDissolveConfirmClick(object sender, RoutedEventArgs e)
     {
+        DissolveConfirmFlyout?.Hide();
         if (_group == null || _viewModel == null) return;
         _viewModel.DisbandGroupCommand.Execute(_group.Id);
+    }
+
+    /// <summary>
+    /// 取消解散（收起确认 Flyout）
+    /// </summary>
+    private void OnDissolveCancelClick(object sender, RoutedEventArgs e)
+    {
+        DissolveConfirmFlyout?.Hide();
     }
 
     #endregion

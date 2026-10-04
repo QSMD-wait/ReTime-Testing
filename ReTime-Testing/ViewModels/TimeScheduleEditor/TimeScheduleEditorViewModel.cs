@@ -1074,131 +1074,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             });
         }
 
-        // 保持选中组（清空列表会重置选中项，重建后按ID恢复，避免保存后预览/抽屉状态丢失）
+        // 保持选中组（清空列表会重置选中项，重建后按ID恢复，避免保存后编辑页状态丢失）
         if (selectedGroupId != null)
         {
             SelectedGroup = Groups.FirstOrDefault(g => g.Id == selectedGroupId);
-            RefreshGroupPreview();
         }
     }
-
-    #region 表组预览
-
-    /// <summary>
-    /// 预览面板的天→表映射行（按本周轮转状态显示生效计划表）
-    /// </summary>
-    public ObservableCollection<GroupPreviewRow> GroupPreviewRows { get; } = new();
-
-    /// <summary>
-    /// 预览面板的轮换摘要（如"第2/4周 · 2 个轮转覆盖"）
-    /// </summary>
-    [ObservableProperty]
-    private string groupRotationSummary = "—";
-
-    /// <summary>
-    /// 预览面板的日期覆盖摘要（如"今日 2026-09-25 → 考试周"）
-    /// </summary>
-    [ObservableProperty]
-    private string groupDateOverrideSummary = "";
-
-    /// <summary>
-    /// 是否存在日期覆盖（控制日期覆盖摘要的可见性）
-    /// </summary>
-    [ObservableProperty]
-    private bool groupHasDateOverrides;
-
-    /// <summary>
-    /// 今日该组生效的计划表名称
-    /// </summary>
-    [ObservableProperty]
-    private string groupTodayScheduleName = "—";
-
-    partial void OnSelectedGroupChanged(ScheduleGroupListItem? value)
-    {
-        RefreshGroupPreview();
-    }
-
-    /// <summary>
-    /// 重新生成当前选中组的预览数据
-    /// </summary>
-    public void RefreshGroupPreview()
-    {
-        GroupPreviewRows.Clear();
-        GroupRotationSummary = "—";
-        GroupDateOverrideSummary = "";
-        GroupHasDateOverrides = false;
-        GroupTodayScheduleName = "—";
-
-        if (SelectedGroup == null) return;
-
-        var group = _groupManager.LoadGroup(SelectedGroup.Id);
-        if (group == null) return;
-
-        var scheduleNames = Schedules
-            .GroupBy(s => s.Id)
-            .ToDictionary(g => g.Key, g => g.First().Name);
-
-        static string DisplayName(Dictionary<string, string> names, string? id)
-            => !string.IsNullOrEmpty(id) && names.TryGetValue(id, out var name) ? name : "（未配置）";
-
-        // 本周（按今日轮转周）的生效映射
-        var effectiveMap = _groupManager.GetEffectiveDayScheduleMap(group);
-        var dayNames = new[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" };
-
-        for (var day = 0; day <= 6; day++)
-        {
-            var key = day.ToString();
-            group.DayScheduleMap.TryGetValue(key, out var baseId);
-            effectiveMap.TryGetValue(key, out var effectiveId);
-
-            var hasBase = !string.IsNullOrEmpty(baseId);
-            var hasEffective = !string.IsNullOrEmpty(effectiveId);
-
-            GroupPreviewRows.Add(new GroupPreviewRow
-            {
-                DayName = dayNames[day],
-                ScheduleName = hasEffective ? DisplayName(scheduleNames, effectiveId) : "（未配置）",
-                IsConfigured = hasEffective,
-                IsRotationApplied = hasBase && hasEffective && baseId != effectiveId
-            });
-        }
-
-        // 轮换摘要
-        if (group.RotationCycleCount <= 1)
-        {
-            GroupRotationSummary = "每周（未启用轮换）";
-        }
-        else
-        {
-            var parts = new List<string> { _groupManager.GetRotationInfo(group.Id) };
-            if (group.RotatedDayScheduleMaps.Count > 0)
-                parts.Add($"{group.RotatedDayScheduleMaps.Count} 个轮转覆盖");
-            GroupRotationSummary = string.Join(" · ", parts);
-        }
-
-        // 日期覆盖摘要
-        GroupHasDateOverrides = group.DateOverrides.Count > 0;
-        var todayKey = DateTime.Today.ToString("yyyy-MM-dd");
-        if (group.DateOverrides.TryGetValue(todayKey, out var todayOverrideId))
-            GroupDateOverrideSummary = $"今日 {todayKey} → {DisplayName(scheduleNames, todayOverrideId)}";
-        else if (group.DateOverrides.Count > 0)
-            GroupDateOverrideSummary = $"共 {group.DateOverrides.Count} 条日期覆盖";
-
-        // 今日生效计划表（日期覆盖 > 轮转/基础映射）
-        if (group.DateOverrides.TryGetValue(todayKey, out var overrideId))
-        {
-            GroupTodayScheduleName = DisplayName(scheduleNames, overrideId);
-        }
-        else
-        {
-            var dayKey = ((int)DateTime.Today.DayOfWeek).ToString();
-            GroupTodayScheduleName = effectiveMap.TryGetValue(dayKey, out var id) && !string.IsNullOrEmpty(id)
-                ? DisplayName(scheduleNames, id)
-                : "（未配置）";
-        }
-    }
-
-    #endregion
 
     [RelayCommand]
     private async Task AddGroupAsync()
@@ -1341,6 +1222,11 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     /// 获取所有可用计划表（用于天→表映射的 ComboBox）
     /// </summary>
     public List<ScheduleListItem> GetAvailableSchedules() => Schedules.ToList();
+
+    /// <summary>
+    /// 获取组在今天所处的轮换周序号（1=基础周, 2..N=轮转周），用于周切换器标记"本周"
+    /// </summary>
+    public int GetCurrentRotationWeek(ScheduleGroup group) => _groupManager.GetCurrentRotationWeek(group);
 
     #endregion
 

@@ -373,6 +373,15 @@ namespace ReTime_Testing.Services
             }
         }
 
+        /// <summary>
+        /// 获取组在指定日期所处的轮换周序号（1=基础周, 2..N=轮转周）
+        /// </summary>
+        public int GetCurrentRotationWeek(ScheduleGroup group, DateTime? date = null)
+        {
+            var targetDate = date ?? DateTime.Today;
+            return ResolveCurrentCycle(group, targetDate) + 1;
+        }
+
         private void RefreshCache()
         {
             _groupCache.Clear();

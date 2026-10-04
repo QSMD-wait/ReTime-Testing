@@ -47,6 +47,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
             GroupDrawer.AttachViewModel(_viewModel);
+            WeekArranger.AttachViewModel(_viewModel);
+            InfoDrawerHost.DrawerStateChanged += OnDrawerStateChanged;
 
             this.Closing += OnWindowClosing;
         }
@@ -194,7 +196,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
         private async void OnWindowClosing(object? sender, CancelEventArgs e)
         {
-            // 提交编辑抽屉中尚未触发的防抖保存，避免关闭时丢失 500ms 内的修改
+            // 提交一级编排页与二级编辑抽屉中尚未触发的防抖保存，避免关闭时丢失 500ms 内的修改
+            WeekArranger.FlushPendingSave();
             GroupDrawer.FlushPendingSave();
 
             // 应用退出（Shutdown 已启动）或强制关闭时放行真正关闭
@@ -430,13 +433,39 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 if (groupData != null)
                 {
                     GroupDrawer.LoadGroup(groupData);
+                    WeekArranger.LoadGroup(groupData);
+                }
+                else
+                {
+                    WeekArranger.Clear();
                 }
             }
+        }
+
+        /// <summary>
+        /// 抽屉开合协同：打开期间禁用一级编排页（避免双写），
+        /// 关闭时先提交抽屉防抖保存再让编排页重载，同步轮换配置等改动
+        /// </summary>
+        private void OnDrawerStateChanged(object? sender, DrawerStateChangedEventArgs e)
+        {
+            if (e.IsOpen)
+            {
+                WeekArranger.IsEnabled = false;
+                return;
+            }
+
+            GroupDrawer.FlushPendingSave();
+            WeekArranger.IsEnabled = true;
+            WeekArranger.Reload();
         }
 
         private void OnEditGroupClick(object sender, RoutedEventArgs e)
         {
             if (_isWindowClosing) return;
+
+            // 先提交一级编排页的防抖保存，保证二级抽屉读取到最新数据
+            WeekArranger.FlushPendingSave();
+
             var groupData = _viewModel.GetSelectedGroupData();
             if (groupData == null) return;
 
