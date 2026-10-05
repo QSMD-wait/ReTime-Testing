@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace ReTime_Testing.Models
@@ -107,6 +108,22 @@ namespace ReTime_Testing.Models
         /// </summary>
         [JsonPropertyName("scheduleId")]
         public string ScheduleId { get; set; } = "";
+
+        /// <summary>
+        /// 临时启用截止日期（yyyy-MM-dd）。
+        /// 空 = 覆盖式启用（长期生效）；非空 = 仅当天临时启用，过期后自动回落组轮换
+        /// </summary>
+        [JsonPropertyName("temporaryDate")]
+        public string TemporaryDate { get; set; } = "";
+
+        /// <summary>
+        /// 覆盖当前是否实际生效：未启用 / 覆盖式启用 / 临时启用且仍为当天。
+        /// 过期的临时启用视为未覆盖，所有生效判断统一走此属性
+        /// </summary>
+        [JsonIgnore]
+        public bool IsEffectiveToday =>
+            Enabled &&
+            (string.IsNullOrEmpty(TemporaryDate) || TemporaryDate == DateTime.Now.ToString("yyyy-MM-dd"));
     }
 
     /// <summary>

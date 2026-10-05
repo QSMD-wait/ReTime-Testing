@@ -287,6 +287,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
             {
                 setting.Schedule.Override.ScheduleId = "";
                 setting.Schedule.Override.Enabled = false;
+                setting.Schedule.Override.TemporaryDate = "";
                 needSave = true;
             }
 
@@ -309,6 +310,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var setting = _settingsService.GetTimeTopSetting();
         setting.Schedule.Override.ScheduleId = scheduleId;
         setting.Schedule.Override.Enabled = true;
+        // 右键"设为活跃"为覆盖式启用（长期），清掉可能残留的临时启用日期
+        setting.Schedule.Override.TemporaryDate = "";
         _settingsService.SaveTimeTopSetting(setting);
 
         UpdateScheduleListActivation(scheduleId);
@@ -871,17 +874,39 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
     }
 
-    public void ApplyScheduleSelection(ScheduleListItem selectedItem)
+    /// <summary>
+    /// 启用一张计划表并热重载调度（"加载计划表"弹窗）
+    /// </summary>
+    /// <param name="onlyToday">true = 仅当天临时启用（次日自动回落组轮换）；false = 覆盖式启用（长期生效）</param>
+    public void ApplyScheduleSelection(ScheduleListItem selectedItem, bool onlyToday = false)
     {
         var setting = _settingsService.GetTimeTopSetting();
         setting.Schedule.Override.ScheduleId = selectedItem.Id;
         setting.Schedule.Override.Enabled = true;
+        setting.Schedule.Override.TemporaryDate = onlyToday ? DateTime.Now.ToString("yyyy-MM-dd") : "";
         _settingsService.SaveTimeTopSetting(setting);
 
         // 手动覆盖接管后：组圆点消失，表圆点移到实际生效的表
         UpdateScheduleListActivation(_groupManager.GetEffectiveScheduleId() ?? "");
         RefreshGroups();
     }
+
+    /// <summary>
+    /// 热重载当前生效的计划表（表组切换后同步调度用；今天无生效表时跳过）
+    /// </summary>
+    public async Task<(bool success, string? error)> ReloadEffectiveScheduleAsync()
+    {
+        var effectiveId = _groupManager.GetEffectiveScheduleId();
+        if (string.IsNullOrEmpty(effectiveId))
+            return (true, null);
+
+        return await HotReloadScheduleAsync(effectiveId);
+    }
+
+    /// <summary>
+    /// 当前激活的表组 ID（"加载表组"弹窗预选用）
+    /// </summary>
+    public string? GetActiveGroupId() => _settingsService.GetTimeTopSetting().Schedule.ActiveGroupId;
 
     public bool TryAutoSaveBeforeLeave()
     {
@@ -1058,8 +1083,9 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var groups = _groupManager.LoadAllGroups();
         var setting = _settingsService.GetTimeTopSetting();
         var currentActiveGroupId = setting.Schedule.ActiveGroupId;
-        // 手动覆盖（单独启用某张表）生效时，实际生效的不再是组的轮换计划
-        var overrideTakingOver = setting.Schedule.Override.Enabled;
+        // 手动覆盖（单独启用某张表）生效时，实际生效的不再是组的轮换计划；
+        // 过期的"仅当天临时启用"不算覆盖，组圆点恢复点亮
+        var overrideTakingOver = setting.Schedule.Override.IsEffectiveToday;
 
         foreach (var group in groups.OrderBy(g => g.Id == ScheduleGroup.DefaultGroupId ? 0 : 1).ThenBy(g => g.Metadata.CreatedAt))
         {
@@ -1142,6 +1168,7 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         setting.Schedule.ActiveGroupId = groupId;
         setting.Schedule.Override.Enabled = false;
         setting.Schedule.Override.ScheduleId = "";
+        setting.Schedule.Override.TemporaryDate = "";
         _settingsService.SaveTimeTopSetting(setting);
 
         RefreshGroups();

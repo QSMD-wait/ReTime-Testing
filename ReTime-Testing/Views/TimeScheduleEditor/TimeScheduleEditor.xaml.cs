@@ -293,7 +293,14 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             var items = _viewModel.BuildScheduleListItems();
             var listView = CreateScheduleListView(items);
-            var dialog = CreateSelectScheduleDialog(listView);
+
+            // 启用方式：勾选 = 仅当天临时启用（次日回落组轮换）；不勾选 = 覆盖式启用（长期）
+            var temporaryCheck = new System.Windows.Controls.CheckBox
+            {
+                Content = "仅当天临时启用",
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+            var dialog = CreateSelectScheduleDialog(listView, temporaryCheck);
 
             _activeDialog = dialog;
             var result = await dialog.ShowAsync();
@@ -308,7 +315,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
 
             if (listView.SelectedItem is ScheduleListItem selectedItem)
             {
-                _viewModel.ApplyScheduleSelection(selectedItem);
+                var onlyToday = temporaryCheck.IsChecked == true;
+                _viewModel.ApplyScheduleSelection(selectedItem, onlyToday);
                 var (success, errorMessage) = await _viewModel.HotReloadScheduleAsync(selectedItem.Id);
 
                 if (_isWindowClosing) return;
@@ -318,7 +326,9 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                     var confirmDialog = new ContentDialog
                     {
                         Title = "切换成功",
-                        Content = $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n已重启调度并应用新的时间计划表",
+                        Content = onlyToday
+                            ? $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n仅当天临时启用，次日自动恢复按表组轮换"
+                            : $"已切换到时间计划表 \"{selectedItem.Name}\"\n\n已重启调度并应用新的时间计划表",
                         CloseButtonText = "确定",
                         DefaultButton = ContentDialogButton.Close,
                         IsShadowEnabled = false
@@ -358,6 +368,118 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             }
         }
 
+        /// <summary>
+        /// 加载表组：弹窗选择要激活的表组，激活后热重载新生效的计划表
+        /// </summary>
+        private async void OnLoadGroupButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (_isWindowClosing) return;
+
+            var groups = _viewModel.Groups.ToList();
+            var listView = CreateGroupListView(groups);
+            var dialog = new ContentDialog
+            {
+                Title = "选择表组",
+                Content = new ScrollViewer
+                {
+                    Content = listView,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    MaxHeight = 300
+                },
+                CloseButtonText = "加载",
+                PrimaryButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+                IsShadowEnabled = false
+            };
+
+            _activeDialog = dialog;
+            var result = await dialog.ShowAsync();
+            _activeDialog = null;
+
+            if (_isWindowClosing) return;
+
+            if (result == ContentDialogResult.Primary)
+            {
+                return; // 取消
+            }
+
+            if (listView.SelectedItem is ScheduleGroupListItem selectedGroup)
+            {
+                _viewModel.ActivateGroupByIdCommand.Execute(selectedGroup.Id);
+
+                // 与"加载计划表"一致：激活后热重载新生效的计划表（成功提示由激活组的 toast 给出）
+                var (success, errorMessage) = await _viewModel.ReloadEffectiveScheduleAsync();
+                if (_isWindowClosing) return;
+
+                if (!success)
+                {
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "切换失败",
+                        Content = $"已激活表组 \"{selectedGroup.Name}\"，但热重载计划表失败\n\n错误：{errorMessage}",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Close,
+                        IsShadowEnabled = false
+                    };
+                    _activeDialog = errorDialog;
+                    await errorDialog.ShowAsync();
+                    _activeDialog = null;
+                }
+            }
+            else if (result == ContentDialogResult.None && listView.SelectedItem == null && listView.Items.Count > 0)
+            {
+                var warnDialog = new ContentDialog
+                {
+                    Title = "提示",
+                    Content = "请选择一个表组",
+                    CloseButtonText = "确定",
+                    DefaultButton = ContentDialogButton.Close,
+                    IsShadowEnabled = false
+                };
+                _activeDialog = warnDialog;
+                await warnDialog.ShowAsync();
+                _activeDialog = null;
+            }
+        }
+
+        /// <summary>
+        /// 表组选择弹窗的列表（两行模板：组名 + "N 张表 · 第N/M周"，预选当前激活组）
+        /// </summary>
+        private System.Windows.Controls.ListView CreateGroupListView(System.Collections.Generic.List<ScheduleGroupListItem> items)
+        {
+            var listView = new System.Windows.Controls.ListView
+            {
+                ItemsSource = items,
+                SelectionMode = SelectionMode.Single,
+                MinWidth = 300,
+                MinHeight = 200,
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+
+            var factory = new FrameworkElementFactory(typeof(StackPanel));
+
+            var nameFactory = new FrameworkElementFactory(typeof(TextBlock));
+            nameFactory.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            factory.AppendChild(nameFactory);
+
+            var subtitleFactory = new FrameworkElementFactory(typeof(TextBlock));
+            subtitleFactory.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("DisplaySubtitle"));
+            subtitleFactory.SetValue(TextBlock.FontSizeProperty, 11d);
+            subtitleFactory.SetValue(FrameworkElement.OpacityProperty, 0.7d);
+            factory.AppendChild(subtitleFactory);
+
+            listView.ItemTemplate = new DataTemplate { VisualTree = factory };
+
+            var activeId = _viewModel.GetActiveGroupId();
+            var current = items.FirstOrDefault(i => i.Id == activeId);
+            if (current != null)
+            {
+                listView.SelectedItem = current;
+            }
+
+            return listView;
+        }
+
         private System.Windows.Controls.ListView CreateScheduleListView(System.Collections.Generic.List<ScheduleListItem> items)
         {
             var listView = new System.Windows.Controls.ListView
@@ -387,17 +509,32 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
             return listView;
         }
 
-        private ContentDialog CreateSelectScheduleDialog(System.Windows.Controls.ListView listView)
+        private ContentDialog CreateSelectScheduleDialog(System.Windows.Controls.ListView listView, System.Windows.Controls.CheckBox temporaryCheck)
         {
+            // 弹窗内容：计划表列表 + 启用方式勾选框 + 说明
+            var content = new StackPanel();
+            content.Children.Add(new ScrollViewer
+            {
+                Content = listView,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 300
+            });
+            content.Children.Add(temporaryCheck);
+
+            var hint = new TextBlock
+            {
+                Text = "勾选：仅当天临时启用，次日自动恢复按表组轮换；不勾选：覆盖式启用，长期生效直到切换表组或重新加载",
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(16, 2, 0, 0)
+            };
+            hint.SetResourceReference(TextBlock.ForegroundProperty, iNKORE.UI.WPF.Modern.ThemeKeys.TextFillColorSecondaryBrushKey);
+            content.Children.Add(hint);
+
             return new ContentDialog
             {
                 Title = "选择时间计划表",
-                Content = new ScrollViewer
-                {
-                    Content = listView,
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    MaxHeight = 300
-                },
+                Content = content,
                 CloseButtonText = "加载",
                 PrimaryButtonText = "取消",
                 DefaultButton = ContentDialogButton.Close,

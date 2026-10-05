@@ -1062,15 +1062,27 @@
             </TabItem>
         </TabControl>
 
+        <!-- 顶部命令栏：加载表组 / 加载计划表 / 保存 -->
         <ui:CommandBar Grid.Column="1"
                        VerticalAlignment="Top"
                        DefaultLabelPosition="Right"
                        IsOpen="False">
-            <ui:AppBarButton Label="加载" Click="OnReloadButtonClick" RenderTransformOrigin="-0.822,0.675">
+            <!-- 加载表组入口：弹窗选择并激活表组（恢复按轮换计划执行） -->
+            <ui:AppBarButton Label="加载表组" Click="OnLoadGroupButtonClick"
+                             ToolTip="选择表组并激活（清除手动启用的计划表，按轮换执行）">
+                <ui:AppBarButton.Icon>
+                    <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Folder}"/>
+                </ui:AppBarButton.Icon>
+            </ui:AppBarButton>
+
+            <!-- 加载计划表入口：弹窗选择计划表并启用（仅当天临时 / 覆盖式） -->
+            <ui:AppBarButton Label="加载计划表" Click="OnReloadButtonClick"
+                             ToolTip="选择计划表并启用，可选仅当天临时启用或覆盖式启用">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"/>
                 </ui:AppBarButton.Icon>
             </ui:AppBarButton>
+
             <ui:AppBarButton Label="保存" Command="{Binding SaveCommand}" RenderTransformOrigin="-0.822,0.675">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Save}"/>

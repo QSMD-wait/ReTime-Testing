@@ -50,6 +50,13 @@ public partial class ScheduleGroupListItem : ObservableObject
     private string? _rotationInfo;
 
     /// <summary>
+    /// 列表副标题："N 张表 · 第N/M周"（非轮换组仅表数），选择弹窗等简单列表用
+    /// </summary>
+    public string DisplaySubtitle => string.IsNullOrEmpty(RotationInfo)
+        ? $"{MemberCount} 张表"
+        : $"{MemberCount} 张表 {RotationInfo}";
+
+    /// <summary>
     /// 创建时间
     /// </summary>
     public DateTime? CreatedAt { get; set; }
