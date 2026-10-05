@@ -32,19 +32,19 @@ public partial class ScheduleGroupListItem : ObservableObject
     private int _rotationCycleCount = 1;
 
     /// <summary>
-    /// 成员计划表数量（去重后的唯一表数）
+    /// 组内计划表数量（基础映射 + 轮转映射 + 日期覆盖去重后的唯一表数）
     /// </summary>
     [ObservableProperty]
     private int _memberCount;
 
     /// <summary>
-    /// 是否为当前激活组
+    /// 是否为当前生效组（激活且未被"单独启用的表"手动覆盖）
     /// </summary>
     [ObservableProperty]
     private bool _isActivated;
 
     /// <summary>
-    /// 轮换信息描述（如 "第1/2周"）
+    /// 轮换信息描述（如 "第1/2周"，非轮换组为空）
     /// </summary>
     [ObservableProperty]
     private string? _rotationInfo;

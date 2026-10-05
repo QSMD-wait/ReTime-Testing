@@ -153,10 +153,11 @@
                         <ui:FlyoutService.Flyout>
                             <ui:Flyout x:Name="DissolveConfirmFlyout" Placement="Top">
                                 <StackPanel Width="240">
-                                    <TextBlock Text="确定要解散该表组吗？" FontSize="13" FontWeight="SemiBold"
+                                    <TextBlock x:Name="DissolveConfirmTitle" Text="确定要解散此表组吗？"
+                                               FontSize="13" FontWeight="SemiBold"
                                                Margin="0,0,0,6"
                                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                    <TextBlock Text="组将被删除，计划表本身不会受影响。" FontSize="12" TextWrapping="Wrap"
+                                    <TextBlock Text="该组将被删除，已创建的计划表不受影响。" FontSize="12" TextWrapping="Wrap"
                                                Margin="0,0,0,12"
                                                Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

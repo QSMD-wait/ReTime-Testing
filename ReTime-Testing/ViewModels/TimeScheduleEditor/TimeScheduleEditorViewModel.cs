@@ -312,6 +312,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         _settingsService.SaveTimeTopSetting(setting);
 
         UpdateScheduleListActivation(scheduleId);
+        // 单独启用表后，组的生效圆点需要同步消失
+        RefreshGroups();
     }
 
     [RelayCommand]
@@ -875,6 +877,10 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         setting.Schedule.Override.ScheduleId = selectedItem.Id;
         setting.Schedule.Override.Enabled = true;
         _settingsService.SaveTimeTopSetting(setting);
+
+        // 手动覆盖接管后：组圆点消失，表圆点移到实际生效的表
+        UpdateScheduleListActivation(_groupManager.GetEffectiveScheduleId() ?? "");
+        RefreshGroups();
     }
 
     public bool TryAutoSaveBeforeLeave()
@@ -1050,12 +1056,17 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         Groups.Clear();
 
         var groups = _groupManager.LoadAllGroups();
-        var currentActiveGroupId = _settingsService.GetTimeTopSetting().Schedule.ActiveGroupId;
+        var setting = _settingsService.GetTimeTopSetting();
+        var currentActiveGroupId = setting.Schedule.ActiveGroupId;
+        // 手动覆盖（单独启用某张表）生效时，实际生效的不再是组的轮换计划
+        var overrideTakingOver = setting.Schedule.Override.Enabled;
 
         foreach (var group in groups.OrderBy(g => g.Id == ScheduleGroup.DefaultGroupId ? 0 : 1).ThenBy(g => g.Metadata.CreatedAt))
         {
-            // 计算组内成员数量（从 DayScheduleMap 中去重统计，忽略未配置的空值）
+            // 组内表数量：基础映射 + 轮转映射 + 日期覆盖，去重统计（忽略未配置的空值）
             var memberCount = group.DayScheduleMap.Values
+                .Concat(group.RotatedDayScheduleMaps.Values.SelectMany(m => m.Values))
+                .Concat(group.DateOverrides.Values)
                 .Where(v => !string.IsNullOrEmpty(v))
                 .Distinct()
                 .Count();
@@ -1067,8 +1078,12 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 Description = group.Metadata.Description,
                 RotationCycleCount = group.RotationCycleCount,
                 MemberCount = memberCount,
-                IsActivated = group.Id == currentActiveGroupId,
-                RotationInfo = _groupManager.GetRotationInfo(group.Id),
+                // 生效圆点：该组为激活组，且未被"单独启用的表"（手动覆盖）接管
+                IsActivated = group.Id == currentActiveGroupId && !overrideTakingOver,
+                // 非轮换组不显示轮换信息；轮换组显示 "· 第N/M周"
+                RotationInfo = group.RotationCycleCount > 1
+                    ? $"· {_groupManager.GetRotationInfo(group.Id)}"
+                    : "",
                 CreatedAt = DateTime.TryParse(group.Metadata.CreatedAt, out var created) ? created : null,
                 UpdatedAt = DateTime.TryParse(group.Metadata.UpdatedAt, out var updated) ? updated : null
             });

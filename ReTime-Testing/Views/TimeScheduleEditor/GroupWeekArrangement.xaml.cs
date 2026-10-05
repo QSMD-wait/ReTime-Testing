@@ -16,8 +16,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor;
 
 /// <summary>
 /// 表组一级编辑页：周视图风格的指派行表。
-/// 一个轮转周一张表格（表头行 = 星期 + 日期，指派行 = 计划表选择），周期内各周纵向堆叠；
-/// 点击指派行弹出 ui:Flyout 选择计划表，修改在 500ms 防抖后统一落盘。
+/// 一个轮转周一张表格（表头行 = 星期 + 轮转标签，指派行 = 计划表选择），周期内各周纵向堆叠；
+/// 点击指派行弹出 ui:Flyout（ListView 选项），修改在 500ms 防抖后统一落盘。
 /// 组名/轮换配置/日期覆盖等高级项由二级抽屉 GroupEditDrawer 承担。
 /// </summary>
 public partial class GroupWeekArrangement : UserControl
@@ -162,29 +162,7 @@ public partial class GroupWeekArrangement : UserControl
 
         var cycleCount = Math.Clamp(group.RotationCycleCount, 1, 9);
         var currentWeek = Math.Clamp(_viewModel?.GetCurrentRotationWeek(group) ?? 1, 1, cycleCount);
-
-        // 轮换锚点与 ScheduleGroupManager 同口径，用于推算各轮转周在当前周期内的实际日期
         var today = DateTime.Today;
-        var anchor = today.AddDays(-(int)today.DayOfWeek);
-        if (cycleCount > 1 && !string.IsNullOrEmpty(group.RotationStartDate) &&
-            DateTime.TryParse(group.RotationStartDate, out var parsed))
-        {
-            anchor = parsed.Date;
-        }
-
-        var anchorDow = (int)anchor.DayOfWeek;
-        DateTime cycleStart;
-        if (cycleCount <= 1)
-        {
-            cycleStart = anchor;
-        }
-        else
-        {
-            var totalElapsed = (int)Math.Floor((today.Date - anchor).TotalDays / 7.0);
-            var position = (totalElapsed + group.RotationOffset) % cycleCount;
-            if (position < 0) position += cycleCount;
-            cycleStart = anchor.AddDays((totalElapsed - position) * 7.0);
-        }
 
         // 重建表格组
         ReleaseTables();
@@ -198,11 +176,10 @@ public partial class GroupWeekArrangement : UserControl
                 Title = TitleOf(week, cycleCount)
             };
 
-            var weekStart = cycleStart.AddDays((week - 1) * 7.0);
             var map = week <= 1
                 ? _dayMap
                 : _rotatedMaps.TryGetValue(WeekKeyOf(week), out var rotated) ? rotated : null;
-            var options = BuildOptions(week <= 1 ? "（未配置）" : "（继承基础映射）");
+            var options = BuildOptions(week <= 1 ? "（未设置）" : "（按第一周安排）");
 
             for (var i = 0; i < DayOrder.Length; i++)
             {
@@ -210,14 +187,13 @@ public partial class GroupWeekArrangement : UserControl
                 string? rawId = null;
                 map?.TryGetValue(day.ToString(), out rawId);
 
-                var date = weekStart.AddDays(((day - anchorDow) % 7 + 7) % 7);
                 var cell = new DayCellItem
                 {
                     DayIndex = day,
                     DayName = DayNames[day],
                     DisplayWeek = week,
-                    DateText = date.ToString("MM/dd"),
-                    IsToday = date == today,
+                    // 仅"本周"表格的今日列做高亮（已不显示日期）
+                    IsToday = week == currentWeek && day == (int)today.DayOfWeek,
                     IsFirst = i == 0,
                     ScheduleOptions = options,
                     ScheduleId = rawId ?? ""
@@ -254,15 +230,18 @@ public partial class GroupWeekArrangement : UserControl
 
     #region 单元格构建
 
+    /// <summary>中文数字（轮换周期上限 9 周）</summary>
+    private static readonly string[] CnWeekNumbers = { "", "一", "二", "三", "四", "五", "六", "七", "八", "九" };
+
     private static string TitleOf(int week, int cycleCount)
         => cycleCount <= 1
             ? "每周安排"
-            : week <= 1 ? "第 1 周（基础映射）" : $"第 {week} 周";
+            : week <= 1 ? "第一周（基础）" : $"第{CnWeekNumbers[week]}周";
 
     private static string WeekKeyOf(int displayWeek) => (displayWeek - 1).ToString();
 
     /// <summary>
-    /// 构建选择器选项：第一项为空选项（未配置 / 继承基础映射）+ 全部计划表
+    /// 构建选择器选项：第一项为空选项（（未设置）/（按第一周安排））+ 全部计划表
     /// </summary>
     private List<ScheduleOption> BuildOptions(string emptyLabel)
     {
@@ -272,7 +251,7 @@ public partial class GroupWeekArrangement : UserControl
     }
 
     /// <summary>
-    /// 刷新天列显示（生效计划表名、按钮文本、继承/差异标签）
+    /// 刷新天列显示（按钮文本、相同/不同标签）
     /// </summary>
     private void UpdateCellView(DayCellItem cell)
     {
@@ -282,18 +261,20 @@ public partial class GroupWeekArrangement : UserControl
             : cell.DisplayWeek <= 1 ? "" : baseId;
         var hasValue = !string.IsNullOrEmpty(effective);
 
-        cell.DisplayName = hasValue ? ResolveScheduleName(effective) : "（未配置）";
+        cell.DisplayName = hasValue ? ResolveScheduleName(effective) : "选择计划表";
         cell.IsEmpty = !hasValue;
-        cell.ButtonText = hasValue ? cell.DisplayName : "添加计划表";
 
         var rotationView = cell.DisplayWeek > 1;
-        cell.ShowRotationTags = rotationView;
-        cell.IsInherited = rotationView && string.IsNullOrEmpty(cell.ScheduleId);
-        cell.TagText = cell.IsInherited ? "继承" : "差异";
+        // 无生效计划表时不显示标签（与第一周一致也无从谈起）
+        cell.ShowRotationTags = rotationView && hasValue;
+        cell.DiffersFromBase = rotationView && effective != baseId;
+        cell.TagText = cell.DiffersFromBase ? "不同" : "相同";
+        // 轮转周沿用第一周（未单独设置）→ 按钮文字灰色斜体
+        cell.IsInherited = rotationView && hasValue && string.IsNullOrEmpty(cell.ScheduleId);
     }
 
     private string ResolveScheduleName(string id)
-        => _scheduleOptions.FirstOrDefault(o => o.Id == id)?.Name ?? "（已删除的计划表）";
+        => _scheduleOptions.FirstOrDefault(o => o.Id == id)?.Name ?? "已删除的计划表";
 
     private void OnCellPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -359,11 +340,27 @@ public partial class GroupWeekArrangement : UserControl
     private string SummaryOf(int week)
     {
         var cycleCount = Math.Clamp(_group?.RotationCycleCount ?? 1, 1, 9);
-        if (cycleCount <= 1) return "每周默认映射";
-        if (week <= 1) return _rotatedMaps.Count > 0 ? "轮转周默认继承此映射" : "每周默认映射";
+        if (cycleCount <= 1) return "未开启轮换";
+        if (week <= 1) return "其他周默认按此安排";
 
-        var diffCount = _rotatedMaps.TryGetValue(WeekKeyOf(week), out var map) ? map.Count : 0;
-        return diffCount == 0 ? "全部继承基础映射" : $"{diffCount} 天与基础映射不同";
+        var diffCount = DiffCountOfWeek(week);
+        return diffCount == 0 ? "与第一周完全一致" : $"{diffCount} 天与第一周不同";
+    }
+
+    /// <summary>
+    /// 统计该轮转周中与第一周安排不同的天数（仅统计真正生效的差异）
+    /// </summary>
+    private int DiffCountOfWeek(int week)
+    {
+        if (!_rotatedMaps.TryGetValue(WeekKeyOf(week), out var map)) return 0;
+
+        var count = 0;
+        foreach (var kv in map)
+        {
+            var baseId = _dayMap.TryGetValue(kv.Key, out var id) ? id : "";
+            if (kv.Value != baseId) count++;
+        }
+        return count;
     }
 
     #endregion
@@ -382,13 +379,14 @@ public partial class GroupWeekArrangement : UserControl
 
         // Flyout 内容未进入视觉树时绑定不随 DataContext 刷新（见冒烟测试），
         // 改为命令式装配选项与当前选择，与事件顺序无关
-        if (flyout.Content is ListBox listBox)
+        // （ui:ListView 与 WPF ListView 重名，此处按公共基类 ListBox 判断）
+        if (flyout.Content is ListBox picker)
         {
             _syncingPicker = true;
             try
             {
-                listBox.ItemsSource = cell.ScheduleOptions;
-                listBox.SelectedValue = cell.ScheduleId;
+                picker.ItemsSource = cell.ScheduleOptions;
+                picker.SelectedValue = cell.ScheduleId;
             }
             finally
             {
@@ -403,9 +401,9 @@ public partial class GroupWeekArrangement : UserControl
     private void OnOptionSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_syncingPicker || _activeCell == null) return;
-        if (sender is not ListBox listBox) return;
+        if (sender is not ListBox picker) return;
 
-        _activeCell.ScheduleId = listBox.SelectedValue as string ?? "";
+        _activeCell.ScheduleId = picker.SelectedValue as string ?? "";
     }
 
     private void OnOptionClick(object sender, RoutedEventArgs e)
@@ -417,6 +415,7 @@ public partial class GroupWeekArrangement : UserControl
 
     private static bool HasListBoxItemAncestor(DependencyObject node)
     {
+        // WPF 与 iNKORE 的项容器均继承自 ListBoxItem
         while (node != null)
         {
             if (node is ListBoxItem) return true;

@@ -56,7 +56,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <!-- 天列容器：左侧分隔线 + 今日顶部强调 -->
+                                        <!-- 天列容器：左侧分隔线 -->
                                         <Border>
                                             <Border.Style>
                                                 <Style TargetType="Border">
@@ -68,76 +68,68 @@
                                                         <DataTrigger Binding="{Binding IsFirst}" Value="True">
                                                             <Setter Property="BorderThickness" Value="0,0,0,0"/>
                                                         </DataTrigger>
-                                                        <!-- 今日列：顶部强调边 + 左侧强调分隔 -->
-                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                            <Setter Property="BorderThickness" Value="1,3,0,0"/>
-                                                            <Setter Property="BorderBrush"
-                                                                    Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
-                                                        </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>
                                             <StackPanel>
-                                                <!-- 表头行：星期 + 日期 + 继承/差异标签 -->
-                                                <Border Padding="8,5,8,6">
+                                                <!-- 今日列顶强调线（常态占位透明，保证各列表头对齐） -->
+                                                <Border Height="3">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
-                                                            <Setter Property="Background"
-                                                                    Value="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}"/>
-                                                            <Setter Property="BorderBrush"
-                                                                    Value="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"/>
-                                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                                            <Setter Property="Background" Value="Transparent"/>
                                                             <Style.Triggers>
-                                                                <!-- 今日：表头底线强调 -->
                                                                 <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                    <Setter Property="BorderBrush"
+                                                                    <Setter Property="Background"
                                                                             Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
-                                                    <StackPanel>
-                                                        <Grid>
-                                                            <TextBlock Text="{Binding DayName}" FontSize="12" FontWeight="SemiBold"
-                                                                       VerticalAlignment="Center"
-                                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
-                                                            <!-- 轮转周标签：继承（中性）/ 差异（强调色） -->
-                                                            <Border HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                                    Padding="5,1" CornerRadius="3"
-                                                                    Visibility="{Binding ShowRotationTags, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                                <Border.Style>
-                                                                    <Style TargetType="Border">
-                                                                        <Setter Property="Background"
-                                                                                Value="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding IsInherited}" Value="False">
-                                                                                <Setter Property="Background"
-                                                                                        Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </Border.Style>
-                                                                <TextBlock Text="{Binding TagText}" FontSize="10"
-                                                                           Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
-                                                            </Border>
-                                                        </Grid>
-                                                        <!-- 表头日期（今日强调色加粗） -->
-                                                        <TextBlock Text="{Binding DateText}" FontSize="11" Margin="0,2,0,0">
+                                                </Border>
+
+                                                <!-- 表头行：星期 + 轮转标签 -->
+                                                <Border Padding="8,5,8,6"
+                                                        BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.CardStrokeColorDefaultBrushKey}}"
+                                                        BorderThickness="0,0,0,1"
+                                                        Background="{DynamicResource {x:Static ui:ThemeKeys.CardBackgroundFillColorSecondaryBrushKey}}">
+                                                    <Grid>
+                                                        <!-- 星期名（今日列强调色） -->
+                                                        <TextBlock Text="{Binding DayName}" FontSize="12"
+                                                                   VerticalAlignment="Center">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
+                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
                                                                     <Setter Property="Foreground"
-                                                                            Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                                            Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsToday}" Value="True">
                                                                             <Setter Property="Foreground"
                                                                                     Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
-                                                                            <Setter Property="FontWeight" Value="SemiBold"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </TextBlock.Style>
                                                         </TextBlock>
-                                                    </StackPanel>
+                                                        <!-- 轮转周标签：相同（中性）/ 不同（强调色） -->
+                                                        <Border HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                Padding="5,1" CornerRadius="3"
+                                                                Visibility="{Binding ShowRotationTags, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background"
+                                                                            Value="{DynamicResource {x:Static ui:ThemeKeys.ControlFillColorDefaultBrushKey}}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding DiffersFromBase}" Value="True">
+                                                                            <Setter Property="Background"
+                                                                                    Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock Text="{Binding TagText}" FontSize="10"
+                                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                                        </Border>
+                                                    </Grid>
                                                 </Border>
 
                                                 <!-- 指派行：点击弹出 ui:Flyout 选择计划表 -->
@@ -149,23 +141,45 @@
                                                         ui:FlyoutService.FlyoutOpeningMode="Click">
                                                     <ui:FlyoutService.Flyout>
                                                         <ui:Flyout Placement="Bottom">
+                                                            <!-- 收紧外框内边距与边框 -->
+                                                            <ui:Flyout.FlyoutPresenterStyle>
+                                                                <Style TargetType="ui:FlyoutPresenter"
+                                                                       BasedOn="{StaticResource {x:Type ui:FlyoutPresenter}}">
+                                                                    <Setter Property="Padding" Value="4"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                </Style>
+                                                            </ui:Flyout.FlyoutPresenterStyle>
                                                             <!-- 选项与当前选择由 OnCellClick 命令式装配（游离元素绑定不刷新） -->
-                                                            <ListBox DisplayMemberPath="Name"
-                                                                     SelectedValuePath="Id"
-                                                                     MinWidth="180" MaxHeight="300"
-                                                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                                     SelectionChanged="OnOptionSelectionChanged"
-                                                                     PreviewMouseLeftButtonUp="OnOptionClick"/>
+                                                            <ui:ListView DisplayMemberPath="Name"
+                                                                      SelectedValuePath="Id"
+                                                                      MinWidth="180" MaxHeight="300"
+                                                                      Padding="0" BorderThickness="0"
+                                                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                                      SelectionChanged="OnOptionSelectionChanged"
+                                                                      PreviewMouseLeftButtonUp="OnOptionClick">
+                                                                <!-- 行内边距收紧；空选项（（未设置）/（按第一周安排））斜体显示 -->
+                                                                <ui:ListView.ItemContainerStyle>
+                                                                    <Style TargetType="ui:ListViewItem"
+                                                                           BasedOn="{StaticResource {x:Type ui:ListViewItem}}">
+                                                                        <Setter Property="Padding" Value="8,3"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                                                                                <Setter Property="FontStyle" Value="Italic"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </ui:ListView.ItemContainerStyle>
+                                                            </ui:ListView>
                                                         </ui:Flyout>
                                                     </ui:FlyoutService.Flyout>
                                                     <DockPanel LastChildFill="True" Margin="4,0">
-                                                        <!-- 空位显示"+ 添加计划表" -->
+                                                        <!-- 空位显示"+ 选择计划表" -->
                                                         <ui:FontIcon DockPanel.Dock="Left"
                                                                      Icon="{x:Static ui:SegoeFluentIcons.Add}"
                                                                      FontSize="12" Margin="0,0,6,0"
                                                                      VerticalAlignment="Center"
                                                                      Visibility="{Binding IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                                        <TextBlock Text="{Binding ButtonText}" FontSize="12"
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="12"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center">
                                                             <TextBlock.Style>
@@ -175,6 +189,12 @@
                                                                             <Setter Property="Foreground"
                                                                                     Value="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"/>
                                                                             <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                        </DataTrigger>
+                                                                        <!-- 轮转周沿用第一周：灰色斜体以示区分 -->
+                                                                        <DataTrigger Binding="{Binding IsInherited}" Value="True">
+                                                                            <Setter Property="Foreground"
+                                                                                    Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"/>
+                                                                            <Setter Property="FontStyle" Value="Italic"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>

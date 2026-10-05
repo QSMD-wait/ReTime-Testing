@@ -48,7 +48,7 @@ public partial class GroupEditDrawer : UserControl
     }
 
     /// <summary>
-    /// 注入窗口的 ViewModel（与预览面板共享同一实例，保存后预览会同步刷新）
+    /// 注入窗口的 ViewModel（与一级编排页共享同一实例）
     /// </summary>
     public void AttachViewModel(TimeScheduleEditorViewModel viewModel)
     {
@@ -82,6 +82,7 @@ public partial class GroupEditDrawer : UserControl
         GroupDescEditButton.Visibility = Visibility.Visible;
 
         DissolveGroupButton.IsEnabled = _viewModel != null && !_viewModel.IsGroupProtected(group.Id);
+        DissolveConfirmTitle.Text = $"确定要解散「{group.Metadata.Name}」吗？";
 
         // 轮换配置
         CycleCountBox.Value = group.RotationCycleCount;
@@ -127,7 +128,7 @@ public partial class GroupEditDrawer : UserControl
     {
         var options = new List<ScheduleOption>(_scheduleOptions);
         if (!string.IsNullOrEmpty(scheduleId) && !options.Any(o => o.Id == scheduleId))
-            options.Add(new ScheduleOption { Id = scheduleId, Name = "（已删除的计划表）" });
+            options.Add(new ScheduleOption { Id = scheduleId, Name = "已删除的计划表" });
         return options;
     }
 

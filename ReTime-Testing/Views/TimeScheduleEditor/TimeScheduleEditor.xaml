@@ -127,8 +127,9 @@
                                                    FontSize="14" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                                   FontSize="11"
+                                        <!-- 副标题不跨圆点列，避免长文本钻到圆点底下 -->
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   FontSize="11" TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}"
                                                    VerticalAlignment="Center"
                                                    Visibility="{Binding UpdatedAt, Converter={StaticResource NotNullToVisibilityConverter}}">
@@ -140,7 +141,7 @@
                                                 Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
                                                 HorizontalAlignment="Right" VerticalAlignment="Center"
                                                 Margin="4,0,0,0"
-                                                ToolTip="此计划表处于活跃状态"
+                                                ToolTip="今天正在使用的计划表"
                                                 Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Grid>
                                 </DataTemplate>
@@ -976,6 +977,12 @@
                                   ItemsSource="{Binding Groups}"
                                   SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
                                   SelectionMode="Single">
+                            <ListView.ItemContainerStyle>
+                                <!-- 内容横向拉伸，圆点才能靠右对齐（否则整体按内容宽度排布，圆点紧跟文字） -->
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="8,6">
@@ -991,11 +998,12 @@
                                         <TextBlock Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                                   FontSize="11"
+                                        <!-- 副标题不跨圆点列，避免长文本钻到圆点底下 -->
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   FontSize="11" TextTrimming="CharacterEllipsis"
                                                    Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorTertiaryBrushKey}}">
-                                            <Run Text="成员: "/><Run Text="{Binding MemberCount, Mode=OneWay}"/>
-                                            <Run Text="  "/><Run Text="{Binding RotationInfo, Mode=OneWay}"/>
+                                            <Run Text="{Binding MemberCount, Mode=OneWay}"/><Run Text=" 张表"/>
+                                            <Run Text=" "/><Run Text="{Binding RotationInfo, Mode=OneWay}"/>
                                         </TextBlock>
 
                                         <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
@@ -1003,7 +1011,7 @@
                                                 Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
                                                 HorizontalAlignment="Right" VerticalAlignment="Center"
                                                 Margin="4,0,0,0"
-                                                ToolTip="此组处于激活状态"
+                                                ToolTip="此组正在生效"
                                                 Visibility="{Binding IsActivated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Grid>
                                 </DataTemplate>

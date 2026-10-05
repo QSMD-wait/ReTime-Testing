@@ -20,7 +20,7 @@ public partial class WeekTableItem : ObservableObject
     public bool IsBase => DisplayWeek <= 1;
 
     /// <summary>
-    /// 表格标题（"第 1 周（基础映射）" / "第 N 周"）
+    /// 表格标题（"第一周（基础）" / "第 N 周"中文数字 / "每周安排"）
     /// </summary>
     public string Title { get; init; } = "";
 
@@ -30,7 +30,7 @@ public partial class WeekTableItem : ObservableObject
     public bool IsCurrentWeek { get; init; }
 
     /// <summary>
-    /// 标题行右侧摘要（"N 天与基础映射不同" / "全部继承基础映射" / "每周默认映射"）
+    /// 标题行右侧摘要（"N 天与第一周不同" / "与第一周完全一致" / "其他周默认按此安排"）
     /// </summary>
     [ObservableProperty]
     private string summary = "";
@@ -42,7 +42,7 @@ public partial class WeekTableItem : ObservableObject
 }
 
 /// <summary>
-/// 表格中的天列（星期几 → 计划表）：表头（星期 + 日期）+ 指派行（计划表选择按钮）
+/// 表格中的天列（星期几 → 计划表）：表头（星期 + 轮转标签）+ 指派行（计划表选择按钮）
 /// </summary>
 public partial class DayCellItem : ObservableObject
 {
@@ -62,12 +62,7 @@ public partial class DayCellItem : ObservableObject
     public int DisplayWeek { get; init; }
 
     /// <summary>
-    /// 表头日期（该轮转周在当前轮换周期内的实际日期，格式 MM/dd）
-    /// </summary>
-    public string DateText { get; init; } = "";
-
-    /// <summary>
-    /// 是否为今天（天列强调高亮）
+    /// 是否为今天（仅"本周"表格的今日列做高亮：列顶强调线 + 星期名强调色）
     /// </summary>
     public bool IsToday { get; init; }
 
@@ -77,18 +72,18 @@ public partial class DayCellItem : ObservableObject
     public bool IsFirst { get; init; }
 
     /// <summary>
-    /// 计划表选择器的选项（首项为空选项：基础周"（未配置）" / 轮转周"（继承基础映射）"）
+    /// 计划表选择器的选项（首项为空选项：基础周"（未设置）" / 轮转周"（按第一周安排）"，以斜体显示）
     /// </summary>
     public List<ScheduleOption> ScheduleOptions { get; init; } = new();
 
     /// <summary>
-    /// 当前编辑周的原始值（"" = 未配置 / 继承基础映射）
+    /// 当前编辑周的原始值（"" = 未设置 / 按第一周安排）
     /// </summary>
     [ObservableProperty]
     private string scheduleId = "";
 
     /// <summary>
-    /// 生效的计划表名（轮转周未覆盖的天显示基础映射的名称）
+    /// 按钮与提示文本（有计划表时为名称，空位为"选择计划表"）
     /// </summary>
     [ObservableProperty]
     private string displayName = "";
@@ -100,25 +95,25 @@ public partial class DayCellItem : ObservableObject
     private bool isEmpty = true;
 
     /// <summary>
-    /// 按钮文本（空时为"添加计划表"，否则为计划表名）
-    /// </summary>
-    [ObservableProperty]
-    private string buttonText = "";
-
-    /// <summary>
-    /// 是否显示 继承/差异 标签（仅轮转周）
+    /// 是否显示 相同/不同 标签（仅轮转周，且当天有生效计划表时）
     /// </summary>
     [ObservableProperty]
     private bool showRotationTags;
 
     /// <summary>
-    /// 该天是否继承自基础映射（轮转周）
+    /// 该天是否与第一周（基础安排）不同（轮转周）
+    /// </summary>
+    [ObservableProperty]
+    private bool differsFromBase;
+
+    /// <summary>
+    /// 轮转周中该天是否沿用第一周的安排（按钮文字灰色斜体以示区分）
     /// </summary>
     [ObservableProperty]
     private bool isInherited;
 
     /// <summary>
-    /// 标签文本（"继承" / "差异"）
+    /// 标签文本（"相同" / "不同"）
     /// </summary>
     [ObservableProperty]
     private string tagText = "";

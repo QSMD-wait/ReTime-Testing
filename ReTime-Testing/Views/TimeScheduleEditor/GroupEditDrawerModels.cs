@@ -4,12 +4,17 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace ReTime_Testing.Views.TimeScheduleEditor;
 
 /// <summary>
-/// 计划表下拉选项（Id 为空字符串表示空选项：基础映射为"（未配置）"，轮转覆盖为"（继承基础映射）"）
+/// 计划表下拉选项（Id 为空字符串表示空选项：基础周为"（未设置）"，轮转周为"（按第一周安排）"）
 /// </summary>
 public class ScheduleOption
 {
     public string Id { get; init; } = "";
     public string Name { get; init; } = "";
+
+    /// <summary>
+    /// 是否为空选项（选择器中以斜体显示）
+    /// </summary>
+    public bool IsPlaceholder => string.IsNullOrEmpty(Id);
 
     public override string ToString() => Name;
 }
