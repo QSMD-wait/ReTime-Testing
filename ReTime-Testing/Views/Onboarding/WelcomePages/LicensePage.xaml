@@ -5,13 +5,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
              xmlns:ikw="http://schemas.inkore.net/lib/ui/wpf"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="840">
-
-    <UserControl.Resources>
-        <sys:Double x:Key="CheckBoxBorderThemeThickness">0</sys:Double>
-    </UserControl.Resources>
 
     <Grid>
         <ikw:SimpleStackPanel Margin="170,0"

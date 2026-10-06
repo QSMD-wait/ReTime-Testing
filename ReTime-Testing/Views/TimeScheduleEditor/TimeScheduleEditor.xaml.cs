@@ -443,7 +443,7 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
         }
 
         /// <summary>
-        /// 表组选择弹窗的列表（两行模板：组名 + "N 张表 · 第N/M周"，预选当前激活组）
+        /// 表组选择弹窗的列表（单行模板仅显示组名，与计划表弹窗保持一致），预选当前激活组
         /// </summary>
         private System.Windows.Controls.ListView CreateGroupListView(System.Collections.Generic.List<ScheduleGroupListItem> items)
         {
@@ -456,18 +456,12 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 Margin = new Thickness(0, 8, 0, 0)
             };
 
-            var factory = new FrameworkElementFactory(typeof(StackPanel));
-
-            var nameFactory = new FrameworkElementFactory(typeof(TextBlock));
-            nameFactory.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
-            factory.AppendChild(nameFactory);
-
-            var subtitleFactory = new FrameworkElementFactory(typeof(TextBlock));
-            subtitleFactory.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("DisplaySubtitle"));
-            subtitleFactory.SetValue(TextBlock.FontSizeProperty, 11d);
-            subtitleFactory.SetValue(FrameworkElement.OpacityProperty, 0.7d);
-            factory.AppendChild(subtitleFactory);
-
+            var factory = new FrameworkElementFactory(typeof(Grid));
+            factory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+            var textBlock = new FrameworkElementFactory(typeof(TextBlock));
+            textBlock.SetValue(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            textBlock.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            factory.AppendChild(textBlock);
             listView.ItemTemplate = new DataTemplate { VisualTree = factory };
 
             var activeId = _viewModel.GetActiveGroupId();

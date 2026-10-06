@@ -15,6 +15,9 @@
             <Thickness x:Key="PivotItemMargin">0</Thickness>
             <!-- 覆盖 iNKORE 默认的 AutoHideScrollBars=False，保持滚动条薄条样式 -->
             <system:Boolean x:Key="AutoHideScrollBars">True</system:Boolean>
+            <!-- 补齐 iNKORE CheckBox 样式引用但主题未提供的边框描边键，
+                 抑制运行时 "Resource not found; ResourceKey='CheckBoxBorderThemeThickness'" 警告。 -->
+            <system:Double x:Key="CheckBoxBorderThemeThickness">1</system:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
