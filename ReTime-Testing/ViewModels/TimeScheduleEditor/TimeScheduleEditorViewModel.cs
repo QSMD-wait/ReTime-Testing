@@ -50,6 +50,37 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     [ObservableProperty]
     private ScheduleGroupListItem? _selectedGroup;
 
+    /// <summary>
+    /// 顶部「加载表组」按钮动态文字：该组生效时显示组名，否则为默认动作文字
+    /// </summary>
+    [ObservableProperty]
+    private string _groupButtonLabel = LoadStateTextResolver.GroupActionText;
+
+    /// <summary>
+    /// 顶部「加载计划表」按钮动态文字：该表覆盖生效时显示表名，否则为默认动作文字
+    /// </summary>
+    [ObservableProperty]
+    private string _scheduleButtonLabel = LoadStateTextResolver.ScheduleActionText;
+
+    /// <summary>
+    /// 「加载表组」按钮 ToolTip 动态行（生效时的轮换信息，未生效为空以隐藏该行）
+    /// </summary>
+    [ObservableProperty]
+    private string _groupButtonDetail = "";
+
+    /// <summary>
+    /// 「加载计划表」按钮 ToolTip 动态行（启用方式说明，未生效为空以隐藏该行）
+    /// </summary>
+    [ObservableProperty]
+    private string _scheduleButtonDetail = "";
+
+    /// <summary>
+    /// 「加载计划表」按钮文字是否为次级信息：
+    /// 表组生效时该按钮显示由轮换得到的"当前应用的表"，用次要色+细字重与主（组名）差分
+    /// </summary>
+    [ObservableProperty]
+    private bool _isScheduleLabelSecondary;
+
     [ObservableProperty]
     private bool _canUndo = false;
 
@@ -310,8 +341,10 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         var setting = _settingsService.GetTimeTopSetting();
         setting.Schedule.Override.ScheduleId = scheduleId;
         setting.Schedule.Override.Enabled = true;
-        // 右键"设为活跃"为覆盖式启用（长期），清掉可能残留的临时启用日期
+        // 右键"设为活跃"为覆盖式启用（长期）：清掉可能残留的临时启用日期，
+        // 并与覆盖式启用同语义清除表组设置
         setting.Schedule.Override.TemporaryDate = "";
+        setting.Schedule.ActiveGroupId = null;
         _settingsService.SaveTimeTopSetting(setting);
 
         UpdateScheduleListActivation(scheduleId);
@@ -603,6 +636,63 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
                 UpdatedAt = info.UpdatedAt
             });
         }
+
+        RefreshLoadState();
+    }
+
+    /// <summary>
+    /// 刷新顶部两个加载按钮的动态文字、ToolTip 细节与主次样式标记（由 RefreshGroups / RefreshScheduleList
+    /// 末尾统一调用，激活组、覆盖启用、加载、改名、删除等所有状态变更路径都会流经这两个方法）
+    /// </summary>
+    private void RefreshLoadState()
+    {
+        var config = _settingsService.GetTimeTopSetting().Schedule;
+
+        // 激活组（覆盖接管时不生效）：解析组名与轮换信息
+        string? activeGroupName = null;
+        string groupRotationInfo = "";
+        if (!string.IsNullOrEmpty(config.ActiveGroupId))
+        {
+            var group = _groupManager.LoadGroup(config.ActiveGroupId);
+            if (group != null)
+            {
+                activeGroupName = group.Metadata.Name;
+                groupRotationInfo = group.RotationCycleCount > 1
+                    ? _groupManager.GetRotationInfo(group.Id)
+                    : "";
+            }
+        }
+
+        // 覆盖启用的计划表（表已被删除时为 null，按钮回退默认动作文字）；
+        // 未覆盖时解析今天实际生效的表（由表组轮换决定，作为计划表按钮的次级显示）
+        string? overrideScheduleName = null;
+        string? effectiveScheduleName = null;
+        if (config.Override.IsEffectiveToday)
+        {
+            if (!string.IsNullOrEmpty(config.Override.ScheduleId))
+            {
+                overrideScheduleName = _scheduleManager.LoadSchedule(config.Override.ScheduleId)?
+                    .Settings.Metadata.Name;
+            }
+        }
+        else
+        {
+            var effectiveId = _groupManager.GetEffectiveScheduleId();
+            if (!string.IsNullOrEmpty(effectiveId))
+            {
+                effectiveScheduleName = _scheduleManager.LoadSchedule(effectiveId)?
+                    .Settings.Metadata.Name;
+            }
+        }
+
+        var (groupLabel, groupDetail, scheduleLabel, scheduleDetail, isScheduleSecondary) =
+            LoadStateTextResolver.Resolve(config, activeGroupName, groupRotationInfo, overrideScheduleName, effectiveScheduleName);
+
+        GroupButtonLabel = groupLabel;
+        GroupButtonDetail = groupDetail;
+        ScheduleButtonLabel = scheduleLabel;
+        ScheduleButtonDetail = scheduleDetail;
+        IsScheduleLabelSecondary = isScheduleSecondary;
     }
 
     #endregion
@@ -877,13 +967,19 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     /// <summary>
     /// 启用一张计划表并热重载调度（"加载计划表"弹窗）
     /// </summary>
-    /// <param name="onlyToday">true = 仅当天临时启用（次日自动回落组轮换）；false = 覆盖式启用（长期生效）</param>
+    /// <param name="onlyToday">true = 仅当天临时启用（保留表组设置，次日自动回落轮换）；false = 覆盖式启用（清除表组设置）</param>
     public void ApplyScheduleSelection(ScheduleListItem selectedItem, bool onlyToday = false)
     {
         var setting = _settingsService.GetTimeTopSetting();
         setting.Schedule.Override.ScheduleId = selectedItem.Id;
         setting.Schedule.Override.Enabled = true;
         setting.Schedule.Override.TemporaryDate = onlyToday ? DateTime.Now.ToString("yyyy-MM-dd") : "";
+        // 覆盖式（永久）启用视为放弃组轮换：清除表组设置，组按钮回退"加载表组"；
+        // 仅当天临时启用保留表组设置，次日过期后自动恢复轮换
+        if (!onlyToday)
+        {
+            setting.Schedule.ActiveGroupId = null;
+        }
         _settingsService.SaveTimeTopSetting(setting);
 
         // 手动覆盖接管后：组圆点消失，表圆点移到实际生效的表
@@ -1120,6 +1216,8 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         {
             SelectedGroup = Groups.FirstOrDefault(g => g.Id == selectedGroupId);
         }
+
+        RefreshLoadState();
     }
 
     [RelayCommand]

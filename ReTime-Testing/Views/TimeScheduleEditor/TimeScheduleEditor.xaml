@@ -1067,20 +1067,68 @@
                        VerticalAlignment="Top"
                        DefaultLabelPosition="Right"
                        IsOpen="False">
-            <!-- 加载表组入口：弹窗选择并激活表组（恢复按轮换计划执行） -->
-            <ui:AppBarButton Label="加载表组" Click="OnLoadGroupButtonClick"
-                             ToolTip="选择表组并激活（清除手动启用的计划表，按轮换执行）">
+            <!-- 加载表组入口：弹窗选择并激活表组；该组生效时按钮动态显示当前组名（ClassIsland 按钮动态文字方案） -->
+            <ui:AppBarButton Label="{Binding GroupButtonLabel}" Click="OnLoadGroupButtonClick">
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Folder}"/>
                 </ui:AppBarButton.Icon>
+                <ui:AppBarButton.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock Text="选择表组并激活（清除手动启用的计划表，按轮换执行）" FontSize="12"/>
+                            <TextBlock Text="{Binding GroupButtonDetail}" FontSize="12"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding GroupButtonDetail}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </ToolTip>
+                </ui:AppBarButton.ToolTip>
             </ui:AppBarButton>
 
-            <!-- 加载计划表入口：弹窗选择计划表并启用（仅当天临时 / 覆盖式） -->
-            <ui:AppBarButton Label="加载计划表" Click="OnReloadButtonClick"
-                             ToolTip="选择计划表并启用，可选仅当天临时启用或覆盖式启用">
+            <!-- 加载计划表入口：弹窗选择计划表并启用（仅当天临时 / 覆盖式）。
+                 表组生效时该按钮显示轮换得到的"当前应用的表"，作为次级信息用次要色+细字重与主（组名）差分；
+                 覆盖启用时显示覆盖表名（主，恢复默认样式） -->
+            <ui:AppBarButton Label="{Binding ScheduleButtonLabel}" Click="OnReloadButtonClick">
+                <ui:AppBarButton.Style>
+                    <Style TargetType="{x:Type ui:AppBarButton}" BasedOn="{StaticResource {x:Type ui:AppBarButton}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsScheduleLabelSecondary}" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                <Setter Property="FontWeight" Value="Light"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:AppBarButton.Style>
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.OpenFile}"/>
                 </ui:AppBarButton.Icon>
+                <ui:AppBarButton.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock Text="选择计划表并启用，可选仅当天临时启用或覆盖式启用" FontSize="12"/>
+                            <TextBlock Text="{Binding ScheduleButtonDetail}" FontSize="12"
+                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ScheduleButtonDetail}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </ToolTip>
+                </ui:AppBarButton.ToolTip>
             </ui:AppBarButton>
 
             <ui:AppBarButton Label="保存" Command="{Binding SaveCommand}" RenderTransformOrigin="-0.822,0.675">
