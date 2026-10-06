@@ -205,6 +205,8 @@ namespace ReTime_Testing.Views.TimeScheduleEditor
                 (Application.Current?.Dispatcher.HasShutdownStarted ?? false))
             {
                 _isWindowClosing = true;
+                // 真正关闭时释放 VM 的自动保存计时器（常驻隐藏路径不释放）
+                _viewModel.Dispose();
                 return;
             }
 

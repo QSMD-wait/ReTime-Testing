@@ -44,7 +44,7 @@ public interface ITrayIconService : IDisposable
     /// <summary>
     /// 初始化托盘图标
     /// </summary>
-    void Initialize(TrayIconService.TrayIconConfig? config = null);
+    void Initialize(TrayIconConfig? config = null);
 
     /// <summary>
     /// 显示气泡通知

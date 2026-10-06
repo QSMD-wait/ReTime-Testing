@@ -9,7 +9,12 @@ namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 /// </summary>
 public interface IUndoableAction
 {
+    /// <summary>对项集合执行该操作</summary>
+    /// <param name="items">当前编辑中的项集合</param>
     void Execute(ObservableCollection<ScheduleItemListItem> items);
+
+    /// <summary>撤销该操作（恢复执行前的集合状态）</summary>
+    /// <param name="items">当前编辑中的项集合</param>
     void Undo(ObservableCollection<ScheduleItemListItem> items);
 }
 

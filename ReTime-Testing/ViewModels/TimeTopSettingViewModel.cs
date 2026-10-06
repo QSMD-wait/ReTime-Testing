@@ -543,14 +543,6 @@ namespace ReTime_Testing.ViewModels
         }
 
         /// <summary>
-        /// 初始化导航（首次进入基本页面）
-        /// </summary>
-        public void InitializeNavigation()
-        {
-            NavigateTo(TAG_BASIC);
-        }
-
-        /// <summary>
         /// 导航到指定页面（缓存 ViewModel 实例，避免重复加载配置）
         /// </summary>
         public void NavigateTo(string tag)

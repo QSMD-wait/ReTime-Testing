@@ -174,7 +174,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
     /// <returns>是否校准成功</returns>
     public async Task<bool> CalibrateAsync()
     {
-        return await PerformCalibration(TimeJumpReason.ManualCalibration);
+        return await PerformCalibrationAsync(TimeJumpReason.ManualCalibration);
     }
 
     /// <summary>
@@ -201,7 +201,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
     /// </summary>
     private async void OnTimerTick()
     {
-        await PerformCalibration(TimeJumpReason.CloudCalibration);
+        await PerformCalibrationAsync(TimeJumpReason.CloudCalibration);
     }
 
     /// <summary>
@@ -209,7 +209,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
     /// </summary>
     /// <param name="reason">校准原因</param>
     /// <returns>是否校准成功</returns>
-    private async Task<bool> PerformCalibration(TimeJumpReason reason)
+    private async Task<bool> PerformCalibrationAsync(TimeJumpReason reason)
     {
         if (!_config.Enabled || !_isRunning)
         {
@@ -360,7 +360,7 @@ public class TimeCalibrationService : ITimeCalibrationService, IDisposable
                 _logger.LogInformation("系统休眠恢复，休眠时长={Minutes:F1}分钟，触发重新校准", sleepDuration.TotalMinutes);
 
                 // 使用系统校准原因
-                _ = PerformCalibration(TimeJumpReason.SystemResume);
+                _ = PerformCalibrationAsync(TimeJumpReason.SystemResume);
             }
         }
     }

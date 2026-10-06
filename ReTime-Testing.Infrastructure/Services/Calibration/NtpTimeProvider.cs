@@ -89,7 +89,7 @@ public class NtpTimeProvider : ITimeProvider
                 return null;
             }
 
-            var receiveResult = receiveTask.Result;
+            var receiveResult = await receiveTask.ConfigureAwait(false);
 
             var receiveTimestamp = Stopwatch.GetTimestamp();
 

@@ -106,25 +106,6 @@ public partial class TextOverlayViewModel : ObservableObject, IDisposable
             _refreshTimer.Stop();
     }
 
-    /// <summary>
-    /// 启动刷新
-    /// </summary>
-    public void Start()
-    {
-        if (_config.Enabled && !_refreshTimer.IsEnabled)
-        {
-            _refreshTimer.Start();
-        }
-    }
-
-    /// <summary>
-    /// 停止刷新
-    /// </summary>
-    public void Stop()
-    {
-        _refreshTimer.Stop();
-    }
-
     private void OnRefreshTick(object? sender, EventArgs e)
     {
         RefreshSlots();

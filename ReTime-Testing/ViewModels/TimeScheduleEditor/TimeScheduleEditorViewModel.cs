@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ReTime_Testing.ViewModels.TimeScheduleEditor;
 
-public partial class TimeScheduleEditorViewModel : ObservableObject
+public partial class TimeScheduleEditorViewModel : ObservableObject, IDisposable
 {
         private readonly ILogger<TimeScheduleEditorViewModel> _logger;
     private readonly ILogger<ExecutionPlanGenerator> _planGeneratorLogger;
@@ -133,6 +133,15 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         RefreshScheduleList();
         RefreshGroups();
+    }
+
+    /// <summary>
+    /// 释放自动保存计时器（窗口真正关闭时由 View 调用；常驻隐藏不调用）
+    /// </summary>
+    public void Dispose()
+    {
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Tick -= OnAutoSaveTimerTick;
     }
 
     #region 计划表选择切换
@@ -352,13 +361,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         RefreshGroups();
     }
 
-    [RelayCommand]
-    private async Task EditScheduleInfoAsync()
-    {
-        if (SelectedSchedule == null) return;
-        await Task.CompletedTask;
-    }
-
     #endregion
 
     #region 时间段/时间点操作命令
@@ -463,7 +465,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
     public void ForceSave()
     {
         if (_currentEditingState == null) return;
@@ -1004,22 +1005,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
     /// </summary>
     public string? GetActiveGroupId() => _settingsService.GetTimeTopSetting().Schedule.ActiveGroupId;
 
-    public bool TryAutoSaveBeforeLeave()
-    {
-        if (_currentEditingState == null) return true;
-
-        if (!_currentEditingState.HasUnpersistedChanges) return true;
-
-        ValidateAllItems();
-
-        if (!_currentEditingState.HasValidationErrors)
-        {
-            return PerformSave(force: false);
-        }
-
-        return false;
-    }
-
     public bool TryAutoSaveAllBeforeLeave()
     {
         bool allSuccess = true;
@@ -1094,21 +1079,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
         }
 
         UpdateHasUnpersistedChanges();
-    }
-
-    public void DiscardUnpersistedChanges()
-    {
-        if (_currentEditingState == null) return;
-
-        var schedule = _scheduleManager.LoadSchedule(_currentEditingState.ScheduleId);
-        if (schedule != null)
-        {
-            _currentEditingState.LoadFromSchedule(schedule);
-        }
-
-        UpdateHasUnpersistedChanges();
-        UpdateUndoRedoState();
-        UpdateScheduleItemsBinding();
     }
 
     private void ValidateState(ScheduleEditingState state)
@@ -1274,24 +1244,6 @@ public partial class TimeScheduleEditorViewModel : ObservableObject
 
         var groupName = Groups.FirstOrDefault(g => g.Id == groupId)?.Name ?? groupId;
         ToastRequested?.Invoke(new ToastMessage("表组已激活", $"已激活表组 \"{groupName}\" 的轮换计划") { Severity = ToastSeverity.Success, Duration = TimeSpan.FromSeconds(2) });
-    }
-
-    /// <summary>
-    /// 更新计划表的基本配置（名称、描述、启用状态）
-    /// 天→表映射和轮转配置现在在组层面管理
-    /// </summary>
-    public void UpdateScheduleRule(string scheduleId, bool isEnabled)
-    {
-        var schedule = _scheduleManager.LoadSchedule(scheduleId);
-        if (schedule == null) return;
-
-        schedule.Settings ??= new TimeScheduleSettings();
-        schedule.Settings.Metadata ??= new TimeScheduleMetadata();
-        schedule.Settings.Metadata.IsEnabled = isEnabled;
-        schedule.Settings.Metadata.UpdatedAt = DateTime.UtcNow.ToString("o");
-
-        _scheduleManager.SaveSchedule(schedule);
-        RefreshGroups();
     }
 
     /// <summary>

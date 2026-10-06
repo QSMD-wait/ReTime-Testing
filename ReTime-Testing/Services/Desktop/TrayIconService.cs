@@ -81,17 +81,6 @@ namespace ReTime_Testing.Services
         public event Action? RestartRequested;
 
         /// <summary>
-        /// 托盘图标服务配置
-        /// </summary>
-        public class TrayIconConfig
-        {
-            public string Title { get; set; } = "ReTime-Testing";
-            public string? IconPath { get; set; }       // 外部文件路径
-            public string? IconResource { get; set; }   // 内嵌资源名（如 Resources/app.ico）
-            public bool ShowContextMenu { get; set; } = true;   // 是否显示右键菜单（引导模式关闭）
-        }
-
-        /// <summary>
         /// 构造函数（支持 DI 注入）
         /// </summary>
         /// <param name="themeService">主题服务</param>

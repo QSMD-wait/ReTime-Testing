@@ -35,7 +35,7 @@ public sealed class TrayIconController : IDisposable
     /// <param name="showContextMenu">是否显示右键菜单（引导模式关闭）</param>
     public void Initialize(bool showContextMenu = true)
     {
-        _trayService.Initialize(new TrayIconService.TrayIconConfig
+        _trayService.Initialize(new TrayIconConfig
         {
             Title = "ReTime - Testing",
             IconResource = "ReTime-Testing;component/Resources/app.ico",

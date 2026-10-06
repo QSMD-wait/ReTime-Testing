@@ -89,7 +89,7 @@ public partial class TimePageViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task CalibrateNow()
+    private async Task CalibrateNowAsync()
     {
         if (_timeCalibrationService == null) return;
 
