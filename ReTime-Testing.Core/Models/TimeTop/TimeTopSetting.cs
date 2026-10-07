@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ReTime_Testing.Models
@@ -67,7 +68,8 @@ namespace ReTime_Testing.Models
 
     /// <summary>
     /// 时间计划表配置
-    /// 轮转配置已移至 ScheduleGroup 层（每组独立）
+    /// 轮转配置已移至 ScheduleGroup 层（每组独立）；
+    /// 手动指定表的全部状态迁移语义（清组/保组/互斥清除）集中在本类型的语义方法中
     /// </summary>
     public class ScheduleConfig
     {
@@ -84,46 +86,139 @@ namespace ReTime_Testing.Models
         public string? ActiveGroupId { get; set; }
 
         /// <summary>
-        /// 手动覆盖配置
+        /// 手动指定的计划表；null = 未手动指定（按表组轮换）。
+        /// 指定后忽略组轮换，生效范围由 <see cref="ScheduleManualConfig.Mode"/> 决定
         /// </summary>
-        [JsonPropertyName("override")]
-        public ScheduleOverrideConfig Override { get; set; } = new();
+        [JsonPropertyName("manual")]
+        public ScheduleManualConfig? Manual { get; set; }
+
+        /// <summary>
+        /// 今天实际生效的手动指定表（未指定 / 仅当天已过期时为 null）。
+        /// 生效判定的唯一出口，ScheduleGroupManager 与按钮文字解析共用此口径
+        /// </summary>
+        [JsonIgnore]
+        public ScheduleManualConfig? EffectiveManual =>
+            Manual != null && Manual.IsEffectiveToday ? Manual : null;
+
+        /// <summary>
+        /// 仅当天临时启用一张计划表（次日自动恢复表组轮换，保留激活组）
+        /// </summary>
+        /// <param name="scheduleId">计划表 ID</param>
+        /// <param name="date">生效日期（yyyy-MM-dd）</param>
+        public void EnableManualToday(string scheduleId, string date)
+        {
+            Manual = new ScheduleManualConfig
+            {
+                ScheduleId = scheduleId,
+                Mode = ScheduleManualMode.Today,
+                Date = date
+            };
+        }
+
+        /// <summary>
+        /// 覆盖式（长期）启用一张计划表：视为放弃组轮换，清除激活组
+        /// </summary>
+        /// <param name="scheduleId">计划表 ID</param>
+        public void EnableManualPermanent(string scheduleId)
+        {
+            Manual = new ScheduleManualConfig
+            {
+                ScheduleId = scheduleId,
+                Mode = ScheduleManualMode.Permanent
+            };
+            ActiveGroupId = null;
+        }
+
+        /// <summary>
+        /// 激活表组并按轮换执行：清除手动指定的计划表
+        /// </summary>
+        /// <param name="groupId">表组 ID</param>
+        public void ActivateGroup(string groupId)
+        {
+            ActiveGroupId = groupId;
+            Manual = null;
+        }
+
+        /// <summary>
+        /// 手动指定的计划表被删除时清除该指定
+        /// </summary>
+        /// <param name="scheduleId">被删除的计划表 ID</param>
+        /// <returns>是否实际清除了指定（调用方据此决定是否落盘）</returns>
+        public bool ClearManualFor(string scheduleId)
+        {
+            if (Manual == null || Manual.ScheduleId != scheduleId) return false;
+            Manual = null;
+            return true;
+        }
     }
 
     /// <summary>
-    /// 计划表手动覆盖配置
-    /// 启用后将忽略组轮换，直接使用指定的计划表
+    /// 手动指定的计划表（启用后忽略组轮换）
     /// </summary>
-    public class ScheduleOverrideConfig
+    public class ScheduleManualConfig
     {
         /// <summary>
-        /// 是否启用手动覆盖（覆盖组轮换）
-        /// </summary>
-        [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; } = false;
-
-        /// <summary>
-        /// 手动指定的计划表ID
-        /// override.enabled=true 时生效；无组轮换时作为默认计划表
+        /// 手动指定的计划表 ID
         /// </summary>
         [JsonPropertyName("scheduleId")]
         public string ScheduleId { get; set; } = "";
 
         /// <summary>
-        /// 临时启用截止日期（yyyy-MM-dd）。
-        /// 空 = 覆盖式启用（长期生效）；非空 = 仅当天临时启用，过期后自动回落组轮换
+        /// 生效方式：覆盖式长期生效 / 仅当天临时生效
         /// </summary>
-        [JsonPropertyName("temporaryDate")]
-        public string TemporaryDate { get; set; } = "";
+        [JsonPropertyName("mode")]
+        [JsonConverter(typeof(ScheduleManualModeConverter))]
+        public ScheduleManualMode Mode { get; set; } = ScheduleManualMode.Permanent;
 
         /// <summary>
-        /// 覆盖当前是否实际生效：未启用 / 覆盖式启用 / 临时启用且仍为当天。
-        /// 过期的临时启用视为未覆盖，所有生效判断统一走此属性
+        /// 仅当天生效日期（yyyy-MM-dd），仅 Mode=Today 时有意义；
+        /// 过期后自动回落表组轮换
+        /// </summary>
+        [JsonPropertyName("date")]
+        public string Date { get; set; } = "";
+
+        /// <summary>
+        /// 当前是否实际生效：未指定 / 覆盖式 / 仅当天且仍为当天。
+        /// 过期的"仅当天"视为未手动指定，所有生效判断统一走此属性
         /// </summary>
         [JsonIgnore]
         public bool IsEffectiveToday =>
-            Enabled &&
-            (string.IsNullOrEmpty(TemporaryDate) || TemporaryDate == DateTime.Now.ToString("yyyy-MM-dd"));
+            !string.IsNullOrEmpty(ScheduleId) &&
+            (Mode == ScheduleManualMode.Permanent ||
+             Date == DateTime.Now.ToString("yyyy-MM-dd"));
+    }
+
+    /// <summary>
+    /// 手动指定计划表的生效方式
+    /// </summary>
+    public enum ScheduleManualMode
+    {
+        /// <summary>
+        /// 覆盖式：长期生效，直至手动切换或激活表组
+        /// </summary>
+        Permanent,
+
+        /// <summary>
+        /// 仅当天：当天生效，次日自动恢复表组轮换
+        /// </summary>
+        Today
+    }
+
+    /// <summary>
+    /// <see cref="ScheduleManualMode"/> 的 JSON 小写字符串转换（"permanent" / "today"），
+    /// 使配置文件保持可读；无效值按 Permanent 回退
+    /// </summary>
+    public class ScheduleManualModeConverter : JsonConverter<ScheduleManualMode>
+    {
+        public override ScheduleManualMode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => reader.GetString() switch
+            {
+                "today" => ScheduleManualMode.Today,
+                _ => ScheduleManualMode.Permanent
+            };
+
+        public override void Write(Utf8JsonWriter writer, ScheduleManualMode value, JsonSerializerOptions options)
+            => writer.WriteStringValue(value == ScheduleManualMode.Today ? "today" : "permanent");
     }
 
     /// <summary>

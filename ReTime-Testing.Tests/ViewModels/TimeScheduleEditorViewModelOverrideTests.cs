@@ -29,10 +29,15 @@ public class TimeScheduleEditorViewModelOverrideTests
         _schedules.Setup(s => s.GetScheduleList()).Returns(new List<ScheduleInfo>());
         _groups.Setup(g => g.LoadAllGroups()).Returns(new List<ScheduleGroup>());
 
-        // 覆盖指向的表：返回带名称的实例，供按钮显示断言
+        // 手动指定的表：返回带名称的实例，供按钮显示断言
         var namedSchedule = new TimeSchedule();
         namedSchedule.Settings.Metadata.Name = "数学复习";
         _schedules.Setup(s => s.LoadSchedule(It.IsAny<string>())).Returns(namedSchedule);
+
+        // 激活组：返回带名称的实例，供组按钮显示断言（仅当天保留组的场景）
+        var namedGroup = new ScheduleGroup();
+        namedGroup.Metadata.Name = "高三(1)";
+        _groups.Setup(g => g.LoadGroup("group_1")).Returns(namedGroup);
     }
 
     private TimeScheduleEditorViewModel CreateViewModel() =>
@@ -77,20 +82,21 @@ public class TimeScheduleEditorViewModelOverrideTests
 
             // 永久覆盖视为放弃组轮换：表组设置被清除
             Assert.Null(_setting.Schedule.ActiveGroupId);
-            Assert.True(_setting.Schedule.Override.Enabled);
-            Assert.Equal("s1", _setting.Schedule.Override.ScheduleId);
-            Assert.Equal("", _setting.Schedule.Override.TemporaryDate);
+            Assert.NotNull(_setting.Schedule.Manual);
+            Assert.Equal("s1", _setting.Schedule.Manual!.ScheduleId);
+            Assert.Equal(ScheduleManualMode.Permanent, _setting.Schedule.Manual.Mode);
             _settings.Verify(s => s.SaveTimeTopSetting(It.IsAny<TimeTopSetting>()), Times.Once);
 
             // 显示：组按钮回退"加载表组"，表按钮为主位表名
             Assert.Equal("加载表组", vm.GroupButtonLabel);
+            Assert.False(vm.IsGroupLabelSecondary);
             Assert.Equal("数学复习", vm.ScheduleButtonLabel);
             Assert.False(vm.IsScheduleLabelSecondary);
         });
     }
 
     [Fact]
-    public void 仅当天启用_保留表组设置供次日轮换()
+    public void 仅当天启用_保留表组设置供次日轮换_组按钮显示组名次级样式()
     {
         RunSta(() =>
         {
@@ -100,12 +106,16 @@ public class TimeScheduleEditorViewModelOverrideTests
 
             // 临时启用不清表组设置，次日过期后恢复轮换（回落显示见 LoadStateTextResolverTests）
             Assert.Equal("group_1", _setting.Schedule.ActiveGroupId);
-            Assert.True(_setting.Schedule.Override.Enabled);
-            Assert.Equal(DateTime.Now.ToString("yyyy-MM-dd"), _setting.Schedule.Override.TemporaryDate);
+            Assert.NotNull(_setting.Schedule.Manual);
+            Assert.Equal(ScheduleManualMode.Today, _setting.Schedule.Manual!.Mode);
+            Assert.Equal(DateTime.Now.ToString("yyyy-MM-dd"), _setting.Schedule.Manual.Date);
 
-            // 覆盖今天生效期间：表按钮为主位表名
+            // 生效期间：表按钮为主位表名；组配置仍保留，组按钮以次级样式显示组名
             Assert.Equal("数学复习", vm.ScheduleButtonLabel);
             Assert.False(vm.IsScheduleLabelSecondary);
+            Assert.Equal("高三(1)", vm.GroupButtonLabel);
+            Assert.True(vm.IsGroupLabelSecondary);
+            Assert.Equal("次日恢复按表组轮换", vm.GroupButtonDetail);
         });
     }
 
@@ -119,9 +129,9 @@ public class TimeScheduleEditorViewModelOverrideTests
             vm.ActivateScheduleCommand.Execute("s1");
 
             Assert.Null(_setting.Schedule.ActiveGroupId);
-            Assert.True(_setting.Schedule.Override.Enabled);
-            Assert.Equal("s1", _setting.Schedule.Override.ScheduleId);
-            Assert.Equal("", _setting.Schedule.Override.TemporaryDate);
+            Assert.NotNull(_setting.Schedule.Manual);
+            Assert.Equal("s1", _setting.Schedule.Manual!.ScheduleId);
+            Assert.Equal(ScheduleManualMode.Permanent, _setting.Schedule.Manual.Mode);
         });
     }
 }

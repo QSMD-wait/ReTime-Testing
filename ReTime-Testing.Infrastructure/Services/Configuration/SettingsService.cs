@@ -281,9 +281,7 @@ namespace ReTime_Testing.Services
                 target.Version = defaults.Version;
 
             target.Schedule ??= new ScheduleConfig();
-            target.Schedule.Override ??= new ScheduleOverrideConfig();
-            if (string.IsNullOrEmpty(target.Schedule.Override.ScheduleId))
-                target.Schedule.Override.ScheduleId = defaults.Schedule.Override.ScheduleId;
+            // Manual 默认 null 即"未手动指定"，无需回填
 
             target.ProgressBar ??= new ProgressBarConfig();
             target.ProgressBar.Scale = Math.Clamp(target.ProgressBar.Scale, 0.5, 3.0);

@@ -309,9 +309,10 @@ namespace ReTime_Testing.Services
                 if (!config.Enabled)
                     return null;
 
-                // 1. 手动覆盖优先（过期的"仅当天临时启用"视为未覆盖，回落组轮换）
-                if (config.Override.IsEffectiveToday)
-                    return config.Override.ScheduleId;
+                // 1. 手动指定优先（过期的"仅当天"视为未指定，回落组轮换）——口径统一走 EffectiveManual
+                var manual = config.EffectiveManual;
+                if (manual != null)
+                    return manual.ScheduleId;
 
                 // 2. 激活组
                 if (string.IsNullOrEmpty(config.ActiveGroupId))

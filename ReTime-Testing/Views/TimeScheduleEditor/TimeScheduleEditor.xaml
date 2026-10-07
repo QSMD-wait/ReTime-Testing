@@ -1067,8 +1067,19 @@
                        VerticalAlignment="Top"
                        DefaultLabelPosition="Right"
                        IsOpen="False">
-            <!-- 加载表组入口：弹窗选择并激活表组；该组生效时按钮动态显示当前组名（ClassIsland 按钮动态文字方案） -->
+            <!-- 加载表组入口：弹窗选择并激活表组；该组生效时按钮动态显示当前组名（ClassIsland 按钮动态文字方案）。
+                 仅当天临时启用接管时组配置仍保留，组名以次要色+细字重次级显示，与主（临时表名）差分 -->
             <ui:AppBarButton Label="{Binding GroupButtonLabel}" Click="OnLoadGroupButtonClick">
+                <ui:AppBarButton.Style>
+                    <Style TargetType="{x:Type ui:AppBarButton}" BasedOn="{StaticResource {x:Type ui:AppBarButton}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsGroupLabelSecondary}" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"/>
+                                <Setter Property="FontWeight" Value="Light"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:AppBarButton.Style>
                 <ui:AppBarButton.Icon>
                     <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Folder}"/>
                 </ui:AppBarButton.Icon>
