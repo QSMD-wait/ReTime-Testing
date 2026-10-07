@@ -27,48 +27,17 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20,16">
             <StackPanel Margin="0,0,0,8">
 
-                <!-- 组名 -->
+                <!-- 组名（直接编辑；默认组受保护时只读） -->
                 <TextBlock Text="组名" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,6"/>
-                <Grid HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="GroupNameBox" Grid.Column="0" IsReadOnly="True" Padding="8,6"
-                             TextChanged="OnFieldChanged"
-                             LostFocus="OnEditBoxLostFocus"
-                             KeyDown="OnGroupNameKeyDown"/>
-                    <Button x:Name="GroupNameEditButton" Grid.Column="1"
-                            Content="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="11"
-                            Width="28" Height="28" Padding="0"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Center" ToolTip="编辑组名"
-                            Background="Transparent" BorderBrush="Transparent"
-                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                            Click="OnGroupNameEditClick"/>
-                </Grid>
+                <TextBox x:Name="GroupNameBox" Padding="8,6"
+                         TextChanged="OnFieldChanged"/>
 
-                <!-- 描述 -->
+                <!-- 描述（直接编辑） -->
                 <TextBlock Text="描述" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <Grid HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="GroupDescBox" Grid.Column="0" IsReadOnly="True"
-                             AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100"
-                             VerticalScrollBarVisibility="Auto" Padding="8,6"
-                             TextChanged="OnFieldChanged"
-                             LostFocus="OnEditBoxLostFocus"/>
-                    <Button x:Name="GroupDescEditButton" Grid.Column="1"
-                            Content="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="11"
-                            Width="28" Height="28" Padding="0"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Center" ToolTip="编辑描述"
-                            Background="Transparent" BorderBrush="Transparent"
-                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                            Click="OnGroupDescEditClick"/>
-                </Grid>
+                <TextBox x:Name="GroupDescBox"
+                         AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100"
+                         VerticalScrollBarVisibility="Auto" Padding="8,6"
+                         TextChanged="OnFieldChanged"/>
 
                 <Separator Margin="0,20" BorderBrush="{DynamicResource {x:Static ui:ThemeKeys.ControlStrokeColorDefaultBrushKey}}"/>
 

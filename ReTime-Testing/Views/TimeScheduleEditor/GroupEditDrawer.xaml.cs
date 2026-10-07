@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using ReTime_Testing.Models;
@@ -72,14 +71,13 @@ public partial class GroupEditDrawer : UserControl
         _isLoading = true;
         _group = group;
 
-        // 基本属性
+        // 基本属性（直接编辑；默认组名称受保护时只读）
         GroupNameBox.Text = group.Metadata.Name;
-        GroupNameBox.IsReadOnly = true;
-        GroupNameEditButton.Visibility = Visibility.Visible;
+        bool isProtected = _viewModel?.IsGroupProtected(group.Id) == true;
+        GroupNameBox.IsReadOnly = isProtected;
+        GroupNameBox.ToolTip = isProtected ? "默认表组的名称不可修改" : null;
 
         GroupDescBox.Text = group.Metadata.Description ?? "";
-        GroupDescBox.IsReadOnly = true;
-        GroupDescEditButton.Visibility = Visibility.Visible;
 
         DissolveGroupButton.IsEnabled = _viewModel != null && !_viewModel.IsGroupProtected(group.Id);
         DissolveConfirmTitle.Text = $"确定要解散「{group.Metadata.Name}」吗？";
@@ -142,61 +140,6 @@ public partial class GroupEditDrawer : UserControl
             if (e.PropertyName is nameof(DateOverrideItem.Date) or nameof(DateOverrideItem.ScheduleId))
                 ScheduleAutoSave();
         };
-    }
-
-    #endregion
-
-    #region 编辑按钮
-
-    private void OnGroupNameEditClick(object sender, RoutedEventArgs e)
-    {
-        if (_group == null) return;
-
-        // 默认组保护
-        if (_viewModel?.IsGroupProtected(_group.Id) == true) return;
-
-        GroupNameBox.IsReadOnly = false;
-        GroupNameBox.Focus();
-        GroupNameBox.SelectAll();
-        GroupNameEditButton.Visibility = Visibility.Collapsed;
-    }
-
-    private void OnGroupDescEditClick(object sender, RoutedEventArgs e)
-    {
-        if (_group == null) return;
-
-        GroupDescBox.IsReadOnly = false;
-        GroupDescBox.Focus();
-        GroupDescEditButton.Visibility = Visibility.Collapsed;
-    }
-
-    private void OnEditBoxLostFocus(object sender, RoutedEventArgs e)
-    {
-        ExitEditMode(sender as TextBox);
-    }
-
-    private void OnGroupNameKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter) return;
-
-        ExitEditMode(sender as TextBox);
-        e.Handled = true;
-    }
-
-    /// <summary>
-    /// 结束名称/描述的编辑态（内容已由防抖保存写入）
-    /// </summary>
-    private void ExitEditMode(TextBox? box)
-    {
-        if (box == null || box.IsReadOnly) return;
-
-        box.IsReadOnly = true;
-        if (box == GroupNameBox)
-            GroupNameEditButton.Visibility = Visibility.Visible;
-        else if (box == GroupDescBox)
-            GroupDescEditButton.Visibility = Visibility.Visible;
-
-        ScheduleAutoSave();
     }
 
     #endregion

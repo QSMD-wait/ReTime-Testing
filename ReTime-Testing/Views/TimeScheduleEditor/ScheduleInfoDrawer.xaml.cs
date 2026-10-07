@@ -40,33 +40,14 @@ public partial class ScheduleInfoDrawer : UserControl
         var isEnabled = _viewModel!.GetScheduleRule(schedule.Id);
 
         NameBox.Text = schedule.Name;
-        NameBox.IsReadOnly = true;
-        NameEditButton.Visibility = Visibility.Visible;
 
         DescBox.Text = schedule.Description ?? "";
-        DescBox.IsReadOnly = true;
-        DescEditButton.Visibility = Visibility.Visible;
 
         EnableToggle.IsOn = isEnabled;
 
         IdBox.Text = schedule.Id;
 
         _isLoading = false;
-    }
-
-    private void OnNameEditClick(object sender, RoutedEventArgs e)
-    {
-        NameBox.IsReadOnly = false;
-        NameBox.Focus();
-        NameBox.SelectAll();
-        NameEditButton.Visibility = Visibility.Collapsed;
-    }
-
-    private void OnDescEditClick(object sender, RoutedEventArgs e)
-    {
-        DescBox.IsReadOnly = false;
-        DescBox.Focus();
-        DescEditButton.Visibility = Visibility.Collapsed;
     }
 
     private void OnEnableToggled(object sender, RoutedEventArgs e)
@@ -85,8 +66,9 @@ public partial class ScheduleInfoDrawer : UserControl
     {
         if (_schedule == null || _viewModel == null) return;
 
-        string newName = NameBox.IsReadOnly ? _schedule.Name : (NameBox.Text?.Trim() ?? _schedule.Name);
-        string? newDesc = DescBox.IsReadOnly ? _schedule.Description : (string.IsNullOrWhiteSpace(DescBox.Text) ? null : DescBox.Text.Trim());
+        // 名称/描述直接从文本框取值（清空名称回退原值，描述清空视为无描述）
+        string newName = string.IsNullOrWhiteSpace(NameBox.Text) ? _schedule.Name : NameBox.Text.Trim();
+        string? newDesc = string.IsNullOrWhiteSpace(DescBox.Text) ? null : DescBox.Text.Trim();
 
         bool newIsEnabled = EnableToggle.IsOn;
 

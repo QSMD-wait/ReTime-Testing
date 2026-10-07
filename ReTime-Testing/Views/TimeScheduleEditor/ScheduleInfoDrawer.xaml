@@ -23,43 +23,15 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20,16">
             <StackPanel x:Name="InfoPanel" Margin="0,0,0,8">
 
-                <!-- 名称 -->
+                <!-- 名称（直接编辑，失焦保存） -->
                 <TextBlock Text="名称" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,0,0,6"/>
-                <Grid HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="NameBox" Grid.Column="0" IsReadOnly="True" Padding="8,6" LostFocus="OnFieldChanged"/>
-                    <Button x:Name="NameEditButton" Grid.Column="1"
-                            Content="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="11"
-                            Width="28" Height="28" Padding="0"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Center" ToolTip="编辑名称"
-                            Background="Transparent" BorderBrush="Transparent"
-                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                            Click="OnNameEditClick"/>
-                </Grid>
+                <TextBox x:Name="NameBox" Padding="8,6" LostFocus="OnFieldChanged"/>
 
-                <!-- 描述 -->
+                <!-- 描述（直接编辑，失焦保存） -->
                 <TextBlock Text="描述" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
-                <Grid HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="DescBox" Grid.Column="0" IsReadOnly="True"
-                             AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100"
-                             VerticalScrollBarVisibility="Auto" Padding="8,6" LostFocus="OnFieldChanged"/>
-                    <Button x:Name="DescEditButton" Grid.Column="1"
-                            Content="&#xE70F;" FontFamily="Segoe Fluent Icons" FontSize="11"
-                            Width="28" Height="28" Padding="0"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Center" ToolTip="编辑描述"
-                            Background="Transparent" BorderBrush="Transparent"
-                            Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}"
-                            Click="OnDescEditClick"/>
-                </Grid>
+                <TextBox x:Name="DescBox"
+                         AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="100"
+                         VerticalScrollBarVisibility="Auto" Padding="8,6" LostFocus="OnFieldChanged"/>
 
                 <!-- 自动启用 -->
                 <TextBlock Text="自动启用" FontSize="12" Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorSecondaryBrushKey}}" Margin="0,16,0,6"/>
