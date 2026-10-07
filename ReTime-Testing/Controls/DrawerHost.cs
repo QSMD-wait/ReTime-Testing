@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -193,6 +194,13 @@ public class DrawerHost : ContentControl
         }
         else
         {
+            // 收起前先清理抽屉内残留的键盘焦点与弹出层（NumberBox 微调按钮、下拉框、
+            // 日期选择等 Popup）：否则弹出层会跟随滑出动画移到窗口外，
+            // 且因焦点未离开而不会自动关闭；清焦触发的 LostFocus 会提交抽屉防抖保存
+            if (_drawerBorder.IsKeyboardFocusWithin)
+                Keyboard.ClearFocus();
+            CloseDescendantPopups(_drawerBorder);
+
             _drawerBorder.IsHitTestVisible = false;
             _overlayBorder.IsHitTestVisible = false;
 
@@ -225,5 +233,19 @@ public class DrawerHost : ContentControl
             _drawerTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
             _overlayBorder.BeginAnimation(OpacityProperty, fadeOut);
         }
+    }
+
+    /// <summary>
+    /// 关闭子视觉树内所有仍打开的 Popup 元素实例
+    /// （Popup 元素位于模板树中、内容在独立弹出窗口，需显式关闭防止残留）。
+    /// </summary>
+    private static void CloseDescendantPopups(DependencyObject root)
+    {
+        if (root is Popup popup && popup.IsOpen)
+            popup.IsOpen = false;
+
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+            CloseDescendantPopups(VisualTreeHelper.GetChild(root, i));
     }
 }

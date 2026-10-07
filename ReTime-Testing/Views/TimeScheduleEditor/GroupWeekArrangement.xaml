@@ -39,7 +39,7 @@
                                             Background="{DynamicResource {x:Static ui:ThemeKeys.AccentFillColorDefaultBrushKey}}"
                                             Visibility="{Binding IsCurrentWeek, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <TextBlock Text="本周" FontSize="10"
-                                                   Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                                   Foreground="White"/>
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Text="{Binding Summary}" HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -127,7 +127,7 @@
                                                                 </Style>
                                                             </Border.Style>
                                                             <TextBlock Text="{Binding TagText}" FontSize="10"
-                                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextFillColorPrimaryBrushKey}}"/>
+                                                                       Foreground="{DynamicResource {x:Static ui:ThemeKeys.TextOnAccentFillColorPrimaryBrushKey}}"/>
                                                         </Border>
                                                     </Grid>
                                                 </Border>
