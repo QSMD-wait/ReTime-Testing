@@ -455,9 +455,9 @@ namespace ReTime_Testing
         }
 
         /// <summary>
-        /// TimeTop配置变更回调（热重载）
+        /// TimeTop配置变更回调（热重载）——刷新点均经各服务内部读取配置，此处仅触发
         /// </summary>
-        private void OnTimeTopSettingChanged(TimeTopSetting setting)
+        private void OnTimeTopSettingChanged(TimeTopSetting _)
         {
             try
             {
@@ -470,7 +470,7 @@ namespace ReTime_Testing
                 _logger.LogInformation("热重载：窗口位置/缩放/阴影/文字覆盖/层级已刷新");
 
                 // 热重载调度器：重新评估生效计划表并更新执行计划
-                Services.GetRequiredService<IScheduleOrchestrator>().ApplyScheduleConfig(setting.Schedule.Enabled);
+                Services.GetRequiredService<IScheduleOrchestrator>().ApplyScheduleConfig();
             }
             catch (Exception ex)
             {

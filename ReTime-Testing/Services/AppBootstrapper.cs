@@ -119,7 +119,7 @@ public class AppBootstrapper
         }
 
         // 初始化调度（含表组管理器初始化）
-        var scheduleResult = _scheduleOrchestrator.InitializeOnStartup(timeTopSetting.Schedule.Enabled);
+        var scheduleResult = _scheduleOrchestrator.InitializeOnStartup();
         var scheduleError = scheduleResult.Status is ScheduleStartupStatus.InvalidScheduleId
                 or ScheduleStartupStatus.InvalidPlan
             ? scheduleResult.Message

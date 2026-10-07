@@ -297,7 +297,7 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 获取当前生效的计划表ID（综合解析 ScheduleConfig + 激活组的天→表映射）
-        /// 优先级：override.enabled > 日期覆盖 > 轮转覆盖 > 基础映射
+        /// 优先级：手动指定 > 日期覆盖 > 轮转覆盖 > 基础映射
         /// </summary>
         public string? GetEffectiveScheduleId()
         {
@@ -305,9 +305,6 @@ namespace ReTime_Testing.Services
             {
                 var setting = _settingsService.GetTimeTopSetting();
                 var config = setting.Schedule;
-
-                if (!config.Enabled)
-                    return null;
 
                 // 1. 手动指定优先（过期的"仅当天"视为未指定，回落组轮换）——口径统一走 EffectiveManual
                 var manual = config.EffectiveManual;

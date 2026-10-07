@@ -74,12 +74,6 @@ namespace ReTime_Testing.Models
     public class ScheduleConfig
     {
         /// <summary>
-        /// 是否启用时间计划控制进度条
-        /// </summary>
-        [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; } = true;
-
-        /// <summary>
         /// 当前激活的计划表组ID，null 表示未启用组轮换
         /// </summary>
         [JsonPropertyName("activeGroupId")]

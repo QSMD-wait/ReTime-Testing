@@ -9,10 +9,7 @@ namespace ReTime_Testing.Tests.ViewModels;
 /// </summary>
 public class LoadStateTextResolverTests
 {
-    private static ScheduleConfig NewConfig() => new()
-    {
-        Enabled = true
-    };
+    private static ScheduleConfig NewConfig() => new();
 
     /// <summary>构造"仅当天"手动指定（保留 ActiveGroupId 由调用方设置）</summary>
     private static void SetManualToday(ScheduleConfig config, string scheduleId, DateTime date) =>

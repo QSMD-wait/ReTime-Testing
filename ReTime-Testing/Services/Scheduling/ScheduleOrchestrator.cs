@@ -11,9 +11,6 @@ public enum ScheduleStartupStatus
     /// <summary>调度器已启动</summary>
     Started,
 
-    /// <summary>时间计划控制已禁用</summary>
-    Disabled,
-
     /// <summary>今日无生效计划表，保持空闲</summary>
     IdleNoSchedule,
 
@@ -40,14 +37,12 @@ public interface IScheduleOrchestrator
     /// <summary>
     /// 应用启动时的调度初始化
     /// </summary>
-    /// <param name="scheduleEnabled">时间计划控制是否启用</param>
-    ScheduleStartupResult InitializeOnStartup(bool scheduleEnabled);
+    ScheduleStartupResult InitializeOnStartup();
 
     /// <summary>
     /// 配置热重载时的调度切换（重新评估生效计划表并更新执行计划）
     /// </summary>
-    /// <param name="scheduleEnabled">时间计划控制是否启用</param>
-    void ApplyScheduleConfig(bool scheduleEnabled);
+    void ApplyScheduleConfig();
 }
 
 /// <summary>
@@ -80,16 +75,10 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
     }
 
     /// <inheritdoc/>
-    public ScheduleStartupResult InitializeOnStartup(bool scheduleEnabled)
+    public ScheduleStartupResult InitializeOnStartup()
     {
-        // 初始化表组管理器（确保默认组存在，与 Enabled 无关）
+        // 初始化表组管理器（确保默认组存在）
         _scheduleGroupManager.Initialize();
-
-        if (!scheduleEnabled)
-        {
-            _logger.LogInformation("时间计划控制已禁用，跳过调度初始化");
-            return new ScheduleStartupResult(ScheduleStartupStatus.Disabled);
-        }
 
         var effectiveScheduleId = _scheduleGroupManager.GetEffectiveScheduleId();
         if (effectiveScheduleId == null)
@@ -124,20 +113,10 @@ public class ScheduleOrchestrator : IScheduleOrchestrator
     }
 
     /// <inheritdoc/>
-    public void ApplyScheduleConfig(bool scheduleEnabled)
+    public void ApplyScheduleConfig()
     {
         try
         {
-            if (!scheduleEnabled)
-            {
-                if (_scheduleRunManager.CurrentPlan != null)
-                {
-                    _scheduleRunManager.Stop();
-                    _logger.LogInformation("热重载：时间计划控制已禁用，调度器已停止");
-                }
-                return;
-            }
-
             var effectiveScheduleId = _scheduleGroupManager.GetEffectiveScheduleId();
             var currentPlan = _scheduleRunManager.CurrentPlan;
             var currentScheduleId = currentPlan?.ScheduleId;
