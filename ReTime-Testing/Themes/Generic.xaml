@@ -45,9 +45,7 @@
                                 Width="{TemplateBinding DrawerWidth}"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Stretch"
-                                IsHitTestVisible="False"
-                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                                BorderThickness="1,0,0,0">
+                                IsHitTestVisible="False">
                             <ContentPresenter Content="{TemplateBinding DrawerContent}"/>
                         </Border>
                     </Grid>
