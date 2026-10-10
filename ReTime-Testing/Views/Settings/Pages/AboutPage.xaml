@@ -24,7 +24,7 @@
                        VerticalAlignment="Center"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="Copyright © 2025-2026 青色漫地_wait"
+                <ui:SettingsCard Header="Copyright © 2025 青色漫地_wait"
                                  Description="许可证协议：GNU General Public License v3.0">
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
