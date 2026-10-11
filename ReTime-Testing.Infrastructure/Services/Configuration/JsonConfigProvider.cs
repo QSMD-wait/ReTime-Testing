@@ -91,6 +91,7 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 将对象序列化并写入 JSON 文件
+        /// 原子写：先写同目录临时文件再替换，进程中断不会留下截断的配置文件
         /// </summary>
         public void Write<T>(string filePath, T value)
         {
@@ -99,7 +100,12 @@ namespace ReTime_Testing.Services
                 EnsureDirectoryExists(dir);
 
             string jsonContent = JsonSerializer.Serialize(value, _jsonOptions);
-            File.WriteAllText(filePath, jsonContent);
+
+            // 同目录临时文件（同卷），随后原子替换，避免直接覆盖时进程中断导致文件截断
+            var tempFilePath = filePath + ".tmp";
+            File.WriteAllText(tempFilePath, jsonContent);
+            File.Move(tempFilePath, filePath, overwrite: true);
+
             _logger.LogInformation("文件写入成功: {FileName}", Path.GetFileName(filePath));
         }
 

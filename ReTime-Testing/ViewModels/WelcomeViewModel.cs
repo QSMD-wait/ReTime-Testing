@@ -376,6 +376,9 @@ namespace ReTime_Testing.ViewModels
         {
             try
             {
+                // 引导完成：恢复持久化，随后的保存即为配置文件的唯一落盘点
+                _settingsService.SetPersistenceSuspended(false);
+
                 var globalSetting = _settingsService.GetGlobalSetting();
                 globalSetting.Basic.Theme = SelectedTheme;
                 globalSetting.Basic.AutoStart.Enabled = EnableAutoStart;

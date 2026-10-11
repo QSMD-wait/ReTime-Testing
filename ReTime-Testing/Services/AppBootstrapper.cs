@@ -139,6 +139,9 @@ public class AppBootstrapper
     /// </summary>
     public void PrepareWelcomeEnvironment()
     {
+        // 引导期间配置仅驻内存：Save 只更新缓存与事件，不写盘（引导中断不残留半套配置，Finish 统一落盘）
+        _settingsService.SetPersistenceSuspended(true);
+
         var globalSetting = _settingsService.GetGlobalSetting();
 
         // 应用主题（引导窗口正常显示）+ 打开进度条窗口，供引导中的位置步骤实时预览

@@ -52,5 +52,12 @@ namespace ReTime_Testing.Services
         /// 刷新TimeTop配置缓存
         /// </summary>
         void RefreshTimeTopSettingCache();
+
+        /// <summary>
+        /// 设置持久化挂起（引导期间配置仅驻内存：Save 仍更新缓存并触发变更事件，但不写盘）
+        /// 由引导入口开启、引导完成时关闭，保证引导中断不残留半套配置
+        /// </summary>
+        /// <param name="suspended">是否挂起持久化</param>
+        void SetPersistenceSuspended(bool suspended);
     }
 }

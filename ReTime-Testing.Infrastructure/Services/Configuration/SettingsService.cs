@@ -19,6 +19,11 @@ namespace ReTime_Testing.Services
         private TimeTopSetting? _cachedTimeTopSetting;
 
         /// <summary>
+        /// 持久化挂起标志（引导期间为 true：Save 仅更新缓存并触发事件，不写盘）
+        /// </summary>
+        private bool _persistenceSuspended;
+
+        /// <summary>
         /// 全局配置变更事件
         /// </summary>
         public event Action<GlobalSetting>? OnGlobalSettingChanged;
@@ -56,15 +61,20 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 保存全局配置（写入文件 + 更新缓存 + 通知 + 热重载）
+        /// 持久化挂起时仅更新缓存并触发通知，不写盘（引导期间使用）
         /// </summary>
         public void SaveGlobalSetting(GlobalSetting setting)
         {
             try
             {
-                _provider.Write(_configManager.GlobalSettingFilePath, setting);
+                if (!_persistenceSuspended)
+                    _provider.Write(_configManager.GlobalSettingFilePath, setting);
+
                 _cachedGlobalSetting = setting;
 
-                _logger.LogInformation("全局配置保存成功");
+                _logger.LogInformation(_persistenceSuspended
+                    ? "全局配置已更新（持久化挂起，不写盘）"
+                    : "全局配置保存成功");
 
                 OnGlobalSettingChanged?.Invoke(setting);
             }
@@ -105,20 +115,18 @@ namespace ReTime_Testing.Services
 
                 if (!_provider.FileExists(filePath))
                 {
-                    _logger.LogWarning("全局配置文件不存在，创建默认配置");
-                    var newSetting = new GlobalSetting();
-                    SaveGlobalSetting(newSetting);
-                    return newSetting;
+                    // 不落盘：全局配置文件的"存在性"参与首次启动引导判定，
+                    // 加载阶段绝不创建文件（文件仅由引导 Finish 或用户显式保存产生）
+                    _logger.LogWarning("全局配置文件不存在，使用默认配置（不写盘）");
+                    return new GlobalSetting();
                 }
 
                 var jsonContent = _provider.ReadRawText(filePath);
 
                 if (jsonContent == null)
                 {
-                    _logger.LogInformation("全局配置文件为空，写入默认配置");
-                    var newSetting = new GlobalSetting();
-                    SaveGlobalSetting(newSetting);
-                    return newSetting;
+                    _logger.LogInformation("全局配置文件为空，使用默认配置（不覆盖原文件）");
+                    return new GlobalSetting();
                 }
 
                 JsonNode? rootNode;
@@ -173,15 +181,20 @@ namespace ReTime_Testing.Services
 
         /// <summary>
         /// 保存TimeTop配置（写入文件 + 更新缓存 + 通知 + 热重载）
+        /// 持久化挂起时仅更新缓存并触发通知，不写盘（引导期间使用）
         /// </summary>
         public void SaveTimeTopSetting(TimeTopSetting setting)
         {
             try
             {
-                _provider.Write(_configManager.TimeTopSettingFilePath, setting);
+                if (!_persistenceSuspended)
+                    _provider.Write(_configManager.TimeTopSettingFilePath, setting);
+
                 _cachedTimeTopSetting = setting;
 
-                _logger.LogInformation("TimeTop设置保存成功");
+                _logger.LogInformation(_persistenceSuspended
+                    ? "TimeTop设置已更新（持久化挂起，不写盘）"
+                    : "TimeTop设置保存成功");
 
                 OnTimeTopSettingChanged?.Invoke(setting);
             }
@@ -349,6 +362,21 @@ namespace ReTime_Testing.Services
                 if (slot.CommonSettings.FontSizeOverride.HasValue)
                     slot.CommonSettings.FontSizeOverride = Math.Max(1, slot.CommonSettings.FontSizeOverride.Value);
             }
+        }
+
+        #endregion
+
+        #region 持久化挂起
+
+        /// <summary>
+        /// 设置持久化挂起（引导期间配置仅驻内存）
+        /// 挂起时 Save 仍更新缓存并触发变更事件（实时预览依赖），但不写盘；
+        /// 引导完成时关闭挂起，由 Finish 统一落盘
+        /// </summary>
+        public void SetPersistenceSuspended(bool suspended)
+        {
+            _persistenceSuspended = suspended;
+            _logger.LogInformation("配置持久化挂起状态变更: Suspended={Suspended}", suspended);
         }
 
         #endregion
